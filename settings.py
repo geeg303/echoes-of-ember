@@ -35,6 +35,11 @@ COLLECTIBLE_SCORE_VALUES: dict[str, int] = {
     "rare_crystal": 1_000,
     "secret_token": 2_500,
 }
+PLAYER_INVULNERABILITY_DURATION = 1.25
+PLAYER_STOMP_BOUNCE_SPEED = 650.0
+PLAYER_ENEMY_KNOCKBACK = (390.0, -430.0)
+ENEMY_GRAVITY = 2_400.0
+ENEMY_MAX_FALL_SPEED = 1_050.0
 
 
 @dataclass(frozen=True, slots=True)

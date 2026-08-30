@@ -13,6 +13,7 @@ from settings import (
     PLAYER_MAX_HEALTH,
     PLAYER_PHYSICS,
     PLAYER_STARTING_LIVES,
+    PLAYER_INVULNERABILITY_DURATION,
     PlayerPhysics,
     SHOW_COLLISION_BOXES,
 )
@@ -20,6 +21,7 @@ from systems.player_animation import (
     PlayerAnimationState,
     build_player_animation_controller,
 )
+from systems.combat import DamageResult, DamageSource
 from world.collision import CollisionEngine, CollisionResult
 
 
@@ -67,6 +69,8 @@ class Player(Entity):
         self.max_health = PLAYER_MAX_HEALTH
         self.health = self.max_health
         self.lives = PLAYER_STARTING_LIVES
+        self.invulnerability_timer = 0.0
+        self.previous_rect = self.rect.copy()
 
     def update(
         self,
@@ -75,6 +79,8 @@ class Player(Entity):
         collision: CollisionEngine,
     ) -> None:
         dt = min(max(dt, 0.0), 0.05)
+        self.previous_rect = self.rect.copy()
+        self.invulnerability_timer = max(0.0, self.invulnerability_timer - dt)
         was_grounded = self.grounded
         if self.is_dead:
             controls = PlayerControls()
@@ -218,11 +224,35 @@ class Player(Entity):
         self.animation.play(PlayerAnimationState.DEATH.value, restart=True)
 
     def take_damage(self, amount: int = 1) -> bool:
-        """Apply minimal environmental damage and report whether health reached zero."""
+        """Backward-compatible hazard damage helper."""
+        return self.apply_damage(amount, DamageSource.HAZARD).died
+
+    def apply_damage(
+        self,
+        amount: int,
+        source: DamageSource,
+        knockback: pygame.Vector2 | None = None,
+    ) -> DamageResult:
         if amount <= 0 or GOD_MODE or self.is_dead:
-            return False
+            return DamageResult(False)
+        if source is not DamageSource.HAZARD and self.invulnerability_timer > 0.0:
+            return DamageResult(False)
         self.health = max(0, self.health - amount)
-        return self.health == 0
+        died = self.health == 0
+        if died:
+            self.trigger_death()
+        else:
+            self.trigger_hurt()
+            if source is not DamageSource.HAZARD:
+                self.invulnerability_timer = PLAYER_INVULNERABILITY_DURATION
+            if knockback:
+                self.velocity.update(knockback)
+                self.grounded = False
+        return DamageResult(True, died, amount)
+
+    def bounce_from_stomp(self, speed: float) -> None:
+        self.velocity.y = -abs(speed)
+        self.grounded = False
 
     def heal(self, amount: int = 1) -> int:
         if amount <= 0:
@@ -265,11 +295,17 @@ class Player(Entity):
         self.coyote_timer = 0.0
         self.jump_buffer_timer = 0.0
         self.jump_hold_timer = 0.0
+        self.invulnerability_timer = 0.0
+        self.previous_rect = self.rect.copy()
 
     def draw(self, surface: pygame.Surface, offset: tuple[int, int] = (0, 0)) -> None:
         draw_rect = self.rect.move(offset)
         shadow = pygame.Rect(draw_rect.x - 5, draw_rect.bottom - 8, draw_rect.width + 10, 12)
         pygame.draw.ellipse(surface, (10, 13, 31, 100), shadow)
+        if self.invulnerability_timer > 0.0 and int(self.invulnerability_timer * 16) % 2 == 0:
+            if SHOW_COLLISION_BOXES:
+                pygame.draw.rect(surface, (75, 255, 165), draw_rect, 2)
+            return
         frame = self.animation.current_frame
         frame_rect = frame.get_rect(midbottom=draw_rect.midbottom)
         surface.blit(frame, frame_rect)

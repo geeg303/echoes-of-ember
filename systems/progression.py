@@ -53,3 +53,7 @@ class LevelProgress:
     def total(self, kind: CollectibleType) -> int:
         return self.totals[kind]
 
+    def award_score(self, amount: int) -> None:
+        if amount > 0:
+            self.score += amount
+

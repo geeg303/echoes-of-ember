@@ -69,3 +69,41 @@ def test_full_game_level_reset_restores_authored_state() -> None:
     finally:
         game.shutdown()
 
+
+def test_enemy_contact_invulnerability_death_and_restart_cleanup() -> None:
+    game = Game()
+    try:
+        enemy = game.enemies.enemies[0]
+        game.player.reposition((enemy.rect.x - game.player.rect.width + 8, enemy.rect.y))
+        game.player.previous_rect = game.player.rect.copy()
+        game.player.velocity.y = 0
+        first = game.enemies.update(
+            DT, game.camera.view_rect.inflate(2000, 1000), game.player,
+            game.collision, game.level.tilemap, game.progress,
+        )
+        assert first.player_damaged and game.player.health == 2
+        game.enemies.update(
+            DT, game.camera.view_rect.inflate(2000, 1000), game.player,
+            game.collision, game.level.tilemap, game.progress,
+        )
+        assert game.player.health == 2
+
+        game.player.invulnerability_timer = 0
+        game.player.health = 1
+        game.player.reposition((enemy.rect.x - game.player.rect.width + 8, enemy.rect.y))
+        game.player.previous_rect = game.player.rect.copy()
+        outcome = game.enemies.update(
+            DT, game.camera.view_rect.inflate(2000, 1000), game.player,
+            game.collision, game.level.tilemap, game.progress,
+        )
+        assert outcome.player_died and game.player.is_dead
+        for _ in range(60):
+            game.update(DT)
+        assert game.player.lives == 2 and game.player.health == game.player.max_health
+
+        game.projectiles.projectiles.extend([])
+        game.reset_level()
+        assert len(game.enemies.enemies) == 5
+        assert game.projectiles.projectiles == []
+    finally:
+        game.shutdown()

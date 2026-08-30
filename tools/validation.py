@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 from typing import Any
 
+from tools.object_validation import validate_objects
 from world.tile import TILE_DEFINITIONS
-from systems.progression import KNOWN_COLLECTIBLE_TYPES
 
 
 class LevelValidationError(ValueError):
@@ -68,48 +67,9 @@ def validate_level_data(data: Any) -> list[str]:
         if x < 0 or y < 0 or x + region_width > width or y + region_height > height:
             errors.append(f"{prefix} extends outside level bounds")
 
-    objects = data.get("objects", [])
-    if not isinstance(objects, list):
-        errors.append("objects must be a list")
-        return errors
-    seen_ids: set[str] = set()
     pixel_width = width * tile_size if isinstance(tile_size, int) else 0
     pixel_height = height * tile_size if isinstance(tile_size, int) else 0
-    for index, entry in enumerate(objects):
-        prefix = f"objects[{index}]"
-        if not isinstance(entry, dict):
-            errors.append(f"{prefix} must be an object")
-            continue
-        collectible_type = entry.get("type")
-        if collectible_type not in KNOWN_COLLECTIBLE_TYPES:
-            errors.append(f"{prefix} has unknown collectible type: {collectible_type!r}")
-        object_id = entry.get("id", f"object_{index}")
-        if not isinstance(object_id, str) or not object_id.strip():
-            errors.append(f"{prefix}.id must be a non-empty string when provided")
-        elif object_id in seen_ids:
-            errors.append(f"{prefix} has duplicate id: {object_id!r}")
-        else:
-            seen_ids.add(object_id)
-        for coordinate in ("x", "y"):
-            value = entry.get(coordinate)
-            if (
-                not isinstance(value, (int, float))
-                or isinstance(value, bool)
-                or not math.isfinite(value)
-            ):
-                errors.append(f"{prefix}.{coordinate} must be a finite number")
-        x_value = entry.get("x")
-        y_value = entry.get("y")
-        if (
-            isinstance(x_value, (int, float))
-            and not isinstance(x_value, bool)
-            and math.isfinite(x_value)
-            and isinstance(y_value, (int, float))
-            and not isinstance(y_value, bool)
-            and math.isfinite(y_value)
-            and not (0 <= x_value < pixel_width and 0 <= y_value < pixel_height)
-        ):
-            errors.append(f"{prefix} is outside level pixel bounds")
+    errors.extend(validate_objects(data.get("objects", []), pixel_width, pixel_height))
     return errors
 
 

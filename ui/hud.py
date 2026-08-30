@@ -41,6 +41,9 @@ class HUD:
     def notify_health_changed(self) -> None:
         self.health_flash = 0.42
 
+    def notify_score_changed(self) -> None:
+        self.score_pulse = 0.3
+
     def reset_feedback(self) -> None:
         self.shard_pulse = 0.0
         self.score_pulse = 0.0

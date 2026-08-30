@@ -8,7 +8,10 @@ import pygame
 
 from core.asset_manager import AssetManager
 from entities.player import Player, PlayerControls
+from systems.combat import DamageSource
 from systems.collectible_system import CollectibleManager
+from systems.enemy_system import EnemyManager
+from systems.projectile_system import ProjectileManager
 from systems.progression import LevelProgress
 from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PROJECT_ROOT, SHOW_FPS
 from ui.debug_overlay import DebugOverlay
@@ -64,6 +67,8 @@ class Game:
             [spawn.kind for spawn in self.level.collectible_spawns]
         )
         self.collectibles = CollectibleManager(self.level.collectible_spawns)
+        self.projectiles = ProjectileManager()
+        self.enemies = EnemyManager(self.level.enemy_spawns, self.projectiles)
 
     def _create_display(self) -> pygame.Surface:
         if self.fullscreen:
@@ -125,13 +130,11 @@ class Game:
         )
         self.player.update(dt, controls, self.collision)
         if self.player.hit_hazard and not self.player.is_dead:
-            died = self.player.take_damage()
-            self.hud.notify_health_changed()
-            self.camera.shake(8.0, 0.18)
-            if died:
-                self.player.trigger_death()
-            else:
-                self.player.trigger_hurt()
+            damage = self.player.apply_damage(1, DamageSource.HAZARD)
+            if damage.applied:
+                self.hud.notify_health_changed()
+                self.camera.shake(8.0, 0.18)
+            if damage.applied and not damage.died:
                 self.player.reposition(self.level.player_spawn)
                 self.camera.snap_to(self.player.rect)
         if self.player.death_animation_finished:
@@ -139,6 +142,20 @@ class Game:
             self.player.respawn(self.level.player_spawn)
             self.camera.snap_to(self.player.rect)
         self.camera.update(self.player.rect, self.player.velocity, dt)
+        enemy_result = self.enemies.update(
+            dt,
+            self.camera.view_rect,
+            self.player,
+            self.collision,
+            self.level.tilemap,
+            self.progress,
+        )
+        if enemy_result.player_damaged:
+            self.hud.notify_health_changed()
+        if enemy_result.score_awarded:
+            self.hud.notify_score_changed()
+        if enemy_result.shake:
+            self.camera.shake(enemy_result.shake, 0.12)
         self.collectibles.update(dt, self.camera.view_rect)
         if not self.player.is_dead:
             for result in self.collectibles.collect_overlaps(
@@ -161,6 +178,7 @@ class Game:
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
         self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
+        self.enemies.draw(self.canvas, self.camera.view_rect, offset)
         self.player.draw(self.canvas, offset)
         self.hud.draw(
             self.canvas,

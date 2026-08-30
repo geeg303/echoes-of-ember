@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 5 is playable. Nova now has reusable animation, health and lives, data-driven collectibles, score tracking, pickup feedback, and a polished fixed-screen HUD while exploring the validated multi-screen parallax level.
+Phase 6 is playable. The multi-screen level now includes five data-driven enemy archetypes, stomp combat, contact knockback, temporary invulnerability, hostile projectiles, and enemy score rewards built on shared animation and collision systems.
 
 ## Requirements
 
@@ -60,6 +60,9 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `core/`: application lifecycle and shared services
 - `entities/`: Nova and future moving game objects
 - `entities/collectible.py`: reusable animated pickup entities and original placeholder art
+- `entities/enemy.py`: common enemy contract and terrain movement helpers
+- `entities/projectile.py`: faction-aware reusable projectile foundation
+- `enemies/`: separate crawler, flyer, jumper, turret, and armored AI classes
 - `world/`: validated levels, tile definitions, tile maps, and collision resolution
 - `world/camera.py`: smooth tracking and world-to-screen framing
 - `world/background.py`: procedural multi-layer parallax scenery
@@ -67,6 +70,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `systems/player_animation.py`: Nova's animation configuration and generated placeholder art
 - `systems/progression.py`: centralized score and per-level collectible tracking
 - `systems/collectible_system.py`: pickup lifecycle, culling, and lightweight effects
+- `systems/enemy_system.py`: activation, stomps, damage, scoring, and cleanup
+- `systems/projectile_system.py`: shared projectile lifetime, terrain collision, and culling
 - `ui/debug_overlay.py`: animation and movement diagnostics in debug builds
 - `ui/hud.py`: fixed-screen health, lives, shard, score, level, and power-up display
 - `data/levels/`: external JSON level content
@@ -121,3 +126,33 @@ Supported `type` values are `ember_shard`, `rare_crystal`, `secret_token`, and `
 The HUD remains fixed to the screen while the world scrolls. It contains three health hearts, remaining lives, Ember Shards collected versus available, current score, level name, and a reserved power-up slot. Shard and score values pulse briefly after pickups, while health changes flash the heart display.
 
 Nova starts with three health and three lives. Hazards remove one health and return Nova to the level spawn while preserving collected objects. Reaching zero health plays the death animation, consumes one life, restores health, and respawns. Because the game-over state is scheduled for a later phase, play currently continues when the displayed lives counter reaches zero.
+
+## Enemies and damage
+
+- Ground Crawler patrols terrain, reverses at walls, and avoids configured cliffs.
+- Flyer follows a predictable bounded hover and only pursues Nova within its local detection radius.
+- Jumper waits between leaps, then biases a jump toward nearby Nova.
+- Turret remains fixed and fires faction-tagged projectiles only inside its activation range.
+- Armored Enemy patrols like a crawler but survives ordinary stomps and has four health.
+
+Normal enemies can be stomped by descending from above; Nova bounces upward and receives the enemy score only when it actually dies. An armored stomp bounces Nova but deals no damage. Side contact and hostile projectiles remove one health, apply knockback, trigger the hurt animation, and grant 1.25 seconds of flashing invulnerability. Hazards retain their distinct damage-and-spawn-return behavior.
+
+Enemy rewards are Crawler 200, Flyer 300, Jumper 350, Turret 500, and Armored Enemy 750. Score claims are one-shot even while a death animation is still visible.
+
+### Enemy level object format
+
+```json
+{
+  "id": "crawler_01",
+  "type": "enemy",
+  "enemy_type": "crawler",
+  "x": 1035,
+  "y": 988,
+  "properties": {
+    "speed": 78,
+    "cliff_avoidance": true
+  }
+}
+```
+
+Supported enemy types are `crawler`, `flyer`, `jumper`, `turret`, and `armored`. Properties may override validated per-archetype settings such as speed, detection radius, cooldown, projectile speed, jump force, horizontal speed, health, damage, and score reward. Enemy and collectible IDs share one uniqueness namespace.

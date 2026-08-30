@@ -75,3 +75,34 @@ def test_validator_rejects_non_list_object_section() -> None:
         "objects": "not-a-list",
     }
     assert "objects must be a list" in validate_level_data(data)
+
+
+def test_enemy_validation_rejects_unknown_missing_and_malformed_data() -> None:
+    data = {
+        "name": "Enemy errors",
+        "width": 10,
+        "height": 8,
+        "tile_size": 50,
+        "player_spawn": [0, 0],
+        "tiles": [],
+        "objects": [
+            {"id": "bad", "type": "enemy", "enemy_type": "dragon", "x": 20, "y": 20},
+            {"id": "bad", "type": "enemy", "x": 30, "y": 20},
+            {
+                "id": "props",
+                "type": "enemy",
+                "enemy_type": "crawler",
+                "x": 40,
+                "y": 20,
+                "properties": {"speed": "fast", "cliff_avoidance": 1},
+            },
+            {"type": "enemy", "enemy_type": "flyer", "x": 50, "y": 20, "properties": []},
+        ],
+    }
+    errors = validate_level_data(data)
+    assert any("unknown enemy type" in error for error in errors)
+    assert any("missing enemy_type" in error for error in errors)
+    assert any("duplicate id" in error for error in errors)
+    assert sum("incorrect type or value" in error for error in errors) == 2
+    assert any("id must be" in error for error in errors)
+    assert any("properties must be an object" in error for error in errors)

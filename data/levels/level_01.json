@@ -87,6 +87,17 @@
     {"id": "rare_03", "type": "rare_crystal", "x": 3240, "y": 565},
     {"id": "secret_01", "type": "secret_token", "x": 4120, "y": 635},
     {"id": "health_01", "type": "health_item", "x": 990, "y": 970},
-    {"id": "health_02", "type": "health_item", "x": 1845, "y": 970}
+    {"id": "health_02", "type": "health_item", "x": 1845, "y": 970},
+
+    {"id": "crawler_01", "type": "enemy", "enemy_type": "crawler", "x": 1035, "y": 988,
+      "properties": {"speed": 78, "cliff_avoidance": true}},
+    {"id": "flyer_01", "type": "enemy", "enemy_type": "flyer", "x": 1320, "y": 820,
+      "properties": {"speed": 88, "detection_radius": 340}},
+    {"id": "jumper_01", "type": "enemy", "enemy_type": "jumper", "x": 1880, "y": 976,
+      "properties": {"jump_force": 700, "horizontal_speed": 145, "attack_cooldown": 1.7}},
+    {"id": "turret_01", "type": "enemy", "enemy_type": "turret", "x": 2280, "y": 776,
+      "properties": {"detection_radius": 560, "attack_cooldown": 1.45, "projectile_speed": 340}},
+    {"id": "armored_01", "type": "enemy", "enemy_type": "armored", "x": 3000, "y": 910,
+      "properties": {"speed": 54, "cliff_avoidance": true}}
   ]
 }
