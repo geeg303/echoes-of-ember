@@ -76,8 +76,12 @@ class TileMap:
                 if tile and (kinds is None or tile.definition.kind in kinds):
                     yield tile
 
-    def draw(self, surface: pygame.Surface, viewport: pygame.Rect | None = None) -> None:
+    def draw(
+        self,
+        surface: pygame.Surface,
+        viewport: pygame.Rect | None = None,
+        offset: tuple[int, int] = (0, 0),
+    ) -> None:
         view = viewport or pygame.Rect(0, 0, surface.get_width(), surface.get_height())
         for tile in self.tiles_in_rect(view):
-            draw_tile(surface, tile.definition, tile.rect, self.tile_size)
-
+            draw_tile(surface, tile.definition, tile.rect.move(offset), self.tile_size)

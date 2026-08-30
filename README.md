@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 2 is playable. Nova's responsive movement now runs through an external, validated JSON tile level with solid terrain, one-way ledges, hazards, decoration, breakable blocks, bounce pads, and slippery surfaces.
+Phase 3 is playable. Nova explores an external, validated JSON tile level spanning several screens. A smooth bounded camera provides a dead-zone, horizontal look-ahead, vertical tracking, and shake support over procedural twilight parallax scenery.
 
 ## Requirements
 
@@ -57,6 +57,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `core/`: application lifecycle and shared services
 - `entities/`: Nova and future moving game objects
 - `world/`: validated levels, tile definitions, tile maps, and collision resolution
+- `world/camera.py`: smooth tracking and world-to-screen framing
+- `world/background.py`: procedural multi-layer parallax scenery
 - `data/levels/`: external JSON level content
 - `tools/`: content validation utilities
 - `assets/`: replaceable art, sound, music, and font files

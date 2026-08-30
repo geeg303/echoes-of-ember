@@ -16,8 +16,9 @@ def test_level_01_loads_from_json() -> None:
     level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
     assert level.tilemap.width == 72
     assert level.tilemap.pixel_width > 1280
-    assert level.tilemap.tile_at(12, 10).definition.kind is TileKind.HAZARD
-    assert level.tilemap.tile_at(9, 5).definition.kind is TileKind.BREAKABLE
+    assert level.tilemap.pixel_height > 720
+    assert level.tilemap.tile_at(12, 16).definition.kind is TileKind.HAZARD
+    assert level.tilemap.tile_at(9, 11).definition.kind is TileKind.BREAKABLE
 
 
 def test_validator_rejects_unknown_tile_and_out_of_bounds_region() -> None:

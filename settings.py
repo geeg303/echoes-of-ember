@@ -61,3 +61,16 @@ class PlayerPhysics:
 
 
 PLAYER_PHYSICS = PlayerPhysics()
+
+
+@dataclass(frozen=True, slots=True)
+class CameraSettings:
+    dead_zone_size: tuple[int, int] = (380, 220)
+    smoothing: float = 8.5
+    look_ahead_distance: float = 170.0
+    look_ahead_smoothing: float = 5.0
+    vertical_bias: float = 35.0
+    shake_decay: float = 9.0
+
+
+CAMERA_SETTINGS = CameraSettings()

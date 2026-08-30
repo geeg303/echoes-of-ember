@@ -127,29 +127,30 @@ class Player(Entity):
         self.jump_buffer_timer = 0.0
         self.jump_hold_timer = 0.0
 
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.Surface, offset: tuple[int, int] = (0, 0)) -> None:
         # An original luminous explorer silhouette, generated without external art.
-        shadow = pygame.Rect(self.rect.x - 5, self.rect.bottom - 8, self.rect.width + 10, 12)
+        draw_rect = self.rect.move(offset)
+        shadow = pygame.Rect(draw_rect.x - 5, draw_rect.bottom - 8, draw_rect.width + 10, 12)
         pygame.draw.ellipse(surface, (10, 13, 31, 100), shadow)
 
-        body = self.rect.inflate(-8, -10)
+        body = draw_rect.inflate(-8, -10)
         pygame.draw.rect(surface, (59, 55, 108), body, border_radius=13)
         pygame.draw.rect(surface, (238, 104, 72), (body.x, body.y + 29, body.width, 12), border_radius=6)
 
-        head_center = (self.rect.centerx + self.facing * 2, self.rect.y + 16)
+        head_center = (draw_rect.centerx + self.facing * 2, draw_rect.y + 16)
         pygame.draw.circle(surface, (242, 190, 126), head_center, 13)
         hood_points = [
-            (self.rect.centerx - 17, self.rect.y + 18),
-            (self.rect.centerx, self.rect.y - 3),
-            (self.rect.centerx + 18, self.rect.y + 19),
+            (draw_rect.centerx - 17, draw_rect.y + 18),
+            (draw_rect.centerx, draw_rect.y - 3),
+            (draw_rect.centerx + 18, draw_rect.y + 19),
         ]
         pygame.draw.polygon(surface, (82, 63, 135), hood_points)
         eye = (head_center[0] + self.facing * 6, head_center[1] + 1)
         pygame.draw.circle(surface, (255, 238, 165), eye, 3)
 
-        ember = (self.rect.centerx - self.facing * 14, self.rect.y + 35)
+        ember = (draw_rect.centerx - self.facing * 14, draw_rect.y + 35)
         pygame.draw.circle(surface, (255, 172, 62), ember, 7)
         pygame.draw.circle(surface, (255, 235, 142), ember, 3)
 
         if SHOW_COLLISION_BOXES:
-            pygame.draw.rect(surface, (75, 255, 165), self.rect, 2)
+            pygame.draw.rect(surface, (75, 255, 165), draw_rect, 2)

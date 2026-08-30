@@ -9,6 +9,8 @@ import pygame
 from core.asset_manager import AssetManager
 from entities.player import Player, PlayerControls
 from settings import DISPLAY, GAME_TITLE, PLAYER_NAME, PROJECT_ROOT, SHOW_FPS
+from world.background import ParallaxBackground
+from world.camera import Camera
 from world.collision import CollisionEngine
 from world.level import Level
 
@@ -38,6 +40,10 @@ class Game:
         self.level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
         self.collision = CollisionEngine(self.level.tilemap)
         self.player = Player(self.level.player_spawn)
+        world_size = (self.level.tilemap.pixel_width, self.level.tilemap.pixel_height)
+        self.camera = Camera(DISPLAY.internal_size, world_size)
+        self.camera.snap_to(self.player.rect)
+        self.background = ParallaxBackground(*world_size)
         self._jump_pressed = False
         self._jump_released = False
         LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
@@ -97,13 +103,21 @@ class Game:
         self.player.update(dt, controls, self.collision)
         if self.player.hit_hazard:
             self.player.respawn(self.level.player_spawn)
+            self.camera.snap_to(self.player.rect)
+            self.camera.shake(8.0, 0.18)
+        self.camera.update(self.player.rect, self.player.velocity, dt)
         self._jump_pressed = False
         self._jump_released = False
 
     def draw(self) -> None:
-        self.canvas.fill((24, 31, 64))
-        self.level.tilemap.draw(self.canvas)
-        self.player.draw(self.canvas)
+        self.background.draw(self.canvas, self.camera.position)
+        tile_view = self.camera.view_rect.inflate(
+            self.level.tilemap.tile_size * 2,
+            self.level.tilemap.tile_size * 2,
+        )
+        offset = self.camera.render_offset
+        self.level.tilemap.draw(self.canvas, tile_view, offset)
+        self.player.draw(self.canvas, offset)
         help_label = self._ui_font.render(
             f"{PLAYER_NAME}: A/D or arrows to move  •  Space/Z/Up to jump  •  F11 fullscreen",
             True,
