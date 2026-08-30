@@ -27,6 +27,15 @@ SHOW_COLLISION_BOXES = False
 SHOW_FPS = True
 GOD_MODE = False
 
+PLAYER_MAX_HEALTH = 3
+PLAYER_STARTING_LIVES = 3
+COLLECTIBLE_SCORE_VALUES: dict[str, int] = {
+    "ember_shard": 100,
+    "health_item": 0,
+    "rare_crystal": 1_000,
+    "secret_token": 2_500,
+}
+
 
 @dataclass(frozen=True, slots=True)
 class DisplaySettings:

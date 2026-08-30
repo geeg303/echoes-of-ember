@@ -6,7 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tools.validation import load_and_validate_level
+from systems.progression import CollectibleType
 from world.tilemap import TileMap
+
+
+@dataclass(frozen=True, slots=True)
+class CollectibleSpawn:
+    object_id: str
+    kind: CollectibleType
+    position: tuple[float, float]
 
 
 @dataclass(slots=True)
@@ -14,16 +22,25 @@ class Level:
     name: str
     player_spawn: tuple[float, float]
     tilemap: TileMap
+    collectible_spawns: tuple[CollectibleSpawn, ...]
     source_path: Path
 
     @classmethod
     def load(cls, path: Path) -> "Level":
         data = load_and_validate_level(path)
         spawn = data["player_spawn"]
+        collectible_spawns = tuple(
+            CollectibleSpawn(
+                object_id=str(entry.get("id", f"object_{index}")),
+                kind=CollectibleType(entry["type"]),
+                position=(float(entry["x"]), float(entry["y"])),
+            )
+            for index, entry in enumerate(data.get("objects", []))
+        )
         return cls(
             name=str(data["name"]),
             player_spawn=(float(spawn[0]), float(spawn[1])),
             tilemap=TileMap.from_data(data),
+            collectible_spawns=collectible_spawns,
             source_path=path,
         )
-

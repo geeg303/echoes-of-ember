@@ -7,7 +7,15 @@ from dataclasses import dataclass
 import pygame
 
 from entities.entity import Entity
-from settings import PLAYER_ANIMATION, PLAYER_PHYSICS, PlayerPhysics, SHOW_COLLISION_BOXES
+from settings import (
+    GOD_MODE,
+    PLAYER_ANIMATION,
+    PLAYER_MAX_HEALTH,
+    PLAYER_PHYSICS,
+    PLAYER_STARTING_LIVES,
+    PlayerPhysics,
+    SHOW_COLLISION_BOXES,
+)
 from systems.player_animation import (
     PlayerAnimationState,
     build_player_animation_controller,
@@ -56,6 +64,9 @@ class Player(Entity):
         self._hurt_timer = 0.0
         self._attack_active = False
         self._land_active = False
+        self.max_health = PLAYER_MAX_HEALTH
+        self.health = self.max_health
+        self.lives = PLAYER_STARTING_LIVES
 
     def update(
         self,
@@ -206,6 +217,24 @@ class Player(Entity):
         self._land_active = False
         self.animation.play(PlayerAnimationState.DEATH.value, restart=True)
 
+    def take_damage(self, amount: int = 1) -> bool:
+        """Apply minimal environmental damage and report whether health reached zero."""
+        if amount <= 0 or GOD_MODE or self.is_dead:
+            return False
+        self.health = max(0, self.health - amount)
+        return self.health == 0
+
+    def heal(self, amount: int = 1) -> int:
+        if amount <= 0:
+            return 0
+        previous = self.health
+        self.health = min(self.max_health, self.health + amount)
+        return self.health - previous
+
+    def lose_life_and_restore(self) -> None:
+        self.lives = max(0, self.lives - 1)
+        self.health = self.max_health
+
     @property
     def death_animation_finished(self) -> bool:
         return (
@@ -215,6 +244,18 @@ class Player(Entity):
         )
 
     def respawn(self, position: tuple[float, float]) -> None:
+        self.reposition(position)
+        self.is_dead = False
+        self._hurt_active = False
+        self._hurt_timer = 0.0
+        self._attack_active = False
+        self._land_active = False
+        self.animation.flip_x = self.facing < 0
+        self.animation.play(PlayerAnimationState.IDLE.value, restart=True)
+        self.animation_events = ()
+
+    def reposition(self, position: tuple[float, float]) -> None:
+        """Move to a safe spawn while preserving health and active visual reactions."""
         self.position.update(position)
         self.velocity.update(0.0, 0.0)
         self.sync_rect()
@@ -224,14 +265,6 @@ class Player(Entity):
         self.coyote_timer = 0.0
         self.jump_buffer_timer = 0.0
         self.jump_hold_timer = 0.0
-        self.is_dead = False
-        self._hurt_active = False
-        self._hurt_timer = 0.0
-        self._attack_active = False
-        self._land_active = False
-        self.animation.flip_x = self.facing < 0
-        self.animation.play(PlayerAnimationState.IDLE.value, restart=True)
-        self.animation_events = ()
 
     def draw(self, surface: pygame.Surface, offset: tuple[int, int] = (0, 0)) -> None:
         draw_rect = self.rect.move(offset)

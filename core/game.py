@@ -8,8 +8,11 @@ import pygame
 
 from core.asset_manager import AssetManager
 from entities.player import Player, PlayerControls
-from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PLAYER_NAME, PROJECT_ROOT, SHOW_FPS
+from systems.collectible_system import CollectibleManager
+from systems.progression import LevelProgress
+from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PROJECT_ROOT, SHOW_FPS
 from ui.debug_overlay import DebugOverlay
+from ui.hud import HUD
 from world.background import ParallaxBackground
 from world.camera import Camera
 from world.collision import CollisionEngine
@@ -37,18 +40,30 @@ class Game:
         self.running = True
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
-        self._ui_font = self.assets.font(None, 28)
         self.debug_overlay = DebugOverlay(self.assets.font(None, 22))
-        self.level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
+        self.hud = HUD(
+            self.assets.font(None, 26),
+            self.assets.font(None, 20),
+            self.assets.font(None, 32),
+        )
+        self.level_path = PROJECT_ROOT / "data" / "levels" / "level_01.json"
+        self._load_level_runtime()
+        self._jump_pressed = False
+        self._jump_released = False
+        LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
+
+    def _load_level_runtime(self) -> None:
+        self.level = Level.load(self.level_path)
         self.collision = CollisionEngine(self.level.tilemap)
         self.player = Player(self.level.player_spawn)
         world_size = (self.level.tilemap.pixel_width, self.level.tilemap.pixel_height)
         self.camera = Camera(DISPLAY.internal_size, world_size)
         self.camera.snap_to(self.player.rect)
         self.background = ParallaxBackground(*world_size)
-        self._jump_pressed = False
-        self._jump_released = False
-        LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
+        self.progress = LevelProgress.from_types(
+            [spawn.kind for spawn in self.level.collectible_spawns]
+        )
+        self.collectibles = CollectibleManager(self.level.collectible_spawns)
 
     def _create_display(self) -> pygame.Surface:
         if self.fullscreen:
@@ -81,6 +96,8 @@ class Game:
                     self.player.trigger_attack()
                 elif DEBUG_MODE and event.key == pygame.K_F6:
                     self.player.trigger_hurt()
+                elif DEBUG_MODE and event.key == pygame.K_F7:
+                    self.reset_level()
                 elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
                     self._jump_pressed = True
             elif event.type == pygame.KEYUP and event.key in (
@@ -108,12 +125,30 @@ class Game:
         )
         self.player.update(dt, controls, self.collision)
         if self.player.hit_hazard and not self.player.is_dead:
-            self.player.trigger_death()
+            died = self.player.take_damage()
+            self.hud.notify_health_changed()
             self.camera.shake(8.0, 0.18)
+            if died:
+                self.player.trigger_death()
+            else:
+                self.player.trigger_hurt()
+                self.player.reposition(self.level.player_spawn)
+                self.camera.snap_to(self.player.rect)
         if self.player.death_animation_finished:
+            self.player.lose_life_and_restore()
             self.player.respawn(self.level.player_spawn)
             self.camera.snap_to(self.player.rect)
         self.camera.update(self.player.rect, self.player.velocity, dt)
+        self.collectibles.update(dt, self.camera.view_rect)
+        if not self.player.is_dead:
+            for result in self.collectibles.collect_overlaps(
+                self.player.rect,
+                self.player,
+                self.progress,
+            ):
+                self.assets.sound(result.sound_path).play()
+                self.hud.notify_pickup(result)
+        self.hud.update(dt)
         self._jump_pressed = False
         self._jump_released = False
 
@@ -125,21 +160,33 @@ class Game:
         )
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
+        self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
         self.player.draw(self.canvas, offset)
-        help_label = self._ui_font.render(
-            f"{PLAYER_NAME}: A/D or arrows to move  •  Space/Z/Up to jump  •  F11 fullscreen",
-            True,
-            (226, 233, 245),
+        self.hud.draw(
+            self.canvas,
+            self.player.health,
+            self.player.max_health,
+            self.player.lives,
+            self.progress,
+            self.level.name,
         )
-        self.canvas.blit(help_label, (58, 24))
         if DEBUG_MODE:
             self.debug_overlay.draw(self.canvas, self.player)
         if SHOW_FPS:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
-            self.canvas.blit(label, (16, 12))
+            position = (self.canvas.get_width() - 16, self.canvas.get_height() - 12)
+            self.canvas.blit(label, label.get_rect(bottomright=position))
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
+
+    def reset_level(self) -> None:
+        """Reload original level state, including collectibles and current score."""
+        self._load_level_runtime()
+        self._jump_pressed = False
+        self._jump_released = False
+        self.hud.reset_feedback()
+        LOGGER.info("Restarted level: %s", self.level.name)
 
     def shutdown(self) -> None:
         if self._shutdown:
