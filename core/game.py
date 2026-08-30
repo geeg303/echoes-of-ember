@@ -7,7 +7,9 @@ import logging
 import pygame
 
 from core.asset_manager import AssetManager
-from settings import BACKGROUND_COLOR, DISPLAY, GAME_TITLE, SHOW_FPS
+from entities.player import Player, PlayerControls
+from settings import DISPLAY, GAME_TITLE, PLAYER_NAME, SHOW_FPS
+from world.test_room import TestRoom
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +33,11 @@ class Game:
         self.running = True
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
+        self._ui_font = self.assets.font(None, 28)
+        self.room = TestRoom()
+        self.player = Player(self.room.player_spawn)
+        self._jump_pressed = False
+        self._jump_released = False
         LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
 
     def _create_display(self) -> pygame.Surface:
@@ -60,6 +67,14 @@ class Game:
                     self.running = False
                 elif event.key == pygame.K_F11:
                     self.toggle_fullscreen()
+                elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
+                    self._jump_pressed = True
+            elif event.type == pygame.KEYUP and event.key in (
+                pygame.K_SPACE,
+                pygame.K_z,
+                pygame.K_UP,
+            ):
+                self._jump_released = True
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
@@ -67,10 +82,29 @@ class Game:
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
-        """Update active game content. Phase 0 intentionally has no scene yet."""
+        keys = pygame.key.get_pressed()
+        move_axis = float(keys[pygame.K_RIGHT] or keys[pygame.K_d]) - float(
+            keys[pygame.K_LEFT] or keys[pygame.K_a]
+        )
+        controls = PlayerControls(
+            move_axis=move_axis,
+            jump_pressed=self._jump_pressed,
+            jump_held=bool(keys[pygame.K_SPACE] or keys[pygame.K_z] or keys[pygame.K_UP]),
+            jump_released=self._jump_released,
+        )
+        self.player.update(dt, controls, self.room.solids)
+        self._jump_pressed = False
+        self._jump_released = False
 
     def draw(self) -> None:
-        self.canvas.fill(BACKGROUND_COLOR)
+        self.room.draw(self.canvas)
+        self.player.draw(self.canvas)
+        help_label = self._ui_font.render(
+            f"{PLAYER_NAME}: A/D or arrows to move  •  Space/Z/Up to jump  •  F11 fullscreen",
+            True,
+            (226, 233, 245),
+        )
+        self.canvas.blit(help_label, (58, 24))
         if SHOW_FPS:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
             self.canvas.blit(label, (16, 12))

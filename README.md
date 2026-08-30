@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 0 provides the application foundation: a 1280×720 internal canvas, scalable window, fullscreen toggle, frame limiting, logging, and failure-tolerant asset loading.
+Phase 1 is a playable movement prototype. Nova can accelerate, run, decelerate, and perform variable-height jumps through a handcrafted platform test room. Coyote time and jump buffering keep the controls forgiving and responsive.
 
 ## Requirements
 
@@ -39,7 +39,12 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-Press `F11` to switch between windowed and fullscreen mode. Press `Esc` or close the window to quit.
+### Controls
+
+- Move: `A`/`D` or left/right arrows
+- Jump: `Space`, `Z`, or up arrow (release early for a shorter jump)
+- Toggle fullscreen: `F11`
+- Quit: `Esc`
 
 For CI or headless verification:
 
@@ -50,6 +55,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 ## Project architecture
 
 - `core/`: application lifecycle and shared services
+- `entities/`: Nova and future moving game objects
+- `world/`: test room and future level infrastructure
 - `assets/`: replaceable art, sound, music, and font files
 - `tests/`: automated checks
 

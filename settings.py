@@ -37,3 +37,24 @@ class DisplaySettings:
 
 DISPLAY = DisplaySettings()
 
+
+@dataclass(frozen=True, slots=True)
+class PlayerPhysics:
+    """Tunable, pixels-per-second movement values for Nova."""
+
+    max_run_speed: float = 360.0
+    ground_acceleration: float = 2_600.0
+    air_acceleration: float = 1_650.0
+    ground_deceleration: float = 3_200.0
+    air_deceleration: float = 700.0
+    gravity: float = 2_400.0
+    held_jump_gravity_scale: float = 0.42
+    jump_speed: float = 820.0
+    jump_cut_multiplier: float = 0.45
+    maximum_fall_speed: float = 1_050.0
+    maximum_jump_hold: float = 0.22
+    coyote_time: float = 0.12
+    jump_buffer_time: float = 0.12
+
+
+PLAYER_PHYSICS = PlayerPhysics()
