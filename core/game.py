@@ -8,7 +8,8 @@ import pygame
 
 from core.asset_manager import AssetManager
 from entities.player import Player, PlayerControls
-from settings import DISPLAY, GAME_TITLE, PLAYER_NAME, PROJECT_ROOT, SHOW_FPS
+from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PLAYER_NAME, PROJECT_ROOT, SHOW_FPS
+from ui.debug_overlay import DebugOverlay
 from world.background import ParallaxBackground
 from world.camera import Camera
 from world.collision import CollisionEngine
@@ -37,6 +38,7 @@ class Game:
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
         self._ui_font = self.assets.font(None, 28)
+        self.debug_overlay = DebugOverlay(self.assets.font(None, 22))
         self.level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
         self.collision = CollisionEngine(self.level.tilemap)
         self.player = Player(self.level.player_spawn)
@@ -75,6 +77,10 @@ class Game:
                     self.running = False
                 elif event.key == pygame.K_F11:
                     self.toggle_fullscreen()
+                elif DEBUG_MODE and event.key == pygame.K_F5:
+                    self.player.trigger_attack()
+                elif DEBUG_MODE and event.key == pygame.K_F6:
+                    self.player.trigger_hurt()
                 elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
                     self._jump_pressed = True
             elif event.type == pygame.KEYUP and event.key in (
@@ -101,10 +107,12 @@ class Game:
             jump_released=self._jump_released,
         )
         self.player.update(dt, controls, self.collision)
-        if self.player.hit_hazard:
+        if self.player.hit_hazard and not self.player.is_dead:
+            self.player.trigger_death()
+            self.camera.shake(8.0, 0.18)
+        if self.player.death_animation_finished:
             self.player.respawn(self.level.player_spawn)
             self.camera.snap_to(self.player.rect)
-            self.camera.shake(8.0, 0.18)
         self.camera.update(self.player.rect, self.player.velocity, dt)
         self._jump_pressed = False
         self._jump_released = False
@@ -124,6 +132,8 @@ class Game:
             (226, 233, 245),
         )
         self.canvas.blit(help_label, (58, 24))
+        if DEBUG_MODE:
+            self.debug_overlay.draw(self.canvas, self.player)
         if SHOW_FPS:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
             self.canvas.blit(label, (16, 12))

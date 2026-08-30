@@ -74,3 +74,14 @@ class CameraSettings:
 
 
 CAMERA_SETTINGS = CameraSettings()
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerAnimationSettings:
+    visual_size: tuple[int, int] = (64, 80)
+    apex_velocity_threshold: float = 45.0
+    landing_speed_threshold: float = 430.0
+    hurt_duration: float = 0.36
+
+
+PLAYER_ANIMATION = PlayerAnimationSettings()

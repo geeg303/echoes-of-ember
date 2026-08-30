@@ -7,7 +7,11 @@ from dataclasses import dataclass
 import pygame
 
 from entities.entity import Entity
-from settings import PLAYER_PHYSICS, PlayerPhysics, SHOW_COLLISION_BOXES
+from settings import PLAYER_ANIMATION, PLAYER_PHYSICS, PlayerPhysics, SHOW_COLLISION_BOXES
+from systems.player_animation import (
+    PlayerAnimationState,
+    build_player_animation_controller,
+)
 from world.collision import CollisionEngine, CollisionResult
 
 
@@ -45,6 +49,13 @@ class Player(Entity):
         self.jump_hold_timer = 0.0
         self.on_slippery = False
         self.hit_hazard = False
+        self.animation = build_player_animation_controller()
+        self.animation_events: tuple[str, ...] = ()
+        self.is_dead = False
+        self._hurt_active = False
+        self._hurt_timer = 0.0
+        self._attack_active = False
+        self._land_active = False
 
     def update(
         self,
@@ -53,9 +64,13 @@ class Player(Entity):
         collision: CollisionEngine,
     ) -> None:
         dt = min(max(dt, 0.0), 0.05)
+        was_grounded = self.grounded
+        if self.is_dead:
+            controls = PlayerControls()
         self._update_timers(dt, controls)
         self._update_horizontal_velocity(dt, controls.move_axis)
-        self._try_buffered_jump()
+        if not self.is_dead:
+            self._try_buffered_jump()
 
         if controls.jump_released and self.velocity.y < 0.0:
             self.velocity.y *= self.physics.jump_cut_multiplier
@@ -70,8 +85,17 @@ class Player(Entity):
             self.physics.maximum_fall_speed,
         )
 
+        fall_speed_before_collision = self.velocity.y
         result = collision.move(self.position, self.velocity, self.rect, dt)
         self._apply_collision_result(result)
+        if (
+            not was_grounded
+            and result.grounded
+            and fall_speed_before_collision >= PLAYER_ANIMATION.landing_speed_threshold
+        ):
+            self._land_active = True
+            self.animation.play(PlayerAnimationState.LAND.value, restart=True)
+        self._update_animation(dt)
 
     def _update_timers(self, dt: float, controls: PlayerControls) -> None:
         if self.grounded:
@@ -116,6 +140,80 @@ class Player(Entity):
         self.on_slippery = result.on_slippery
         self.hit_hazard = result.hit_hazard
 
+    def _update_animation(self, dt: float) -> None:
+        state = self._select_animation_state()
+        self.animation.flip_x = self.facing < 0
+        self.animation.play(state.value)
+        self.animation_events = self.animation.update(dt)
+
+        if self._hurt_active:
+            self._hurt_timer = max(0.0, self._hurt_timer - dt)
+            if self._hurt_timer <= 0.0 and self.animation.finished:
+                self._hurt_active = False
+        if self._attack_active and self.animation.current_name == PlayerAnimationState.ATTACK.value:
+            if self.animation.finished:
+                self._attack_active = False
+        if self._land_active and self.animation.current_name == PlayerAnimationState.LAND.value:
+            if self.animation.finished:
+                self._land_active = False
+
+    def _select_animation_state(self) -> PlayerAnimationState:
+        if self.is_dead:
+            return PlayerAnimationState.DEATH
+        if self._hurt_active:
+            return PlayerAnimationState.HURT
+        if self._attack_active:
+            return PlayerAnimationState.ATTACK
+        if self._land_active:
+            return PlayerAnimationState.LAND
+        if not self.grounded:
+            threshold = PLAYER_ANIMATION.apex_velocity_threshold
+            if self.velocity.y < -threshold:
+                return PlayerAnimationState.JUMP
+            if self.velocity.y > threshold:
+                return PlayerAnimationState.FALL
+            if self.animation.current_name == PlayerAnimationState.JUMP.value:
+                return PlayerAnimationState.JUMP
+            return PlayerAnimationState.FALL
+        if abs(self.velocity.x) > 25.0:
+            return PlayerAnimationState.RUN
+        return PlayerAnimationState.IDLE
+
+    def trigger_hurt(self) -> None:
+        """Safe Phase 4 hook for future damage handling."""
+        if self.is_dead:
+            return
+        self._hurt_active = True
+        self._hurt_timer = PLAYER_ANIMATION.hurt_duration
+        self._attack_active = False
+        self._land_active = False
+        self.animation.play(PlayerAnimationState.HURT.value, restart=True)
+
+    def trigger_attack(self) -> None:
+        """Start the visual attack only; combat is intentionally not implemented."""
+        if self.is_dead or self._hurt_active:
+            return
+        self._attack_active = True
+        self._land_active = False
+        self.animation.play(PlayerAnimationState.ATTACK.value, restart=True)
+
+    def trigger_death(self) -> None:
+        if self.is_dead:
+            return
+        self.is_dead = True
+        self._hurt_active = False
+        self._attack_active = False
+        self._land_active = False
+        self.animation.play(PlayerAnimationState.DEATH.value, restart=True)
+
+    @property
+    def death_animation_finished(self) -> bool:
+        return (
+            self.is_dead
+            and self.animation.current_name == PlayerAnimationState.DEATH.value
+            and self.animation.finished
+        )
+
     def respawn(self, position: tuple[float, float]) -> None:
         self.position.update(position)
         self.velocity.update(0.0, 0.0)
@@ -126,31 +224,22 @@ class Player(Entity):
         self.coyote_timer = 0.0
         self.jump_buffer_timer = 0.0
         self.jump_hold_timer = 0.0
+        self.is_dead = False
+        self._hurt_active = False
+        self._hurt_timer = 0.0
+        self._attack_active = False
+        self._land_active = False
+        self.animation.flip_x = self.facing < 0
+        self.animation.play(PlayerAnimationState.IDLE.value, restart=True)
+        self.animation_events = ()
 
     def draw(self, surface: pygame.Surface, offset: tuple[int, int] = (0, 0)) -> None:
-        # An original luminous explorer silhouette, generated without external art.
         draw_rect = self.rect.move(offset)
         shadow = pygame.Rect(draw_rect.x - 5, draw_rect.bottom - 8, draw_rect.width + 10, 12)
         pygame.draw.ellipse(surface, (10, 13, 31, 100), shadow)
-
-        body = draw_rect.inflate(-8, -10)
-        pygame.draw.rect(surface, (59, 55, 108), body, border_radius=13)
-        pygame.draw.rect(surface, (238, 104, 72), (body.x, body.y + 29, body.width, 12), border_radius=6)
-
-        head_center = (draw_rect.centerx + self.facing * 2, draw_rect.y + 16)
-        pygame.draw.circle(surface, (242, 190, 126), head_center, 13)
-        hood_points = [
-            (draw_rect.centerx - 17, draw_rect.y + 18),
-            (draw_rect.centerx, draw_rect.y - 3),
-            (draw_rect.centerx + 18, draw_rect.y + 19),
-        ]
-        pygame.draw.polygon(surface, (82, 63, 135), hood_points)
-        eye = (head_center[0] + self.facing * 6, head_center[1] + 1)
-        pygame.draw.circle(surface, (255, 238, 165), eye, 3)
-
-        ember = (draw_rect.centerx - self.facing * 14, draw_rect.y + 35)
-        pygame.draw.circle(surface, (255, 172, 62), ember, 7)
-        pygame.draw.circle(surface, (255, 235, 142), ember, 3)
+        frame = self.animation.current_frame
+        frame_rect = frame.get_rect(midbottom=draw_rect.midbottom)
+        surface.blit(frame, frame_rect)
 
         if SHOW_COLLISION_BOXES:
             pygame.draw.rect(surface, (75, 255, 165), draw_rect, 2)
