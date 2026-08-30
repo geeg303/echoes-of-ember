@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 1 is a playable movement prototype. Nova can accelerate, run, decelerate, and perform variable-height jumps through a handcrafted platform test room. Coyote time and jump buffering keep the controls forgiving and responsive.
+Phase 2 is playable. Nova's responsive movement now runs through an external, validated JSON tile level with solid terrain, one-way ledges, hazards, decoration, breakable blocks, bounce pads, and slippery surfaces.
 
 ## Requirements
 
@@ -56,7 +56,9 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 
 - `core/`: application lifecycle and shared services
 - `entities/`: Nova and future moving game objects
-- `world/`: test room and future level infrastructure
+- `world/`: validated levels, tile definitions, tile maps, and collision resolution
+- `data/levels/`: external JSON level content
+- `tools/`: content validation utilities
 - `assets/`: replaceable art, sound, music, and font files
 - `tests/`: automated checks
 

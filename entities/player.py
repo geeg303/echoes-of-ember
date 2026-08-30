@@ -8,6 +8,7 @@ import pygame
 
 from entities.entity import Entity
 from settings import PLAYER_PHYSICS, PlayerPhysics, SHOW_COLLISION_BOXES
+from world.collision import CollisionEngine, CollisionResult
 
 
 @dataclass(slots=True)
@@ -42,12 +43,14 @@ class Player(Entity):
         self.coyote_timer = 0.0
         self.jump_buffer_timer = 0.0
         self.jump_hold_timer = 0.0
+        self.on_slippery = False
+        self.hit_hazard = False
 
     def update(
         self,
         dt: float,
         controls: PlayerControls,
-        solids: list[pygame.Rect],
+        collision: CollisionEngine,
     ) -> None:
         dt = min(max(dt, 0.0), 0.05)
         self._update_timers(dt, controls)
@@ -67,8 +70,8 @@ class Player(Entity):
             self.physics.maximum_fall_speed,
         )
 
-        self._move_horizontal(dt, solids)
-        self._move_vertical(dt, solids)
+        result = collision.move(self.position, self.velocity, self.rect, dt)
+        self._apply_collision_result(result)
 
     def _update_timers(self, dt: float, controls: PlayerControls) -> None:
         if self.grounded:
@@ -90,9 +93,12 @@ class Player(Entity):
             )
             target = axis * self.physics.max_run_speed
         else:
-            acceleration = (
-                self.physics.ground_deceleration if self.grounded else self.physics.air_deceleration
-            )
+            if self.grounded and self.on_slippery:
+                acceleration = self.physics.slippery_deceleration
+            else:
+                acceleration = (
+                    self.physics.ground_deceleration if self.grounded else self.physics.air_deceleration
+                )
             target = 0.0
         self.velocity.x = move_toward(self.velocity.x, target, acceleration * dt)
 
@@ -105,33 +111,21 @@ class Player(Entity):
         self.jump_buffer_timer = 0.0
         self.jump_hold_timer = self.physics.maximum_jump_hold
 
-    def _move_horizontal(self, dt: float, solids: list[pygame.Rect]) -> None:
-        self.position.x += self.velocity.x * dt
-        self.sync_rect()
-        for solid in solids:
-            if not self.rect.colliderect(solid):
-                continue
-            if self.velocity.x > 0.0:
-                self.rect.right = solid.left
-            elif self.velocity.x < 0.0:
-                self.rect.left = solid.right
-            self.position.x = float(self.rect.x)
-            self.velocity.x = 0.0
+    def _apply_collision_result(self, result: CollisionResult) -> None:
+        self.grounded = result.grounded
+        self.on_slippery = result.on_slippery
+        self.hit_hazard = result.hit_hazard
 
-    def _move_vertical(self, dt: float, solids: list[pygame.Rect]) -> None:
-        self.position.y += self.velocity.y * dt
+    def respawn(self, position: tuple[float, float]) -> None:
+        self.position.update(position)
+        self.velocity.update(0.0, 0.0)
         self.sync_rect()
         self.grounded = False
-        for solid in solids:
-            if not self.rect.colliderect(solid):
-                continue
-            if self.velocity.y > 0.0:
-                self.rect.bottom = solid.top
-                self.grounded = True
-            elif self.velocity.y < 0.0:
-                self.rect.top = solid.bottom
-            self.position.y = float(self.rect.y)
-            self.velocity.y = 0.0
+        self.on_slippery = False
+        self.hit_hazard = False
+        self.coyote_timer = 0.0
+        self.jump_buffer_timer = 0.0
+        self.jump_hold_timer = 0.0
 
     def draw(self, surface: pygame.Surface) -> None:
         # An original luminous explorer silhouette, generated without external art.
@@ -159,4 +153,3 @@ class Player(Entity):
 
         if SHOW_COLLISION_BOXES:
             pygame.draw.rect(surface, (75, 255, 165), self.rect, 2)
-

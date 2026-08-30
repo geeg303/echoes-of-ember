@@ -19,6 +19,8 @@ INTERNAL_SIZE = (INTERNAL_WIDTH, INTERNAL_HEIGHT)
 WINDOW_SIZE = INTERNAL_SIZE
 TARGET_FPS = 60
 BACKGROUND_COLOR = (19, 24, 48)
+DEFAULT_TILE_SIZE = 64
+BOUNCE_PAD_SPEED = 980.0
 
 DEBUG_MODE = True
 SHOW_COLLISION_BOXES = False
@@ -47,6 +49,7 @@ class PlayerPhysics:
     air_acceleration: float = 1_650.0
     ground_deceleration: float = 3_200.0
     air_deceleration: float = 700.0
+    slippery_deceleration: float = 260.0
     gravity: float = 2_400.0
     held_jump_gravity_scale: float = 0.42
     jump_speed: float = 820.0

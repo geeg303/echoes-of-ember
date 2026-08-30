@@ -8,8 +8,9 @@ import pygame
 
 from core.asset_manager import AssetManager
 from entities.player import Player, PlayerControls
-from settings import DISPLAY, GAME_TITLE, PLAYER_NAME, SHOW_FPS
-from world.test_room import TestRoom
+from settings import DISPLAY, GAME_TITLE, PLAYER_NAME, PROJECT_ROOT, SHOW_FPS
+from world.collision import CollisionEngine
+from world.level import Level
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,8 +35,9 @@ class Game:
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
         self._ui_font = self.assets.font(None, 28)
-        self.room = TestRoom()
-        self.player = Player(self.room.player_spawn)
+        self.level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
+        self.collision = CollisionEngine(self.level.tilemap)
+        self.player = Player(self.level.player_spawn)
         self._jump_pressed = False
         self._jump_released = False
         LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
@@ -92,12 +94,15 @@ class Game:
             jump_held=bool(keys[pygame.K_SPACE] or keys[pygame.K_z] or keys[pygame.K_UP]),
             jump_released=self._jump_released,
         )
-        self.player.update(dt, controls, self.room.solids)
+        self.player.update(dt, controls, self.collision)
+        if self.player.hit_hazard:
+            self.player.respawn(self.level.player_spawn)
         self._jump_pressed = False
         self._jump_released = False
 
     def draw(self) -> None:
-        self.room.draw(self.canvas)
+        self.canvas.fill((24, 31, 64))
+        self.level.tilemap.draw(self.canvas)
         self.player.draw(self.canvas)
         help_label = self._ui_font.render(
             f"{PLAYER_NAME}: A/D or arrows to move  •  Space/Z/Up to jump  •  F11 fullscreen",

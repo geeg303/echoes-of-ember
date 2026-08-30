@@ -6,16 +6,34 @@ import pygame
 
 from entities.player import Player, PlayerControls
 from settings import PLAYER_PHYSICS
+from world.collision import CollisionEngine
+from world.tilemap import TileMap
 
 DT = 1.0 / 60.0
-FLOOR = pygame.Rect(0, 300, 900, 100)
+
+
+def collision_map(
+    placements: list[dict[str, object]] | None = None,
+    width: int = 20,
+    height: int = 8,
+) -> CollisionEngine:
+    data: dict[str, object] = {
+        "width": width,
+        "height": height,
+        "tile_size": 50,
+        "tiles": placements or [{"id": 1, "position": [0, 6], "size": [width, 2]}],
+    }
+    return CollisionEngine(TileMap.from_data(data))
+
+
+FLOOR_TOP = 300
 
 
 def step(
     player: Player,
     frames: int,
     controls: PlayerControls | None = None,
-    solids: list[pygame.Rect] | None = None,
+    collision: CollisionEngine | None = None,
 ) -> None:
     current = controls or PlayerControls()
     for frame in range(frames):
@@ -27,12 +45,12 @@ def step(
                 jump_held=current.jump_held,
                 jump_released=current.jump_released and frame == 0,
             ),
-            solids or [FLOOR],
+            collision or collision_map(),
         )
 
 
 def grounded_player() -> Player:
-    player = Player((100.0, FLOOR.top - Player.HEIGHT))
+    player = Player((100.0, FLOOR_TOP - Player.HEIGHT))
     step(player, 2)
     assert player.grounded
     return player
@@ -50,11 +68,16 @@ def test_acceleration_deceleration_and_max_speed() -> None:
 
 
 def test_floor_and_wall_collision() -> None:
-    wall = pygame.Rect(250, 0, 40, 300)
+    collision = collision_map(
+        [
+            {"id": 1, "position": [0, 6], "size": [20, 2]},
+            {"id": 1, "position": [5, 0], "size": [1, 6]},
+        ]
+    )
     player = grounded_player()
-    step(player, 60, PlayerControls(move_axis=1.0), [FLOOR, wall])
+    step(player, 60, PlayerControls(move_axis=1.0), collision)
 
-    assert player.rect.right == wall.left
+    assert player.rect.right == 250
     assert player.velocity.x == 0.0
     assert player.grounded
 
@@ -71,7 +94,7 @@ def jump_peak(hold_jump: bool) -> float:
                 jump_held=hold_jump,
                 jump_released=frame == 1 and not hold_jump,
             ),
-            [FLOOR],
+            collision_map(),
         )
         minimum_y = min(minimum_y, player.position.y)
     return start_y - minimum_y
@@ -85,31 +108,31 @@ def test_variable_height_jump() -> None:
 
 
 def test_coyote_time_allows_jump_after_leaving_platform() -> None:
-    ledge = pygame.Rect(0, 200, 120, 30)
-    player = Player((65.0, ledge.top - Player.HEIGHT))
-    step(player, 2, solids=[ledge])
+    ledge = collision_map([{"id": 1, "position": [0, 4], "size": [3, 1]}])
+    player = Player((75.0, 200 - Player.HEIGHT))
+    step(player, 2, collision=ledge)
     player.velocity.x = PLAYER_PHYSICS.max_run_speed
 
     for _ in range(20):
-        player.update(DT, PlayerControls(move_axis=1.0), [ledge])
+        player.update(DT, PlayerControls(move_axis=1.0), ledge)
         if not player.grounded:
             break
     assert not player.grounded
 
-    player.update(DT, PlayerControls(jump_pressed=True, jump_held=True), [ledge])
+    player.update(DT, PlayerControls(jump_pressed=True, jump_held=True), ledge)
     assert player.velocity.y < 0.0
 
 
 def test_jump_buffer_fires_on_landing() -> None:
     player = Player((100.0, 195.0))
     player.velocity.y = 260.0
-    player.update(DT, PlayerControls(jump_pressed=True, jump_held=True), [FLOOR])
+    collision = collision_map()
+    player.update(DT, PlayerControls(jump_pressed=True, jump_held=True), collision)
 
     jumped = False
     for _ in range(12):
-        player.update(DT, PlayerControls(jump_held=True), [FLOOR])
+        player.update(DT, PlayerControls(jump_held=True), collision)
         if player.velocity.y < 0.0:
             jumped = True
             break
     assert jumped
-
