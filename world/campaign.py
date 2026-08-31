@@ -73,4 +73,9 @@ class WorldProgress:
     def aggregate(self, collected: str, total: str) -> tuple[int, int]:
         return sum(getattr(item, collected) for item in self.results.values()), sum(getattr(item, total) for item in self.results.values())
 
+
+    @property
+    def secrets(self) -> tuple[int, int]:
+        return self.aggregate("secrets_discovered", "secrets_total")
+
 DEFAULT_WORLD_REGISTRY = PROJECT_ROOT / "data" / "worlds" / "verdant_reaches.json"

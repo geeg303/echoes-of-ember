@@ -1,6 +1,6 @@
 {
   "id": "verdant_02",
-  "name": "Verdant Reaches — Whispering Canopy",
+  "name": "Verdant Reaches \u2014 Whispering Canopy",
   "world_id": "verdant_reaches",
   "level_number": 2,
   "display_name": "Whispering Canopy",
@@ -916,6 +916,50 @@
         "width": 48,
         "height": 128,
         "opening_duration": 0.55
+      }
+    }
+  ],
+  "secrets": [
+    {
+      "id": "v02_upper_branch",
+      "secret_type": "secret_cache",
+      "properties": {
+        "trigger_type": "enter_region",
+        "bounds": [
+          1600,
+          430,
+          420,
+          260
+        ],
+        "clue": "Unusual crystal glow above the main branch"
+      }
+    },
+    {
+      "id": "v02_wing_room",
+      "secret_type": "challenge_room",
+      "properties": {
+        "trigger_type": "reach_target",
+        "bounds": [
+          4100,
+          250,
+          420,
+          260
+        ],
+        "clue": "Wing-shaped shard trail into the upper canopy"
+      }
+    },
+    {
+      "id": "v02_hollow_tree",
+      "secret_type": "secret_room",
+      "properties": {
+        "trigger_type": "enter_region",
+        "bounds": [
+          5250,
+          720,
+          360,
+          300
+        ],
+        "clue": "Glowing vines around a hollow trunk"
       }
     }
   ]

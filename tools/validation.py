@@ -9,6 +9,7 @@ from typing import Any
 
 from tools.object_validation import validate_objects
 from world.tile import TILE_DEFINITIONS
+from world.secret_area import SecretTrigger, SecretType
 
 
 class LevelValidationError(ValueError):
@@ -82,6 +83,7 @@ def validate_level_data(data: Any) -> list[str]:
     pixel_width = width * tile_size if isinstance(tile_size, int) else 0
     pixel_height = height * tile_size if isinstance(tile_size, int) else 0
     errors.extend(validate_objects(data.get("objects", []), pixel_width, pixel_height))
+    _validate_secrets(data.get("secrets", []), data.get("objects", []), pixel_width, pixel_height, errors)
     _validate_goal(data.get("goal"), pixel_width, pixel_height, errors)
     if isinstance(data.get("objects"), list):
         counts = {
@@ -94,6 +96,59 @@ def validate_level_data(data: Any) -> list[str]:
                 errors.append(f"{field} does not match derived object total {derived}")
     return errors
 
+
+def _validate_secrets(secrets: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:
+    if not isinstance(secrets, list):
+        errors.append("secrets must be a list")
+        return
+    object_ids = {entry.get("id"): entry.get("type") for entry in objects if isinstance(objects, list) and isinstance(entry, dict)}
+    seen: set[str] = set()
+    for index, entry in enumerate(secrets):
+        prefix = f"secrets[{index}]"
+        if not isinstance(entry, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        secret_id = entry.get("id")
+        if not isinstance(secret_id, str) or not secret_id.strip():
+            errors.append(f"{prefix}.id must be a non-empty string")
+        elif secret_id in seen or secret_id in object_ids:
+            errors.append(f"{prefix} has duplicate id: {secret_id!r}")
+        else:
+            seen.add(secret_id)
+        try:
+            kind = SecretType(entry.get("secret_type"))
+        except (TypeError, ValueError):
+            errors.append(f"{prefix} has unknown secret type: {entry.get('secret_type')!r}")
+            continue
+        properties = entry.get("properties")
+        if not isinstance(properties, dict):
+            errors.append(f"{prefix}.properties must be an object")
+            continue
+        try:
+            trigger = SecretTrigger(properties.get("trigger_type"))
+        except (TypeError, ValueError):
+            errors.append(f"{prefix} has malformed trigger")
+            continue
+        bounds = properties.get("bounds")
+        valid_bounds = isinstance(bounds, list) and len(bounds) == 4 and all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) for value in bounds)
+        if not valid_bounds or bounds[2] <= 0 or bounds[3] <= 0 or bounds[0] < 0 or bounds[1] < 0 or bounds[0] + bounds[2] > pixel_width or bounds[1] + bounds[3] > pixel_height:
+            errors.append(f"{prefix}.properties.bounds is invalid")
+        enemy_ids = properties.get("enemy_ids", [])
+        if trigger is SecretTrigger.DEFEAT_ALL:
+            if not isinstance(enemy_ids, list) or not enemy_ids or not all(isinstance(item, str) and item for item in enemy_ids):
+                errors.append(f"{prefix}.properties.enemy_ids must be a non-empty string list")
+            else:
+                for enemy_id in enemy_ids:
+                    if object_ids.get(enemy_id) != "enemy":
+                        errors.append(f"{prefix} references missing challenge enemy: {enemy_id!r}")
+        if kind is SecretType.EXIT and trigger is not SecretTrigger.INTERACT:
+            errors.append(f"{prefix} secret exit must use interact trigger")
+        allowed = {"trigger_type", "bounds", "enemy_ids", "reward_score", "clue"}
+        for key in properties.keys() - allowed:
+            errors.append(f"{prefix}.properties has unknown property: {key!r}")
+        reward = properties.get("reward_score")
+        if reward is not None and (not isinstance(reward, int) or isinstance(reward, bool) or reward < 0):
+            errors.append(f"{prefix}.properties.reward_score must be non-negative")
 
 def _validate_metadata(data: dict[str, Any], errors: list[str]) -> None:
     for field in ("id", "world_id", "display_name", "description", "theme"):

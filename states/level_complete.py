@@ -32,15 +32,19 @@ class LevelCompleteScreen:
             ("SCORE", f"{result.score:08d}"),
             ("EMBER SHARDS", f"{result.ember_shards_collected} / {result.ember_shards_total}"),
             ("RARE CRYSTALS", f"{result.rare_crystals_collected} / {result.rare_crystals_total}"),
-            ("SECRET TOKENS", f"{result.secret_tokens_collected} / {result.secret_tokens_total}"),
+            ("SECRET TOKEN", "FOUND" if result.secret_tokens_collected else "MISSING"),
+            ("SECRETS", f"{result.secrets_discovered} / {result.secrets_total}"),
             ("ENEMIES DEFEATED", f"{result.enemies_defeated} / {result.enemies_total}"),
             ("LIVES REMAINING", str(result.lives_remaining)),
         ]
         for index, (label, value) in enumerate(rows):
-            y = 225 + index * 48
+            y = 215 + index * 44
             surface.blit(self.font.render(label, True, (174, 192, 222)), (350, y))
             value_image = self.font.render(value, True, (245, 241, 220))
             surface.blit(value_image, value_image.get_rect(topright=(930, y)))
+        if result.exit_type.value == "secret_exit":
+            banner = self.small_font.render("SECRET EXIT FOUND!", True, (219, 155, 255))
+            surface.blit(banner, banner.get_rect(center=(640, 196)))
         message = "Campaign progression coming later" if self.continued else "ENTER / SPACE  CONTINUE     R  REPLAY     ESC  QUIT"
         prompt = self.small_font.render(message, True, (197, 211, 238))
         surface.blit(prompt, prompt.get_rect(center=(640, 604)))

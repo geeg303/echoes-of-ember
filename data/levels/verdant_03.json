@@ -1,6 +1,6 @@
 {
   "id": "verdant_03",
-  "name": "Verdant Reaches — Emberfall Ravine",
+  "name": "Verdant Reaches \u2014 Emberfall Ravine",
   "world_id": "verdant_reaches",
   "level_number": 3,
   "display_name": "Emberfall Ravine",
@@ -1004,6 +1004,54 @@
         "width": 48,
         "height": 128,
         "opening_duration": 0.55
+      }
+    }
+  ],
+  "secrets": [
+    {
+      "id": "v03_mine_shaft",
+      "secret_type": "secret_room",
+      "properties": {
+        "trigger_type": "enter_region",
+        "bounds": [
+          2800,
+          700,
+          420,
+          330
+        ],
+        "clue": "Cracked Ember stone below an old brace"
+      }
+    },
+    {
+      "id": "v03_lower_fall",
+      "secret_type": "alternate_route",
+      "properties": {
+        "trigger_type": "reach_target",
+        "bounds": [
+          4950,
+          390,
+          500,
+          300
+        ],
+        "clue": "Shard trail beneath a recoverable falling-platform route"
+      }
+    },
+    {
+      "id": "v03_challenge",
+      "secret_type": "challenge_room",
+      "properties": {
+        "trigger_type": "defeat_all",
+        "bounds": [
+          4150,
+          780,
+          760,
+          390
+        ],
+        "enemy_ids": [
+          "jumper_6",
+          "turret_8"
+        ],
+        "clue": "Ruined challenge sigil near two guarded ledges"
       }
     }
   ]

@@ -22,6 +22,11 @@ class CompletionRating(str, Enum):
     GOLD = "GOLD"
 
 
+class ExitType(str, Enum):
+    NORMAL = "normal_exit"
+    SECRET = "secret_exit"
+
+
 @dataclass(frozen=True, slots=True)
 class CompletionRequirements:
     reach_goal: bool = True
@@ -61,6 +66,11 @@ class LevelResult:
     health_remaining: int
     checkpoints_activated: int
     rating: CompletionRating
+    secrets_discovered: int = 0
+    secrets_total: int = 0
+    secret_rooms_completed: int = 0
+    exit_type: ExitType = ExitType.NORMAL
+    exit_id: str = "ember_gate"
 
 
 def calculate_rating(

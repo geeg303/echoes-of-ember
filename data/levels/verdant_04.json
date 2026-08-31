@@ -1,6 +1,6 @@
 {
   "id": "verdant_04",
-  "name": "Verdant Reaches — Ruins of the First Flame",
+  "name": "Verdant Reaches \u2014 Ruins of the First Flame",
   "world_id": "verdant_reaches",
   "level_number": 4,
   "display_name": "Ruins of the First Flame",
@@ -1070,6 +1070,64 @@
         "width": 48,
         "height": 128,
         "opening_duration": 0.55
+      }
+    }
+  ],
+  "secrets": [
+    {
+      "id": "v04_ancient_wall",
+      "secret_type": "secret_cache",
+      "properties": {
+        "trigger_type": "enter_region",
+        "bounds": [
+          2700,
+          720,
+          420,
+          340
+        ],
+        "clue": "Warm cracks in an ancient wall"
+      }
+    },
+    {
+      "id": "v04_side_chamber",
+      "secret_type": "secret_room",
+      "properties": {
+        "trigger_type": "enter_region",
+        "bounds": [
+          4300,
+          720,
+          480,
+          340
+        ],
+        "clue": "A secondary ruin symbol and glowing vines"
+      }
+    },
+    {
+      "id": "v04_ascent",
+      "secret_type": "challenge_room",
+      "properties": {
+        "trigger_type": "reach_target",
+        "bounds": [
+          6420,
+          300,
+          500,
+          300
+        ],
+        "clue": "Ascending shard trail toward the Secret Token"
+      }
+    },
+    {
+      "id": "v04_secret_exit",
+      "secret_type": "secret_exit",
+      "properties": {
+        "trigger_type": "interact",
+        "bounds": [
+          7200,
+          570,
+          110,
+          150
+        ],
+        "clue": "A distant violet Ember arch visible from the upper ruin"
       }
     }
   ]

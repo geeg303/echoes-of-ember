@@ -11,6 +11,7 @@ from systems.enemy_config import EnemyType
 from systems.powerup_system import PowerUpType
 from systems.level_completion import CompletionRequirements, RatingThresholds
 from world.tilemap import TileMap
+from world.secret_area import SecretDefinition, SecretTrigger, SecretType
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +79,7 @@ class Level:
     enemy_spawns: tuple[EnemySpawn, ...]
     powerup_spawns: tuple[PowerUpSpawn, ...]
     world_object_spawns: tuple[WorldObjectSpawn, ...]
+    secret_definitions: tuple[SecretDefinition, ...]
     source_path: Path
 
     @classmethod
@@ -124,6 +126,17 @@ class Level:
             for entry in data.get("objects", [])
             if entry["type"] in world_kinds
         )
+        secret_definitions = tuple(
+            SecretDefinition(
+                secret_id=str(entry["id"]), kind=SecretType(entry["secret_type"]),
+                trigger=SecretTrigger(entry["properties"]["trigger_type"]),
+                bounds=tuple(float(value) for value in entry["properties"]["bounds"]),
+                enemy_ids=tuple(entry["properties"].get("enemy_ids", [])),
+                reward_score=entry["properties"].get("reward_score"),
+                clue=str(entry["properties"].get("clue", "")),
+            )
+            for entry in data.get("secrets", [])
+        )
         requirements = data["completion_requirements"]
         ratings = data["rating_thresholds"]
         metadata = LevelMetadata(
@@ -148,6 +161,7 @@ class Level:
             enemy_spawns=enemy_spawns,
             powerup_spawns=powerup_spawns,
             world_object_spawns=world_object_spawns,
+            secret_definitions=secret_definitions,
             source_path=path,
         )
 
