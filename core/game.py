@@ -31,6 +31,8 @@ from systems.progression import LevelProgress
 from systems.secret_system import SecretSystem
 from settings import DEBUG_MODE, DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
+from states.frontend import FrontendController
+from ui.menu import action_for_key
 from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
 from ui.debug_overlay import DebugOverlay
@@ -50,7 +52,7 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None) -> None:
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
         self.fullscreen = DISPLAY.fullscreen
@@ -80,10 +82,10 @@ class Game:
         if level_id not in self.registry.level_paths:
             raise ValueError(f"unknown registered level: {level_id}")
         self.persistence_enabled = persistence
-        self.save_manager = save_manager or (SaveManager(self.registry) if persistence else None)
+        self.save_manager = save_manager or (SaveManager(self.registry) if persistence or start_frontend else None)
         self.save_session: SaveSession | None = None
         self.save_warning = ""
-        if persistence and self.save_manager is not None:
+        if persistence and not start_frontend and self.save_manager is not None:
             if new_game:
                 self.save_session = self.save_manager.new_game(slot_id, overwrite=True)
             else:
@@ -110,9 +112,14 @@ class Game:
         if self.save_warning:
             self.world_map_screen.notify(self.save_warning)
         self.show_world_summary = False
-        self.app_mode = "map" if start_on_map else "gameplay"
+        self.frontend = FrontendController(self, self.save_manager or SaveManager(self.registry), self.assets.font(None, 48), self.assets.font(None, 29), self.assets.font(None, 20), self.audio)
+        self.app_mode = "frontend" if start_frontend else "map" if start_on_map else "gameplay"
         self.level_path = self.registry.level_paths[level_id]
-        if not start_on_map:
+        if start_frontend:
+            self.effects.clear()
+            self.effects.start_emitter("frontend:title", "sanctum_available", (640, 500))
+            self.audio.play_music("music_world_map")
+        elif not start_on_map:
             self._load_level_runtime()
         else:
             self._configure_map_effects()
@@ -180,6 +187,10 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
+                if self.app_mode == "frontend":
+                    action = action_for_key(event.key)
+                    if action is not None: self.frontend.handle(action)
+                    continue
                 if self.app_mode == "map":
                     self._handle_map_key(event.key)
                     continue
@@ -253,6 +264,11 @@ class Game:
     def update(self, dt: float) -> None:
         if self.save_session is not None:
             self.save_session.play_time_seconds += dt
+        if self.app_mode == "frontend":
+            self.frontend.update(dt)
+            self.effects.update(dt)
+            self.audio.update(dt)
+            return
         if self.app_mode == "map":
             previous_node = self.world_map_runtime.current_node_id
             self.world_map_screen.update(dt)
@@ -498,6 +514,11 @@ class Game:
         )
 
     def draw(self) -> None:
+        if self.app_mode == "frontend":
+            self.frontend.draw(self.canvas)
+            self.effects.draw_screen(self.canvas)
+            scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
+            self.screen.blit(scaled, (0, 0)); pygame.display.flip(); return
         if self.app_mode == "map":
             self.world_map_screen.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
@@ -640,6 +661,28 @@ class Game:
         self.effects.update(dt, self.camera.view_rect)
         self.effects.apply_shake(self.camera)
         self.audio.update(dt)
+
+    def start_campaign(self, slot_id: int, new_game: bool = False) -> None:
+        if self.save_manager is None: self.save_manager = SaveManager(self.registry)
+        if new_game: self.save_session = self.save_manager.new_game(slot_id, overwrite=True)
+        else:
+            outcome = self.save_manager.load(slot_id)
+            if outcome.session is None: return
+            self.save_session = outcome.session
+            self.save_warning = "SAVE RECOVERED FROM BACKUP" if outcome.state is SlotState.RECOVERED else ""
+        self.persistence_enabled = True
+        self.world_progress = self.save_session.progress
+        self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
+        node = self.registry.map_definition.nodes[self.save_session.current_map_node]
+        self.world_map_runtime.current_node_id = node.node_id; self.world_map_runtime.avatar_position.update(node.position)
+        self.world_map_screen = WorldMapScreen(self.world_map_runtime, self.assets.font(None,38), self.assets.font(None,25), self.assets.font(None,19))
+        if self.save_warning: self.world_map_screen.notify(self.save_warning)
+        self.app_mode = "map"; self.show_world_summary = False; self.effects.clear(); self._configure_map_effects(); self._configure_map_audio()
+
+    def return_to_main_menu(self) -> None:
+        self._autosave(force=True)
+        self.app_mode = "frontend"; self.effects.clear(); self.effects.start_emitter("frontend:title", "sanctum_available", (640,500)); self.audio.reset_context(); self.audio.play_music("music_world_map")
+        self.frontend.refresh_slots(); self.frontend._main()
 
     def reset_level(self) -> None:
         """Reload original level state, including collectibles and current score."""

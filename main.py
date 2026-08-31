@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
         help="run a few frames and exit (useful for automated checks)",
     )
     parser.add_argument("--level", help="launch a registered World 1 level ID without save persistence")
-    parser.add_argument("--slot", type=int, choices=(1, 2, 3), default=1, help="campaign save slot (default: 1)")
+    parser.add_argument("--slot", type=int, choices=(1, 2, 3), default=None, help="directly load campaign save slot")
     parser.add_argument("--new-game", action="store_true", help="explicitly reset the selected slot")
     return parser.parse_args()
 
@@ -43,7 +43,9 @@ def main() -> int:
     except WorldRegistryError as exc:
         logging.error("Cannot launch: %s", exc)
         return 2
-    game = Game(level_id=level_id, registry=registry, start_on_map=args.level is None, slot_id=args.slot, new_game=args.new_game, persistence=args.level is None)
+    direct_campaign = args.slot is not None or args.new_game
+    slot_id = args.slot or 1
+    game = Game(level_id=level_id, registry=registry, start_frontend=args.level is None and not direct_campaign, start_on_map=args.level is None and direct_campaign, slot_id=slot_id, new_game=args.new_game, persistence=direct_campaign)
     game.run(frame_limit=5 if args.smoke_test else None)
     return 0
 
