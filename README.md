@@ -288,3 +288,7 @@ World 1 contains twelve optional, data-driven discoveries: caches, rooms, challe
 ## World Map
 
 Normal startup now opens the procedural Verdant Reaches World Map. Travel uses authored node connections and waypoints; completing a level returns Nova to that node and unlocks routes without auto-launching the next stage. Latest run results remain separate from monotonic session discoveries. The Ruins secret exit permanently reveals the in-memory Ember Veil branch, while First Flame Sanctum opens the aggregate World Complete summary. See `docs/WORLD_MAP.md`.
+
+## Persistent campaign saves
+
+Campaign startup now uses one of three versioned JSON slots (`python main.py --slot 1`). Use `--new-game` only when intentionally resetting the selected slot. Saves contain completed level results, monotonic unlocks and discoveries, the last reached map node, timestamps, and cumulative play time. Atomic writes, a last-known-good backup, validation, and controlled corruption recovery protect progress. Direct `--level` development launches are nonpersistent. See [docs/SAVE_SYSTEM.md](docs/SAVE_SYSTEM.md) for the schema, platform-specific location policy, and recovery rules.

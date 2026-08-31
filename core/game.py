@@ -7,6 +7,8 @@ import logging
 import pygame
 
 from core.asset_manager import AssetManager
+from core.save_manager import SaveManager, SlotState
+from systems.save_data import SaveSession
 from entities.level_goal import EmberGate
 from entities.player import Player, PlayerControls
 from systems.combat import DamageSource
@@ -44,7 +46,7 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False) -> None:
         pygame.init()
         try:
             pygame.mixer.init()
@@ -74,11 +76,36 @@ class Game:
         self.registry = registry or WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
         if level_id not in self.registry.level_paths:
             raise ValueError(f"unknown registered level: {level_id}")
-        self.world_progress = WorldProgress(self.registry)
+        self.persistence_enabled = persistence
+        self.save_manager = save_manager or (SaveManager(self.registry) if persistence else None)
+        self.save_session: SaveSession | None = None
+        self.save_warning = ""
+        if persistence and self.save_manager is not None:
+            if new_game:
+                self.save_session = self.save_manager.new_game(slot_id, overwrite=True)
+            else:
+                loaded = self.save_manager.load(slot_id)
+                if loaded.session is not None:
+                    self.save_session = loaded.session
+                    if loaded.state is SlotState.RECOVERED:
+                        self.save_warning = "SAVE RECOVERED FROM BACKUP"
+                elif loaded.state is SlotState.EMPTY:
+                    self.save_session = self.save_manager.new_game(slot_id)
+                else:
+                    self.save_warning = "SAVE UNAVAILABLE — USE --NEW-GAME TO RESET"
+                    self.persistence_enabled = False
+                    self.save_session = SaveSession.fresh(slot_id, self.registry)
+        self.world_progress = self.save_session.progress if self.save_session else WorldProgress(self.registry)
         self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
+        if self.save_session:
+            saved_node = self.registry.map_definition.nodes[self.save_session.current_map_node]
+            self.world_map_runtime.current_node_id = saved_node.node_id
+            self.world_map_runtime.avatar_position.update(saved_node.position)
         self.world_map_screen = WorldMapScreen(
             self.world_map_runtime, self.assets.font(None, 38), self.assets.font(None, 25), self.assets.font(None, 19)
         )
+        if self.save_warning:
+            self.world_map_screen.notify(self.save_warning)
         self.show_world_summary = False
         self.app_mode = "map" if start_on_map else "gameplay"
         self.level_path = self.registry.level_paths[level_id]
@@ -200,8 +227,14 @@ class Game:
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
+        if self.save_session is not None:
+            self.save_session.play_time_seconds += dt
         if self.app_mode == "map":
+            previous_node = self.world_map_runtime.current_node_id
             self.world_map_screen.update(dt)
+            if self.world_map_runtime.current_node_id != previous_node:
+                self._mark_save_dirty()
+                self._autosave()
             return
         if self.gameplay_phase in {GameplayPhase.LEVEL_COMPLETE, GameplayPhase.WORLD_COMPLETE}:
             self._clear_frame_inputs()
@@ -307,6 +340,8 @@ class Game:
         self.gameplay_phase = GameplayPhase.GOAL_TRIGGERED
         self.level_result = self._build_level_result(exit_id, exit_type)
         self.world_progress.record(self.level_result)
+        self._mark_save_dirty()
+        self._autosave()
         self.gameplay_phase = GameplayPhase.COMPLETION_SEQUENCE
         self.completion_timer = LEVEL_COMPLETION_SEQUENCE_DURATION
         self.projectiles.clear()
@@ -416,8 +451,26 @@ class Game:
         self.world_map_runtime.return_to_level_node(level_id)
         self.app_mode = "map"
         self.show_world_summary = False
+        self._mark_save_dirty()
+        self._autosave()
         if self.level_result is not None:
             self.world_map_screen.notify("PATH OPENED — CHOOSE YOUR NEXT DESTINATION")
+
+    def _mark_save_dirty(self) -> None:
+        if self.persistence_enabled and self.save_session is not None:
+            self.save_session.dirty = True
+
+    def _autosave(self, force: bool = False) -> None:
+        if not self.persistence_enabled or self.save_manager is None or self.save_session is None:
+            return
+        if not force and not self.save_session.dirty:
+            return
+        self.save_session.progress = self.world_progress
+        self.save_session.current_map_node = self.world_map_runtime.current_node_id
+        try:
+            self.save_manager.save(self.save_session)
+        except OSError:
+            LOGGER.exception("Autosave failed; campaign remains active in memory")
 
     def continue_campaign(self) -> None:
         """Compatibility alias: Continue now returns to the authored World Map."""
@@ -427,6 +480,9 @@ class Game:
         if self._shutdown:
             return
         self._shutdown = True
+        if self.persistence_enabled and self.save_session is not None:
+            self.save_session.dirty = True
+            self._autosave(force=True)
         self.running = False
         pygame.quit()
         LOGGER.info("Clean shutdown complete")

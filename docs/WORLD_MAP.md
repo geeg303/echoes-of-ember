@@ -58,3 +58,6 @@ Normal startup opens the map. `python main.py --level verdant_03` bypasses it fo
 
 To author another map: create stable node IDs, place nodes inside 1280×720, add registered level references, connect them with unique connection IDs, add optional waypoints and unlock requirements, provide one valid start and world-goal node, then run `python -m tools.validation --all-levels`.
 
+## Persistence
+
+The map graph remains authored data. Phase 13 saves only the latest results, monotonic progression flags, and the last node reached after travel settles; node states and connections are derived again on load. Secret branch visibility and world completion therefore survive later lower-scoring or normal-exit replays. See [SAVE_SYSTEM.md](SAVE_SYSTEM.md).

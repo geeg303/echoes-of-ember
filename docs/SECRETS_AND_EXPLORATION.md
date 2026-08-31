@@ -49,3 +49,7 @@ Clues should be readable without explicit labels. Timed powers may make entry ea
 ## World Map integration
 
 A completed secret exit adds a monotonic runtime discovery flag independently of the latest `LevelResult`. The authored `secret_exit_discovered` connection reveals Ember Veil. Replaying Ruins through the normal exit may replace performance statistics but cannot hide that branch during the current session.
+
+## Persistent discoveries
+
+Completed-run secret totals, Secret Tokens, and latest exit information are serialized in each level result. Secret-exit discoveries and revealed map nodes are stored separately as monotonic flags. Consequently, completing Ruins through its normal exit after discovering Ember Veil updates the latest result without hiding the branch. Unfinished-run secret state is intentionally not saved.

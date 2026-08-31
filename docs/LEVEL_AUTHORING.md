@@ -46,3 +46,7 @@ Use teach → test → twist for each mechanic. Put optional challenges above or
 ## Registering a level on the World Map
 
 Add one `level` node with the stable registered `level_id`, map coordinates, and title. Connect it using unique connection IDs, optional route waypoints, and an authored unlock requirement. Do not infer order from filenames. Validate the complete registry with `python -m tools.validation --all-levels`; see `docs/WORLD_MAP.md` for the graph schema.
+
+## Save compatibility
+
+Level IDs, secret-exit IDs, and map-node references are persistent identifiers once shipped. Renaming one can invalidate an existing save unless a future schema migration maps the old identifier. Never add live entity state to the save schema: only a frozen completed `LevelResult` and monotonic campaign discoveries cross the persistence boundary.
