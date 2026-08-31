@@ -24,8 +24,8 @@ class BossHUD:
     def draw(self, surface: pygame.Surface, state: BossHUDState) -> None:
         if not state.visible:
             return
-        outer = pygame.Rect(330, 24, 620, 58)
-        bar = pygame.Rect(350, 53, 580, 16)
+        outer = pygame.Rect(330, 94, 620, 58)
+        bar = pygame.Rect(350, 123, 580, 16)
         pygame.draw.rect(surface, (13, 16, 30), outer, border_radius=12)
         pygame.draw.rect(surface, (230, 190, 119), outer, 2, border_radius=12)
         ratio = max(0.0, min(1.0, state.health / max(1, state.max_health)))
@@ -37,12 +37,12 @@ class BossHUD:
             x = round(bar.left + bar.width * marker)
             pygame.draw.line(surface, (255, 238, 190), (x, bar.top), (x, bar.bottom), 2)
         title = self.font.render(state.name.upper(), True, (255, 231, 174))
-        surface.blit(title, title.get_rect(midtop=(640, 27)))
+        surface.blit(title, title.get_rect(midtop=(640, 97)))
         phase = self.small.render(f"PHASE {state.phase}", True, (228, 210, 185))
-        surface.blit(phase, (bar.right - phase.get_width(), 31))
+        surface.blit(phase, (bar.right - phase.get_width(), 101))
         if state.intro:
             intro = self.font.render(state.name.upper(), True, (255, 218, 133))
-            box = intro.get_rect(center=(640, 165)).inflate(46, 24)
+            box = intro.get_rect(center=(640, 185)).inflate(46, 24)
             pygame.draw.rect(surface, (16, 18, 34), box, border_radius=12)
             pygame.draw.rect(surface, (230, 156, 76), box, 2, border_radius=12)
             surface.blit(intro, intro.get_rect(center=box.center))

@@ -61,3 +61,7 @@ To author another map: create stable node IDs, place nodes inside 1280×720, add
 ## Persistence
 
 The map graph remains authored data. Phase 13 saves only the latest results, monotonic progression flags, and the last node reached after travel settles; node states and connections are derived again on load. Secret branch visibility and world completion therefore survive later lower-scoring or normal-exit replays. See [SAVE_SYSTEM.md](SAVE_SYSTEM.md).
+
+## Boss destination and true completion
+
+`first_flame_sanctum` is now a playable `boss` node referencing `verdant_boss` and `ashen_warden`. Ruins completion changes it from locked to available. Only the monotonic boss-defeat flag changes it to completed and unlocks the `verdant_beacon` World Complete landmark. The secret Ember Veil route remains independent and may coexist with the boss route. Completed boss nodes remain replayable.

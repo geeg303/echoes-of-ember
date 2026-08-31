@@ -213,3 +213,32 @@ def test_stone_guard_absorbs_boss_contact_exactly_once() -> None:
     finally:
         game.shutdown()
 
+def test_available_sanctum_map_node_launches_registered_boss_level() -> None:
+    game = Game(start_on_map=True)
+    try:
+        game.world_progress.record(result("verdant_04"))
+        game.world_map_runtime.current_node_id = "first_flame_sanctum"
+        action, level_id = game.world_map_screen.activate_current()
+        assert action == "level" and level_id == "verdant_boss"
+        game.load_level(level_id)
+        assert game.level.metadata.level_id == "verdant_boss" and game.boss_system is not None
+    finally:
+        game.shutdown()
+
+
+def test_f7_reconstruction_is_safe_during_transition_and_defeat() -> None:
+    for state in (BossState.PHASE_TRANSITION, BossState.DEFEATED):
+        game = Game(level_id="verdant_boss")
+        try:
+            trigger(game)
+            old = game.boss_system
+            old.boss.state = state
+            old.boss.health = 6 if state is BossState.PHASE_TRANSITION else 0
+            game.reset_level()
+            assert game.boss_system is not old
+            assert game.boss_system.boss.state is BossState.INTRO
+            assert game.boss_system.boss.health == 18
+            assert not game.projectiles.projectiles and not game.boss_system.active
+        finally:
+            game.shutdown()
+

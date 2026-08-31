@@ -38,3 +38,7 @@ The Emberfall chamber tracks only its authored Jumper and Turret. The single Wor
 ## Overworld route
 
 The fixed Verdant Reaches map winds from Starting Grove through the four level landmarks to First Flame Sanctum. Elevation and route bends echo canopy ascent, ravine descent, and the final ruins. A violet path from Ruins to Ember Veil stays hidden until the authored secret exit is discovered.
+
+## First Flame Sanctum
+
+Ruins of the First Flame now grants access to a short dedicated Sanctum stage rather than completing the world. Its entry teaches the attack resource safely, then the Ashen Warden tests learned movement, projectile dodging, punish timing, Stone Guard, and three increasingly combined attack phases. Defeating the guardian—not merely reaching Ruins—is Verdant Reaches completion.

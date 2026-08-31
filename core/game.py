@@ -314,6 +314,12 @@ class Game:
         if self.boss_system is not None:
             boss_result = self.boss_system.update(dt, self.player, self.powerups, self.progress)
             self.camera.set_bounds(self.boss_system.arena.camera_bounds)
+            if self.boss_system.active:
+                focus = self.player.rect.union(self.boss_system.boss.rect)
+                if boss_result.triggered:
+                    self.camera.snap_to(focus)
+                else:
+                    self.camera.update(focus, pygame.Vector2(), dt)
             if boss_result.player_damaged:
                 self.hud.notify_health_changed()
             if boss_result.score_awarded:

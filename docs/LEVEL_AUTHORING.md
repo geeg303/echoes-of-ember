@@ -50,3 +50,7 @@ Add one `level` node with the stable registered `level_id`, map coordinates, and
 ## Save compatibility
 
 Level IDs, secret-exit IDs, and map-node references are persistent identifiers once shipped. Renaming one can invalidate an existing save unless a future schema migration maps the old identifier. Never add live entity state to the save schema: only a frozen completed `LevelResult` and monotonic campaign discoveries cross the persistence boundary.
+
+## Boss levels
+
+Boss stages use ordinary validated level metadata plus a top-level `boss_encounter` object. Author stable boss/config IDs, arena and trigger rectangles, a spawn inside the arena, linked door IDs, and an Ember source position. Include a safe checkpoint and normal Ember Pulse pickup before the trigger. Register the level on a `boss` World Map node; never infer boss behavior from filenames or place level-ID conditionals in `Game`. See [BOSS_SYSTEM.md](BOSS_SYSTEM.md).

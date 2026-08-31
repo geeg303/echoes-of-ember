@@ -292,3 +292,7 @@ Normal startup now opens the procedural Verdant Reaches World Map. Travel uses a
 ## Persistent campaign saves
 
 Campaign startup now uses one of three versioned JSON slots (`python main.py --slot 1`). Use `--new-game` only when intentionally resetting the selected slot. Saves contain completed level results, monotonic unlocks and discoveries, the last reached map node, timestamps, and cumulative play time. Atomic writes, a last-known-good backup, validation, and controlled corruption recovery protect progress. Direct `--level` development launches are nonpersistent. See [docs/SAVE_SYSTEM.md](docs/SAVE_SYSTEM.md) for the schema, platform-specific location policy, and recovery rules.
+
+## World 1 boss
+
+First Flame Sanctum is now a playable boss destination. Completing Ruins unlocks the Sanctum but no longer completes Verdant Reaches; defeating the original three-phase Ashen Warden is the true world-completion condition. The fight uses shared projectiles, player damage, Stone Guard, an encounter-safe Ember Pulse grant, arena doors, camera bounds, a segmented boss HUD, and persistent boss progression. See [docs/BOSS_SYSTEM.md](docs/BOSS_SYSTEM.md) and [docs/ASHEN_WARDEN.md](docs/ASHEN_WARDEN.md).

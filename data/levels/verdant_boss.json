@@ -175,7 +175,7 @@
   "boss_encounter": {
     "boss_id": "ashen_warden",
     "boss_spawn": [
-      1680,
+      1580,
       636
     ],
     "arena_bounds": [

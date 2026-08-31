@@ -16,13 +16,13 @@ Normal campaign startup uses slot 1. Choose another with `python main.py --slot 
 
 `python main.py --level verdant_03` remains a nonpersistent development launch. It cannot read or modify campaign slots. It cannot be combined with `--new-game`.
 
-## Version 1 schema
+## Version 2 schema
 
 A sanitized abbreviated save looks like this:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "slot_id": 1,
     "created_at": "2026-08-31T12:00:00Z",
@@ -61,6 +61,7 @@ A sanitized abbreviated save looks like this:
       "completed_levels_once": ["verdant_01", "verdant_02"],
       "discovered_secret_exits": [],
       "revealed_map_nodes": [],
+      "defeated_bosses": [],
       "completed_worlds_once": []
     }
   }
@@ -94,3 +95,9 @@ Validation covers root structure, schema and slot IDs, UTC-compatible timestamps
 ## Programmatic API
 
 `SaveManager` provides `list_slots`, `inspect_slot`, `new_game`, `load`, `save`, and `delete`. `SlotSummary` exposes completion, score, secrets, tokens, play time, last update, and recovery state without exposing filesystem details. Save failures are logged and leave the active in-memory campaign playable.
+
+## Version 1 → 2 migration
+
+Schema 2 adds the monotonic `defeated_bosses` list and makes authored boss defeat the source of truth for world completion. The real v1→v2 migration preserves timestamps, play time, map node, level results, completed levels, secret exits, revealed nodes, tokens, and Ember Veil. It initializes `defeated_bosses` to empty.
+
+Phase 13 considered Verdant Reaches complete after all four platforming levels, before a boss existed. Migration deliberately clears that legacy `completed_worlds_once` flag rather than falsely claiming the Ashen Warden was defeated. Ruins remains completed, so First Flame Sanctum is available immediately; the player must defeat the boss once to establish true World 1 completion. The next successful save writes the migrated snapshot atomically as schema 2.
