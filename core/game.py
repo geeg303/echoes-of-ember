@@ -11,6 +11,7 @@ from entities.player import Player, PlayerControls
 from systems.combat import DamageSource
 from systems.collectible_system import CollectibleManager
 from systems.enemy_system import EnemyManager
+from systems.player_combat import PlayerCombatController
 from systems.projectile_system import ProjectileManager
 from systems.progression import LevelProgress
 from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PROJECT_ROOT, SHOW_FPS
@@ -53,6 +54,7 @@ class Game:
         self._load_level_runtime()
         self._jump_pressed = False
         self._jump_released = False
+        self._attack_pressed = False
         LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
 
     def _load_level_runtime(self) -> None:
@@ -69,6 +71,7 @@ class Game:
         self.collectibles = CollectibleManager(self.level.collectible_spawns)
         self.projectiles = ProjectileManager()
         self.enemies = EnemyManager(self.level.enemy_spawns, self.projectiles)
+        self.player_combat = PlayerCombatController()
 
     def _create_display(self) -> pygame.Surface:
         if self.fullscreen:
@@ -103,6 +106,8 @@ class Game:
                     self.player.trigger_hurt()
                 elif DEBUG_MODE and event.key == pygame.K_F7:
                     self.reset_level()
+                elif event.key == pygame.K_f:
+                    self._attack_pressed = True
                 elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
                     self._jump_pressed = True
             elif event.type == pygame.KEYUP and event.key in (
@@ -129,6 +134,9 @@ class Game:
             jump_released=self._jump_released,
         )
         self.player.update(dt, controls, self.collision)
+        self.player_combat.update(dt)
+        if self._attack_pressed and self.player_combat.try_attack(self.player, self.projectiles):
+            self.assets.sound("sounds/ember_pulse.wav").play()
         if self.player.hit_hazard and not self.player.is_dead:
             damage = self.player.apply_damage(1, DamageSource.HAZARD)
             if damage.applied:
@@ -168,6 +176,7 @@ class Game:
         self.hud.update(dt)
         self._jump_pressed = False
         self._jump_released = False
+        self._attack_pressed = False
 
     def draw(self) -> None:
         self.background.draw(self.canvas, self.camera.position)
@@ -187,6 +196,7 @@ class Game:
             self.player.lives,
             self.progress,
             self.level.name,
+            "EMBER PULSE" if self.player_combat.ember_pulse_enabled else "—",
         )
         if DEBUG_MODE:
             self.debug_overlay.draw(self.canvas, self.player)
@@ -203,6 +213,7 @@ class Game:
         self._load_level_runtime()
         self._jump_pressed = False
         self._jump_released = False
+        self._attack_pressed = False
         self.hud.reset_feedback()
         LOGGER.info("Restarted level: %s", self.level.name)
 

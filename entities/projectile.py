@@ -68,3 +68,18 @@ class Projectile:
         pygame.draw.circle(surface, color, rect.center, 6)
         pygame.draw.circle(surface, (255, 239, 187), rect.center, 2)
 
+
+class EmberPulseProjectile(Projectile):
+    def draw(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
+        rect = self.rect.move(offset)
+        trail_direction = -1 if self.velocity.x > 0 else 1
+        pygame.draw.line(
+            surface,
+            (255, 102, 62),
+            rect.center,
+            (rect.centerx + trail_direction * 18, rect.centery),
+            6,
+        )
+        pygame.draw.circle(surface, (255, 126, 57, 80), rect.center, 15)
+        pygame.draw.circle(surface, (255, 185, 72), rect.center, 8)
+        pygame.draw.circle(surface, (255, 247, 190), rect.center, 3)

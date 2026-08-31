@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 6 is playable. The multi-screen level now includes five data-driven enemy archetypes, stomp combat, contact knockback, temporary invulnerability, hostile projectiles, and enemy score rewards built on shared animation and collision systems.
+Phase 7 is playable. The multi-screen level includes five data-driven enemy archetypes, stomp combat, contact knockback, temporary invulnerability, faction-aware projectiles, and a responsive Ember Pulse ranged attack built on shared animation and collision systems.
 
 ## Requirements
 
@@ -43,6 +43,7 @@ python main.py
 
 - Move: `A`/`D` or left/right arrows
 - Jump: `Space`, `Z`, or up arrow (release early for a shorter jump)
+- Ember Pulse: `F` while `DEBUG_MODE` grants the temporary test ability
 - Toggle fullscreen: `F11`
 - Quit: `Esc`
 - Debug attack animation: `F5` when `DEBUG_MODE` is enabled
@@ -71,6 +72,7 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `systems/progression.py`: centralized score and per-level collectible tracking
 - `systems/collectible_system.py`: pickup lifecycle, culling, and lightweight effects
 - `systems/enemy_system.py`: activation, stomps, damage, scoring, and cleanup
+- `systems/player_combat.py`: Ember Pulse ownership, cooldown, and projectile spawning
 - `systems/projectile_system.py`: shared projectile lifetime, terrain collision, and culling
 - `ui/debug_overlay.py`: animation and movement diagnostics in debug builds
 - `ui/hud.py`: fixed-screen health, lives, shard, score, level, and power-up display
@@ -156,3 +158,21 @@ Enemy rewards are Crawler 200, Flyer 300, Jumper 350, Turret 500, and Armored En
 ```
 
 Supported enemy types are `crawler`, `flyer`, `jumper`, `turret`, and `armored`. Properties may override validated per-archetype settings such as speed, detection radius, cooldown, projectile speed, jump force, horizontal speed, health, damage, and score reward. Enemy and collectible IDs share one uniqueness namespace.
+
+## Ember Pulse combat
+
+Ember Pulse is temporarily enabled for Nova whenever `DEBUG_MODE` is true; permanent acquisition is intentionally deferred to the power-up phase. Press `F` to start Nova's existing attack animation and immediately launch a pulse in the facing direction. The HUD's reserved power-up slot reports the test ability while it is available.
+
+Each pulse deals 1 damage, travels at 720 pixels per second, lasts 0.85 seconds, and uses a 0.35-second firing cooldown. At most four player pulses may exist at once. Pulses disappear on solid terrain, enemy impact, or lifetime expiry. Crawler and Flyer have 1 health, Jumper and Turret have 2, and the Armored Enemy has 4; unlike an ordinary stomp, Ember Pulse can defeat armor.
+
+The shared projectile foundation labels ownership with `PLAYER`, `ENEMY`, or `NEUTRAL` factions. Player pulses cannot harm Nova, and hostile turret shots cannot harm enemy allies. Projectiles use local tile queries rather than scanning the whole map, and all are cleared by a full `F7` level restart.
+
+Enemy death rewards remain one-shot when attacks overlap a dying target. Pulse impacts briefly flash and spark; enemy death produces stronger feedback. These lightweight effects are deliberately local until the full particle-system phase.
+
+## Current limitations
+
+- Ember Pulse is a debug-owned testing ability, not yet a collectible power-up.
+- Audio assets are absent; combat and pickup hooks safely fall back to silence.
+- Collection and enemy state are held in memory only.
+- Lives stop at zero without a Game Over transition; the existing death/respawn loop remains safe.
+- Breakable tiles, level goals, and permanent progression belong to later phases.

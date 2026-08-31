@@ -57,11 +57,12 @@ class HUD:
         lives: int,
         progress: LevelProgress,
         level_name: str,
+        active_power: str = "—",
     ) -> None:
         self._draw_vitals(surface, health, max_health, lives)
         self._draw_shards(surface, progress)
         self._draw_score_and_level(surface, progress.score, level_name)
-        self._draw_powerup_slot(surface)
+        self._draw_powerup_slot(surface, active_power)
 
     def _draw_vitals(
         self,
@@ -113,10 +114,10 @@ class HUD:
         scale = 1.0 + 0.08 * math.sin(self.score_pulse * math.pi / 0.3) if self.score_pulse else 1.0
         self._blit_scaled(surface, score_label, (panel.right - 105, panel.y + 51), scale)
 
-    def _draw_powerup_slot(self, surface: pygame.Surface) -> None:
+    def _draw_powerup_slot(self, surface: pygame.Surface, active_power: str) -> None:
         panel = pygame.Rect(554, 16, 204, 48)
         self._panel(surface, panel, alpha=150)
-        label = self.small_font.render("POWER  —", True, (151, 163, 196))
+        label = self.small_font.render(f"POWER  {active_power}", True, (151, 163, 196))
         surface.blit(label, label.get_rect(center=panel.center))
 
     @staticmethod

@@ -10,7 +10,11 @@ from enemies import create_enemy
 from entities.enemy import Enemy, EnemyUpdateContext
 from entities.player import Player
 from entities.projectile import Faction
-from settings import PLAYER_ENEMY_KNOCKBACK, PLAYER_STOMP_BOUNCE_SPEED
+from settings import (
+    EMBER_PULSE_KNOCKBACK,
+    PLAYER_ENEMY_KNOCKBACK,
+    PLAYER_STOMP_BOUNCE_SPEED,
+)
 from systems.combat import CombatEffect, DamageSource
 from systems.progression import LevelProgress
 from systems.projectile_system import ProjectileManager
@@ -68,6 +72,36 @@ class EnemyManager:
 
         self.projectiles.update(dt, tilemap)
         for projectile in self.projectiles.projectiles:
+            if projectile.active and projectile.faction is Faction.PLAYER:
+                for enemy in self.enemies:
+                    if enemy.active and projectile.rect.colliderect(enemy.rect):
+                        projectile.active = False
+                        if enemy.alive:
+                            direction = 1 if projectile.velocity.x >= 0 else -1
+                            newly_dead = enemy.take_damage(
+                                projectile.damage,
+                                pygame.Vector2(direction * EMBER_PULSE_KNOCKBACK, -45),
+                            )
+                            if newly_dead:
+                                reward = enemy.claim_score()
+                                progress.award_score(reward)
+                                outcome.score_awarded += reward
+                                outcome.shake = max(outcome.shake, 4.0)
+                                self.effects.append(
+                                    CombatEffect(
+                                        pygame.Vector2(enemy.rect.center),
+                                        (255, 151, 68),
+                                        True,
+                                    )
+                                )
+                            else:
+                                self.effects.append(
+                                    CombatEffect(
+                                        pygame.Vector2(projectile.rect.center),
+                                        (255, 207, 104),
+                                    )
+                                )
+                        break
             if (
                 projectile.active
                 and projectile.faction is Faction.ENEMY
@@ -138,4 +172,3 @@ class EnemyManager:
         for effect in self.effects:
             if padded.collidepoint(effect.position):
                 effect.draw(surface, offset)
-
