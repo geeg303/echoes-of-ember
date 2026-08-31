@@ -43,6 +43,11 @@ class Door:
     def open(self) -> None:
         self.opening = True
 
+    def close(self) -> None:
+        self.opening = False
+        self.open_amount = 0.0
+        self.rect = self.base_rect.copy()
+
     def update(self, dt: float) -> None:
         if self.opening:
             self.open_amount = min(1.0, self.open_amount + dt / self.opening_duration)

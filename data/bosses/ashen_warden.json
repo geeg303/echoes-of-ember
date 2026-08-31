@@ -1,0 +1,34 @@
+{
+  "id": "ashen_warden",
+  "display_name": "The Ashen Warden",
+  "max_health": 18,
+  "size": [112, 132],
+  "movement_speed": 150.0,
+  "contact_damage": 1,
+  "hit_invulnerability": 0.18,
+  "stagger_duration": 1.2,
+  "intro_duration": 3.0,
+  "defeat_duration": 3.0,
+  "score_reward": 5000,
+  "projectile_speed": 360.0,
+  "timings": {
+    "phase_transition": 1.4,
+    "ground_slam_telegraph": 0.7,
+    "ground_slam_recovery": 1.0,
+    "ember_bolt_telegraph": 0.55,
+    "ember_bolt_recovery": 0.55,
+    "heavy_advance_telegraph": 0.45,
+    "heavy_advance_recovery": 0.7,
+    "ember_rain_telegraph": 0.85,
+    "ember_rain_recovery": 1.1,
+    "leap_slam_telegraph": 0.7,
+    "leap_slam_recovery": 1.15,
+    "core_burst_telegraph": 0.8,
+    "core_burst_recovery": 1.4
+  },
+  "phases": [
+    {"phase": 1, "minimum_health": 13, "attacks": ["ground_slam", "ember_bolt", "heavy_advance"], "attack_cooldown": 0.8},
+    {"phase": 2, "minimum_health": 7, "attacks": ["ground_slam", "double_ember_bolt", "ember_rain", "leap_slam"], "attack_cooldown": 0.62},
+    {"phase": 3, "minimum_health": 1, "attacks": ["fast_ground_slam", "ember_rain", "charge_leap", "core_burst"], "attack_cooldown": 0.48}
+  ]
+}
