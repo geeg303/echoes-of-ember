@@ -23,6 +23,7 @@ class BossArena:
         self.doors = [available[door_id] for door_id in definition.door_ids]
         self.active = False
         self.completed = False
+        self.reset()
 
     def try_trigger(self, player_rect: pygame.Rect) -> bool:
         if self.active or self.completed or not self.definition.trigger.colliderect(player_rect):

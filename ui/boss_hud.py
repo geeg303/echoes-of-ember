@@ -13,6 +13,7 @@ class BossHUDState:
     health: int = 0
     max_health: int = 1
     phase: int = 1
+    intro: bool = False
 
 
 class BossHUD:
@@ -39,3 +40,9 @@ class BossHUD:
         surface.blit(title, title.get_rect(midtop=(640, 27)))
         phase = self.small.render(f"PHASE {state.phase}", True, (228, 210, 185))
         surface.blit(phase, (bar.right - phase.get_width(), 31))
+        if state.intro:
+            intro = self.font.render(state.name.upper(), True, (255, 218, 133))
+            box = intro.get_rect(center=(640, 165)).inflate(46, 24)
+            pygame.draw.rect(surface, (16, 18, 34), box, border_radius=12)
+            pygame.draw.rect(surface, (230, 156, 76), box, 2, border_radius=12)
+            surface.blit(intro, intro.get_rect(center=box.center))

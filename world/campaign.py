@@ -19,6 +19,8 @@ class WorldRegistry:
     level_ids: tuple[str, ...]
     level_paths: dict[str, Path]
     map_definition: WorldMapDefinition
+    boss_ids: tuple[str, ...]
+    boss_level_ids: tuple[str, ...]
 
     @classmethod
     def load(cls, path: Path) -> "WorldRegistry":
@@ -56,7 +58,8 @@ class WorldRegistry:
         if errors:
             raise WorldRegistryError("; ".join(errors))
         assert map_definition is not None
-        return cls(world_id, display_name, tuple(levels), paths, map_definition)
+        boss_nodes = tuple(node for node in map_definition.nodes.values() if node.kind.value == "boss")
+        return cls(world_id, display_name, tuple(levels), paths, map_definition, tuple(node.boss_id for node in boss_nodes), tuple(node.level_id for node in boss_nodes))
 
 @dataclass(slots=True)
 class WorldProgress:
@@ -67,6 +70,7 @@ class WorldProgress:
     discovered_secret_exits: set[tuple[str, str]] = field(default_factory=set)
     revealed_map_nodes: set[str] = field(default_factory=set)
     world_completed_once: bool = False
+    defeated_bosses: set[str] = field(default_factory=set)
     def record(self, result: LevelResult) -> None:
         if result.level_id not in self.registry.level_ids: raise WorldRegistryError(f"result is outside world: {result.level_id}")
         self.results[result.level_id] = result
@@ -78,8 +82,13 @@ class WorldProgress:
                 requirement = connection.unlock
                 if requirement.kind.value == "secret_exit_discovered" and (requirement.level_id, requirement.exit_id) == discovery:
                     self.revealed_map_nodes.add(connection.target)
-        if all(level_id in self.completed_levels_once for level_id in self.registry.level_ids):
-            self.world_completed_once = True
+    def record_boss_defeat(self, boss_id: str, result: LevelResult) -> None:
+        if boss_id not in self.registry.boss_ids:
+            raise WorldRegistryError(f"unknown boss: {boss_id}")
+        self.record(result)
+        self.defeated_bosses.add(boss_id)
+        self.world_completed_once = bool(self.registry.boss_ids) and set(self.registry.boss_ids) <= self.defeated_bosses
+
     @property
     def complete(self) -> bool: return self.world_completed_once
     @property
@@ -87,6 +96,7 @@ class WorldProgress:
         flags = {f"level_complete:{item}" for item in self.completed_levels_once}
         flags.update(f"secret_exit:{level}:{exit_id}" for level, exit_id in self.discovered_secret_exits)
         flags.update(f"node_revealed:{item}" for item in self.revealed_map_nodes)
+        flags.update(f"boss_defeated:{item}" for item in self.defeated_bosses)
         if self.world_completed_once:
             flags.add("world_complete")
         return frozenset(flags)

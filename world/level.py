@@ -12,6 +12,7 @@ from systems.powerup_system import PowerUpType
 from systems.level_completion import CompletionRequirements, RatingThresholds
 from world.tilemap import TileMap
 from world.secret_area import SecretDefinition, SecretTrigger, SecretType
+from world.boss_arena import BossArenaDefinition
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +81,7 @@ class Level:
     powerup_spawns: tuple[PowerUpSpawn, ...]
     world_object_spawns: tuple[WorldObjectSpawn, ...]
     secret_definitions: tuple[SecretDefinition, ...]
+    boss_encounter: BossArenaDefinition | None
     source_path: Path
 
     @classmethod
@@ -151,6 +153,17 @@ class Level:
         )
         goal_data = data["goal"]
         goal = GoalDefinition(str(goal_data["type"]), (float(goal_data["x"]), float(goal_data["y"])), bool(goal_data.get("properties", {}).get("requires_interact", True)))
+        boss_data = data.get("boss_encounter")
+        boss_encounter = None
+        if boss_data is not None:
+            boss_encounter = BossArenaDefinition(
+                boss_id=str(boss_data["boss_id"]),
+                spawn=(float(boss_data["boss_spawn"][0]), float(boss_data["boss_spawn"][1])),
+                bounds=__import__("pygame").Rect(*[round(value) for value in boss_data["arena_bounds"]]),
+                trigger=__import__("pygame").Rect(*[round(value) for value in boss_data["trigger_bounds"]]),
+                door_ids=tuple(str(value) for value in boss_data["door_ids"]),
+                pulse_source=(float(boss_data["pulse_source"][0]), float(boss_data["pulse_source"][1])),
+            )
         return cls(
             name=str(data["name"]),
             metadata=metadata,
@@ -162,6 +175,7 @@ class Level:
             powerup_spawns=powerup_spawns,
             world_object_spawns=world_object_spawns,
             secret_definitions=secret_definitions,
+            boss_encounter=boss_encounter,
             source_path=path,
         )
 

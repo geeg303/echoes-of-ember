@@ -57,6 +57,7 @@ class PowerUpSystem:
         self.active: ActivePowerUp | None = None
         self.feedback = 0.0
         self.last_event: str | None = None
+        self.encounter_abilities: set[PowerUpType] = set()
         player.damage_absorber = self.absorb_damage
 
     def activate(self, kind: PowerUpType, duration_override: float | None = None) -> None:
@@ -93,7 +94,13 @@ class PowerUpSystem:
 
     @property
     def grants_ranged_attack(self) -> bool:
-        return self.has(PowerUpType.EMBER_PULSE)
+        return self.has(PowerUpType.EMBER_PULSE) or PowerUpType.EMBER_PULSE in self.encounter_abilities
+
+    def grant_encounter_ability(self, kind: PowerUpType) -> None:
+        self.encounter_abilities.add(kind)
+
+    def clear_encounter_abilities(self) -> None:
+        self.encounter_abilities.clear()
 
     @property
     def movement_modifiers(self) -> PlayerModifiers:

@@ -40,10 +40,10 @@ def test_world_map_definition_preserves_authored_graph() -> None:
     registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
     definition = registry.map_definition
     assert definition.start_node == "starting_grove"
-    assert len(definition.nodes) == 7
+    assert len(definition.nodes) == 8
     assert [item.connection_id for item in definition.connections] == [
         "grove_to_01", "route_01_02", "route_02_03", "route_03_04",
-        "route_04_goal", "route_04_secret",
+        "route_04_goal", "route_04_secret", "sanctum_to_beacon",
     ]
 
 
@@ -57,14 +57,15 @@ def test_world_map_definition_preserves_authored_graph() -> None:
         (lambda data: data["connections"][0].update(to="missing"), "missing node"),
         (lambda data: data["connections"][0].update(waypoints=[[1]]), "malformed waypoint"),
         (lambda data: data["connections"][0].update(unlock={"type": "coins"}), "invalid unlock"),
-        (lambda data: data["connections"][-1]["unlock"].update(exit_id="missing"), "unknown secret exit"),
+        (lambda data: next(item for item in data["connections"] if item["id"] == "route_04_secret")["unlock"].update(exit_id="missing"), "unknown secret exit"),
+        (lambda data: data["connections"][-1]["unlock"].update(boss_id="missing"), "unknown boss"),
     ],
 )
 def test_map_validation_rejects_malformed_graph(mutation, message: str) -> None:
     data = map_data()
     mutation(data)
     with pytest.raises(MapDefinitionError, match=message):
-        WorldMapDefinition.from_data(data, ("verdant_01", "verdant_02", "verdant_03", "verdant_04"), {("verdant_04", "v04_secret_exit")})
+        WorldMapDefinition.from_data(data, ("verdant_01", "verdant_02", "verdant_03", "verdant_04", "verdant_boss"), {("verdant_04", "v04_secret_exit")})
 
 
 def test_initial_node_and_connection_states() -> None:
@@ -80,12 +81,16 @@ def test_unlock_sequence_and_world_landmark_are_data_driven() -> None:
     registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
     progress = WorldProgress(registry)
     runtime = WorldMapRuntime(registry.map_definition, progress)
-    for completed, unlocked in zip(registry.level_ids, registry.level_ids[1:]):
+    for completed, unlocked in zip(registry.level_ids[:4], registry.level_ids[1:4]):
         progress.record(result(completed))
         node_id = next(node.node_id for node in registry.map_definition.nodes.values() if node.level_id == unlocked)
         assert runtime.node_state(node_id) is NodeState.AVAILABLE
     progress.record(result("verdant_04"))
+    assert runtime.node_state("first_flame_sanctum") is NodeState.AVAILABLE
+    assert not progress.world_completed_once
+    progress.record_boss_defeat("ashen_warden", result("verdant_boss"))
     assert runtime.node_state("first_flame_sanctum") is NodeState.COMPLETED
+    assert runtime.node_state("verdant_beacon") is NodeState.COMPLETED
     assert progress.world_completed_once
 
 

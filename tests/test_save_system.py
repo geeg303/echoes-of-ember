@@ -66,6 +66,7 @@ def test_three_slots_are_independent(manager: SaveManager) -> None:
     manager.new_game(3)
     for level_id in manager.registry.level_ids:
         first.progress.record(result(level_id))
+    first.progress.record_boss_defeat("ashen_warden", result("verdant_boss"))
     second.progress.record(result("verdant_01"))
     manager.save(first)
     manager.save(second)
@@ -203,6 +204,7 @@ def test_world_completion_and_sanctum_restore(manager: SaveManager) -> None:
     session = manager.new_game(1)
     for level_id in manager.registry.level_ids:
         session.progress.record(result(level_id))
+    session.progress.record_boss_defeat("ashen_warden", result("verdant_boss"))
     manager.save(session)
     loaded = manager.load(1).session
     assert loaded.progress.world_completed_once
@@ -338,5 +340,73 @@ def test_level_result_exit_id_must_match_authored_content(manager: SaveManager) 
     saved["exit_type"] = ExitType.SECRET.value
     saved["exit_id"] = "unknown_secret_exit"
     with pytest.raises(SaveValidationError):
+        SaveSession.from_dict(data, manager.registry, 1)
+
+def test_v1_migration_preserves_progress_but_revokes_legacy_world_completion(manager: SaveManager) -> None:
+    session = SaveSession.fresh(1, manager.registry)
+    for level_id in manager.registry.level_ids[:4]:
+        session.progress.record(result(level_id))
+    session.progress.record(result("verdant_04", exit_type=ExitType.SECRET, exit_id="v04_secret_exit"))
+    session.current_map_node = "first_flame_sanctum"
+    session.play_time_seconds = 4321.5
+    data = session.to_dict()
+    data["schema_version"] = 1
+    progression = data["campaign"]["progression"]
+    progression.pop("defeated_bosses")
+    progression["completed_worlds_once"] = ["verdant_reaches"]
+    path = manager.save_root / "slot_1.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    loaded = manager.load(1)
+    assert loaded.state is SlotState.VALID and loaded.session is not None
+    migrated = loaded.session
+    assert migrated.play_time_seconds == pytest.approx(4321.5)
+    assert set(manager.registry.level_ids[:4]) <= migrated.progress.completed_levels_once
+    assert ("verdant_04", "v04_secret_exit") in migrated.progress.discovered_secret_exits
+    assert "ember_veil" in migrated.progress.revealed_map_nodes
+    assert migrated.progress.defeated_bosses == set()
+    assert not migrated.progress.world_completed_once
+    runtime = WorldMapRuntime(manager.registry.map_definition, migrated.progress)
+    assert runtime.node_state("first_flame_sanctum") is NodeState.AVAILABLE
+    manager.save(migrated)
+    assert json.loads(path.read_text())["schema_version"] == 2
+
+
+def test_boss_defeat_and_true_world_completion_round_trip(manager: SaveManager) -> None:
+    session = manager.new_game(1)
+    for level_id in manager.registry.level_ids[:4]:
+        session.progress.record(result(level_id))
+    boss_result = result("verdant_boss", exit_id="ashen_warden")
+    session.progress.record_boss_defeat("ashen_warden", boss_result)
+    session.current_map_node = "first_flame_sanctum"
+    manager.save(session)
+    restored = manager.load(1).session
+    assert restored is not None
+    assert restored.progress.results["verdant_boss"] == boss_result
+    assert restored.progress.defeated_bosses == {"ashen_warden"}
+    assert restored.progress.world_completed_once
+    runtime = WorldMapRuntime(manager.registry.map_definition, restored.progress)
+    assert runtime.node_state("first_flame_sanctum") is NodeState.COMPLETED
+    assert runtime.node_state("verdant_beacon") is NodeState.COMPLETED
+
+
+def test_boss_progression_is_isolated_across_three_slots(manager: SaveManager) -> None:
+    first = manager.new_game(1)
+    for level_id in manager.registry.level_ids[:4]:
+        first.progress.record(result(level_id))
+    first.progress.record_boss_defeat("ashen_warden", result("verdant_boss", exit_id="ashen_warden"))
+    manager.save(first)
+    second = manager.new_game(2)
+    second.progress.record(result("verdant_04")); manager.save(second)
+    manager.new_game(3)
+    assert manager.load(1).session.progress.world_completed_once
+    assert not manager.load(2).session.progress.world_completed_once
+    assert manager.load(2).session.progress.defeated_bosses == set()
+    assert manager.load(3).session.progress.completed_levels_once == set()
+
+
+def test_v2_rejects_world_complete_without_defeated_boss(manager: SaveManager) -> None:
+    data = SaveSession.fresh(1, manager.registry).to_dict()
+    data["campaign"]["progression"]["completed_worlds_once"] = ["verdant_reaches"]
+    with pytest.raises(SaveValidationError, match="defeated bosses"):
         SaveSession.from_dict(data, manager.registry, 1)
 

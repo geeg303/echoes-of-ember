@@ -13,7 +13,7 @@ def result(level_id: str, score: int = 100) -> LevelResult:
 
 def test_registry_is_valid_and_preserves_explicit_order() -> None:
     registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
-    assert registry.level_ids == ("verdant_01", "verdant_02", "verdant_03", "verdant_04")
+    assert registry.level_ids == ("verdant_01", "verdant_02", "verdant_03", "verdant_04", "verdant_boss")
     assert [Level.load(registry.level_paths[item]).metadata.level_id for item in registry.level_ids] == list(registry.level_ids)
 
 def test_registry_rejects_unknown_and_duplicate_references(tmp_path) -> None:

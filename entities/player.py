@@ -276,6 +276,15 @@ class Player(Entity):
                 self.grounded = False
         return DamageResult(True, died, amount)
 
+    def stabilize_for_completion(self) -> None:
+        """Resolve a committed boss defeat ahead of a simultaneous player death."""
+        self.is_dead = False
+        self.health = max(1, self.health)
+        self.invulnerability_timer = PLAYER_INVULNERABILITY_DURATION
+        self.velocity.update()
+        self._hurt_active = False
+        self._attack_active = False
+
     def bounce_from_stomp(self, speed: float) -> None:
         self.velocity.y = -abs(speed)
         self.grounded = False

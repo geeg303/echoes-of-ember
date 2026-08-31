@@ -5,7 +5,8 @@
     "verdant_01",
     "verdant_02",
     "verdant_03",
-    "verdant_04"
+    "verdant_04",
+    "verdant_boss"
   ],
   "map": {
     "start_node": "starting_grove",
@@ -51,10 +52,12 @@
       },
       {
         "id": "first_flame_sanctum",
-        "type": "world_goal",
-        "title": "First Flame Sanctum",
+        "type": "boss",
+        "title": "BOSS  First Flame Sanctum",
         "x": 1100,
-        "y": 145
+        "y": 145,
+        "level_id": "verdant_boss",
+        "boss_id": "ashen_warden"
       },
       {
         "id": "ember_veil",
@@ -62,6 +65,13 @@
         "title": "???  Ember Veil",
         "x": 1120,
         "y": 390
+      },
+      {
+        "id": "verdant_beacon",
+        "type": "world_goal",
+        "title": "Verdant Beacon",
+        "x": 1180,
+        "y": 72
       }
     ],
     "connections": [
@@ -169,6 +179,21 @@
           "type": "secret_exit_discovered",
           "level_id": "verdant_04",
           "exit_id": "v04_secret_exit"
+        }
+      },
+      {
+        "id": "sanctum_to_beacon",
+        "from": "first_flame_sanctum",
+        "to": "verdant_beacon",
+        "waypoints": [
+          [
+            1145,
+            105
+          ]
+        ],
+        "unlock": {
+          "type": "boss_defeated",
+          "boss_id": "ashen_warden"
         }
       }
     ]

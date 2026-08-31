@@ -89,7 +89,7 @@ def test_world_progress_secret_aggregate_replaces_replay() -> None:
 def test_all_world_levels_have_expected_secret_totals_and_one_secret_exit() -> None:
     registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
     levels = [Level.load(registry.level_paths[level_id]) for level_id in registry.level_ids]
-    assert [len(level.secret_definitions) for level in levels] == [2, 3, 3, 4]
+    assert [len(level.secret_definitions) for level in levels] == [2, 3, 3, 4, 0]
     exits = [item for level in levels for item in level.secret_definitions if item.kind is SecretType.EXIT]
     assert len(exits) == 1 and exits[0].secret_id == "v04_secret_exit"
 

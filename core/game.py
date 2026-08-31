@@ -9,6 +9,7 @@ import pygame
 from core.asset_manager import AssetManager
 from core.save_manager import SaveManager, SlotState
 from systems.save_data import SaveSession
+from systems.boss_system import BossSystem
 from entities.level_goal import EmberGate
 from entities.player import Player, PlayerControls
 from systems.combat import DamageSource
@@ -32,6 +33,7 @@ from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
 from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
+from ui.boss_hud import BossHUD
 from ui.notifications import NotificationQueue
 from world.background import ParallaxBackground
 from world.camera import Camera
@@ -68,6 +70,7 @@ class Game:
             self.assets.font(None, 20),
             self.assets.font(None, 32),
         )
+        self.boss_hud = BossHUD(self.assets.font(None, 25), self.assets.font(None, 17))
         self.level_complete_screen = LevelCompleteScreen(
             self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
         )
@@ -134,6 +137,10 @@ class Game:
         self.powerups = PowerUpSystem(self.player)
         self.powerup_pickups = PowerUpManager(self.level.powerup_spawns)
         self.world_objects = WorldObjectManager(self.level.world_object_spawns, self.level.player_spawn)
+        self.boss_system = (
+            BossSystem(self.level.boss_encounter, self.world_objects.doors, self.projectiles)
+            if self.level.boss_encounter is not None else None
+        )
         self.secrets = SecretSystem(self.level.secret_definitions)
         self.goal = EmberGate(self.level.goal.position, self.level.goal.requires_interact)
         self.gameplay_phase = GameplayPhase.PLAYING
@@ -190,6 +197,10 @@ class Game:
                     self._attack_pressed = True
                 elif event.key == pygame.K_e:
                     self._interact_pressed = True
+                elif event.key in (pygame.K_RETURN, pygame.K_SPACE) and self.boss_system and self.boss_system.active:
+                    self.boss_system.skip_intro()
+                    if event.key == pygame.K_SPACE:
+                        self._jump_pressed = True
                 elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
                     self._jump_pressed = True
             elif event.type == pygame.KEYUP and event.key in (
@@ -280,6 +291,9 @@ class Game:
             self.deaths += 1
             self.player.lose_life_and_restore()
             self.powerups.clear("life_lost")
+            if self.boss_system is not None:
+                self.boss_system.reset_encounter(self.powerups)
+                self.camera.set_bounds(None)
             self.player.respawn(self.world_objects.respawn_position)
             self.camera.snap_to(self.player.rect)
         self.camera.update(self.player.rect, self.player.velocity, dt)
@@ -297,6 +311,19 @@ class Game:
             self.hud.notify_score_changed()
         if enemy_result.shake:
             self.camera.shake(enemy_result.shake, 0.12)
+        if self.boss_system is not None:
+            boss_result = self.boss_system.update(dt, self.player, self.powerups, self.progress)
+            self.camera.set_bounds(self.boss_system.arena.camera_bounds)
+            if boss_result.player_damaged:
+                self.hud.notify_health_changed()
+            if boss_result.score_awarded:
+                self.hud.notify_score_changed()
+            if boss_result.shake:
+                self.camera.shake(boss_result.shake, 0.25)
+            for hook in boss_result.audio_events:
+                self.assets.sound(f"sounds/boss_{hook}.wav").play()
+            if boss_result.defeat_sequence_complete:
+                self._begin_completion("ashen_warden", ExitType.NORMAL, boss_id="ashen_warden")
         self.collectibles.update(dt, self.camera.view_rect)
         self.powerup_pickups.update(dt, self.camera.view_rect)
         if not self.player.is_dead:
@@ -322,7 +349,7 @@ class Game:
             self._begin_completion(secret_update.secret_exit_id, ExitType.SECRET)
         self.notifications.update(dt)
         self.goal.update(dt, self.player.rect)
-        if not self.player.is_dead and self.goal.try_activate(self.player.rect, self._interact_pressed):
+        if self.boss_system is None and not self.player.is_dead and self.goal.try_activate(self.player.rect, self._interact_pressed):
             if self.level.metadata.requirements.evaluate(True, self.progress):
                 self._begin_completion("ember_gate", ExitType.NORMAL)
         self.hud.update(dt)
@@ -334,12 +361,15 @@ class Game:
         self._attack_pressed = False
         self._interact_pressed = False
 
-    def _begin_completion(self, exit_id: str = "ember_gate", exit_type: ExitType = ExitType.NORMAL) -> None:
+    def _begin_completion(self, exit_id: str = "ember_gate", exit_type: ExitType = ExitType.NORMAL, boss_id: str | None = None) -> None:
         if self.gameplay_phase is not GameplayPhase.PLAYING:
             return
         self.gameplay_phase = GameplayPhase.GOAL_TRIGGERED
         self.level_result = self._build_level_result(exit_id, exit_type)
-        self.world_progress.record(self.level_result)
+        if boss_id is not None:
+            self.world_progress.record_boss_defeat(boss_id, self.level_result)
+        else:
+            self.world_progress.record(self.level_result)
         self._mark_save_dirty()
         self._autosave()
         self.gameplay_phase = GameplayPhase.COMPLETION_SEQUENCE
@@ -393,7 +423,10 @@ class Game:
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
         self.world_objects.draw(self.canvas, self.camera.view_rect, offset)
-        self.goal.draw(self.canvas, offset)
+        if self.boss_system is None:
+            self.goal.draw(self.canvas, offset)
+        else:
+            self.boss_system.draw(self.canvas, offset)
         self.secrets.draw(self.canvas, self.camera.view_rect, offset)
         self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
         self.powerup_pickups.draw(self.canvas, self.camera.view_rect, offset)
@@ -414,6 +447,8 @@ class Game:
             self.elapsed_time,
         )
         self.notifications.draw(self.canvas)
+        if self.boss_system is not None:
+            self.boss_hud.draw(self.canvas, self.boss_system.hud_state)
         if DEBUG_MODE:
             self.debug_overlay.draw(self.canvas, self.player)
         if SHOW_FPS:

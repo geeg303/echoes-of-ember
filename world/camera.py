@@ -27,6 +27,7 @@ class Camera:
         self._shake_time = 0.0
         self._shake_duration = 0.0
         self._random = random.Random(0xE4B3)
+        self.bounds: pygame.Rect | None = None
 
     def snap_to(self, target: pygame.Rect) -> None:
         self.look_ahead = 0.0
@@ -68,6 +69,10 @@ class Camera:
         self.position += (desired - self.position) * smoothing_alpha
         self._clamp_position()
         self._update_shake(dt)
+
+    def set_bounds(self, bounds: pygame.Rect | None) -> None:
+        self.bounds = bounds.copy() if bounds is not None else None
+        self._clamp_position()
 
     def shake(self, intensity: float, duration: float) -> None:
         if intensity <= 0.0 or duration <= 0.0:
@@ -116,6 +121,11 @@ class Camera:
         self.position.y = self._clamp_axis(
             self.position.y, self.world_height, self.viewport_height
         )
+        if self.bounds is not None:
+            max_x = max(self.bounds.left, self.bounds.right - self.viewport_width)
+            max_y = max(self.bounds.top, self.bounds.bottom - self.viewport_height)
+            self.position.x = max(self.bounds.left, min(self.position.x, max_x))
+            self.position.y = max(self.bounds.top, min(self.position.y, max_y))
 
     @staticmethod
     def _clamp_axis(value: float, world_size: int, viewport_size: int) -> float:

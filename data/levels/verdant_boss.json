@@ -1,0 +1,202 @@
+{
+  "id": "verdant_boss",
+  "name": "Verdant Reaches \u2014 First Flame Sanctum",
+  "world_id": "verdant_reaches",
+  "level_number": 5,
+  "display_name": "First Flame Sanctum",
+  "description": "The dormant guardian awaits beyond the ancient Ember threshold.",
+  "theme": "first_flame_sanctum",
+  "time_target": 240,
+  "shard_total": 0,
+  "rare_crystal_total": 0,
+  "secret_token_total": 0,
+  "completion_requirements": {
+    "reach_goal": true,
+    "minimum_ember_shards": 0
+  },
+  "rating_thresholds": {
+    "silver_score": 5000,
+    "gold_score": 7500,
+    "gold_shard_ratio": 0.0,
+    "gold_time": 210
+  },
+  "goal": {
+    "type": "ember_gate",
+    "x": 2210,
+    "y": 690,
+    "properties": {
+      "requires_interact": false
+    }
+  },
+  "width": 36,
+  "height": 14,
+  "tile_size": 64,
+  "player_spawn": [
+    96,
+    690
+  ],
+  "tiles": [
+    {
+      "id": 1,
+      "position": [
+        0,
+        0
+      ],
+      "size": [
+        1,
+        14
+      ]
+    },
+    {
+      "id": 1,
+      "position": [
+        35,
+        0
+      ],
+      "size": [
+        1,
+        14
+      ]
+    },
+    {
+      "id": 1,
+      "position": [
+        0,
+        12
+      ],
+      "size": [
+        36,
+        2
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        0,
+        0
+      ],
+      "size": [
+        36,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        7,
+        8
+      ],
+      "size": [
+        1,
+        4
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        33,
+        8
+      ],
+      "size": [
+        1,
+        4
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        15,
+        11
+      ],
+      "size": [
+        2,
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        25,
+        11
+      ],
+      "size": [
+        2,
+        1
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "sanctum_checkpoint",
+      "type": "checkpoint",
+      "x": 170,
+      "y": 690
+    },
+    {
+      "id": "sanctum_pulse",
+      "type": "powerup",
+      "powerup_type": "ember_pulse",
+      "x": 280,
+      "y": 700,
+      "properties": {
+        "duration": 20
+      }
+    },
+    {
+      "id": "sanctum_health",
+      "type": "health_item",
+      "x": 350,
+      "y": 700
+    },
+    {
+      "id": "arena_entry_door",
+      "type": "door",
+      "x": 448,
+      "y": 512,
+      "properties": {
+        "width": 48,
+        "height": 256,
+        "opening_duration": 0.5
+      }
+    },
+    {
+      "id": "arena_exit_door",
+      "type": "door",
+      "x": 2112,
+      "y": 512,
+      "properties": {
+        "width": 48,
+        "height": 256,
+        "opening_duration": 0.5
+      }
+    }
+  ],
+  "secrets": [],
+  "boss_encounter": {
+    "boss_id": "ashen_warden",
+    "boss_spawn": [
+      1680,
+      636
+    ],
+    "arena_bounds": [
+      448,
+      128,
+      1712,
+      640
+    ],
+    "trigger_bounds": [
+      505,
+      350,
+      110,
+      418
+    ],
+    "door_ids": [
+      "arena_entry_door",
+      "arena_exit_door"
+    ],
+    "pulse_source": [
+      620,
+      690
+    ]
+  }
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import copy
 from datetime import datetime, timezone
 import math
 from typing import Any
@@ -11,7 +12,7 @@ from systems.level_completion import CompletionRating, ExitType, LevelResult
 from world.campaign import WorldProgress, WorldRegistry
 
 
-CURRENT_SAVE_VERSION = 1
+CURRENT_SAVE_VERSION = 2
 
 
 class SaveValidationError(ValueError):
@@ -64,6 +65,7 @@ class SaveSession:
                         for level_id, exit_id in sorted(self.progress.discovered_secret_exits)
                     ],
                     "revealed_map_nodes": sorted(self.progress.revealed_map_nodes),
+                    "defeated_bosses": sorted(self.progress.defeated_bosses),
                     "completed_worlds_once": (
                         [self.progress.registry.world_id] if self.progress.world_completed_once else []
                     ),
@@ -92,6 +94,7 @@ class SaveSession:
             for connection in registry.map_definition.connections
             if connection.unlock.exit_id is not None
         }
+        boss_exit_ids = dict(zip(registry.boss_level_ids, registry.boss_ids, strict=True))
         raw_results = _mapping(campaign.get("level_results"), "campaign.level_results")
         progress = WorldProgress(registry)
         for level_id, result_raw in raw_results.items():
@@ -100,7 +103,8 @@ class SaveSession:
             result = _result_from_dict(result_raw, level_id)
             if result.exit_type is ExitType.SECRET and (level_id, result.exit_id) not in valid_exits:
                 raise SaveValidationError(f"level result {level_id} references an unknown secret exit")
-            if result.exit_type is ExitType.NORMAL and result.exit_id != "ember_gate":
+            valid_normal_exit = result.exit_id == "ember_gate" or boss_exit_ids.get(level_id) == result.exit_id
+            if result.exit_type is ExitType.NORMAL and not valid_normal_exit:
                 raise SaveValidationError(f"level result {level_id} references an unknown normal exit")
             progress.results[level_id] = result
         progression = _mapping(campaign.get("progression"), "campaign.progression")
@@ -123,22 +127,46 @@ class SaveSession:
         progress.revealed_map_nodes = _unique_known_strings(
             progression.get("revealed_map_nodes"), set(registry.map_definition.nodes), "revealed_map_nodes"
         )
+        progress.defeated_bosses = _unique_known_strings(
+            progression.get("defeated_bosses"), set(registry.boss_ids), "defeated_bosses"
+        )
         worlds = _unique_known_strings(
             progression.get("completed_worlds_once"), {registry.world_id}, "completed_worlds_once"
         )
         progress.world_completed_once = registry.world_id in worlds
+        boss_complete = bool(registry.boss_ids) and set(registry.boss_ids) <= progress.defeated_bosses
+        if progress.world_completed_once != boss_complete:
+            raise SaveValidationError("world completion does not match defeated bosses")
         return cls(slot_id, progress, str(current_node), created, updated, play_time)
 
 
 def migrate_save(raw: object) -> dict[str, Any]:
-    data = _mapping(raw, "save root")
+    source = _mapping(raw, "save root")
+    data = copy.deepcopy(source)
     version = data.get("schema_version")
     if not isinstance(version, int) or isinstance(version, bool):
         raise SaveValidationError("schema_version must be an integer")
     if version > CURRENT_SAVE_VERSION:
         raise UnsupportedSaveVersion("save was created by a newer game version")
-    if version < CURRENT_SAVE_VERSION:
+    if version < 1:
         raise UnsupportedSaveVersion(f"no migration path from save version {version}")
+    while version < CURRENT_SAVE_VERSION:
+        if version == 1:
+            data = _migrate_v1_to_v2(data)
+        else:
+            raise UnsupportedSaveVersion(f"no migration path from save version {version}")
+        version = data["schema_version"]
+    return data
+
+
+def _migrate_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
+    campaign = _mapping(data.get("campaign"), "campaign")
+    progression = _mapping(campaign.get("progression"), "campaign.progression")
+    progression["defeated_bosses"] = []
+    # V1 treated completion of the four platform stages as world completion.
+    # V2 deliberately requires a real boss defeat, so the legacy flag is cleared.
+    progression["completed_worlds_once"] = []
+    data["schema_version"] = 2
     return data
 
 

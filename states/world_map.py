@@ -38,7 +38,7 @@ class WorldMapScreen:
         if state in {NodeState.LOCKED, NodeState.HIDDEN}:
             self.notify("THE PATH IS STILL CLOSED")
             return "none", None
-        if node.kind is NodeType.LEVEL:
+        if node.kind in {NodeType.LEVEL, NodeType.BOSS}:
             return "level", node.level_id
         if node.kind is NodeType.SECRET:
             self.notify("THE PATH BEYOND IS NOT YET OPEN")
@@ -116,6 +116,8 @@ class WorldMapScreen:
             center = (round(node.position[0]), round(node.position[1]))
             if node.kind is NodeType.SECRET:
                 color, radius = (185, 105, 236), 23
+            elif node.kind is NodeType.BOSS:
+                color, radius = ((255, 205, 92), 31) if state is NodeState.COMPLETED else ((255, 116, 64), 29)
             elif node.kind is NodeType.WORLD_GOAL:
                 color, radius = (255, 165, 72), 31
             elif state is NodeState.LOCKED:
@@ -155,8 +157,8 @@ class WorldMapScreen:
                 f"RARE {result.rare_crystals_collected}/{result.rare_crystals_total}",
                 f"TOKEN {'FOUND' if result.secret_tokens_collected else 'MISSING'}", f"SECRETS {result.secrets_discovered}/{result.secrets_total}",
             ]
-        elif node.kind is NodeType.LEVEL:
-            details = ["NOT YET COMPLETED"]
+        elif node.kind in {NodeType.LEVEL, NodeType.BOSS}:
+            details = ["ASHEN WARDEN DEFEATED" if node.kind is NodeType.BOSS and state is NodeState.COMPLETED else "NOT YET COMPLETED"]
         elif node.kind is NodeType.SECRET:
             details = ["A HIDDEN PATH HAS BEEN REVEALED"]
         else:

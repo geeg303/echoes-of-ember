@@ -17,6 +17,7 @@ class MapDefinitionError(ValueError):
 class NodeType(str, Enum):
     START = "start"
     LEVEL = "level"
+    BOSS = "boss"
     WORLD_GOAL = "world_goal"
     OPTIONAL = "optional"
     SECRET = "secret"
@@ -26,6 +27,7 @@ class RequirementType(str, Enum):
     ALWAYS = "always"
     LEVEL_COMPLETE = "level_complete"
     SECRET_EXIT_DISCOVERED = "secret_exit_discovered"
+    BOSS_DEFEATED = "boss_defeated"
     WORLD_COMPLETE = "world_complete"
 
 
@@ -49,6 +51,7 @@ class UnlockRequirement:
     kind: RequirementType
     level_id: str | None = None
     exit_id: str | None = None
+    boss_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +61,7 @@ class MapNode:
     position: tuple[float, float]
     title: str
     level_id: str | None = None
+    boss_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,23 +116,29 @@ class WorldMapDefinition:
                 errors.append(f"{prefix} has invalid position")
                 continue
             level_id = raw.get("level_id")
-            if kind is NodeType.LEVEL:
+            boss_id = raw.get("boss_id")
+            if kind in {NodeType.LEVEL, NodeType.BOSS}:
                 if level_id not in level_ids:
                     errors.append(f"{prefix} references unknown level: {level_id!r}")
                 else:
                     represented_levels.add(level_id)
-            elif level_id is not None:
-                errors.append(f"{prefix} non-level node cannot reference a level")
+                if kind is NodeType.BOSS and (not isinstance(boss_id, str) or not boss_id):
+                    errors.append(f"{prefix} boss node requires boss_id")
+                if kind is NodeType.LEVEL and boss_id is not None:
+                    errors.append(f"{prefix} normal level cannot reference boss_id")
+            elif level_id is not None or boss_id is not None:
+                errors.append(f"{prefix} landmark node cannot reference level or boss")
             title = raw.get("title", node_id)
             if not isinstance(title, str) or not title:
                 errors.append(f"{prefix}.title must be non-empty")
                 title = node_id
-            nodes[node_id] = MapNode(node_id, kind, (float(position[0]), float(position[1])), title, level_id)
+            nodes[node_id] = MapNode(node_id, kind, (float(position[0]), float(position[1])), title, level_id, boss_id)
         start = data.get("start_node")
         if start not in nodes or (start in nodes and nodes[start].kind is not NodeType.START):
             errors.append("map.start_node must reference a start node")
         if represented_levels != set(level_ids):
             errors.append("map must represent every registered campaign level exactly once")
+        valid_boss_ids = {node.boss_id for node in nodes.values() if node.kind is NodeType.BOSS and node.boss_id}
         connections: list[MapConnection] = []
         connection_ids: set[str] = set()
         for index, raw in enumerate(raw_connections):
@@ -149,14 +159,14 @@ class WorldMapDefinition:
             if not isinstance(points, list) or not all(_point(value) for value in points):
                 errors.append(f"{prefix} has malformed waypoint")
                 points = []
-            unlock = _requirement(raw.get("unlock"), level_ids, prefix, errors, valid_secret_exits)
+            unlock = _requirement(raw.get("unlock"), level_ids, prefix, errors, valid_secret_exits, valid_boss_ids)
             if unlock is not None:
                 connections.append(MapConnection(connection_id, source, target, tuple((float(p[0]), float(p[1])) for p in points), unlock))
         if not any(node.kind is NodeType.WORLD_GOAL for node in nodes.values()):
             errors.append("map requires a world_goal node")
         if isinstance(start, str):
             reachable = _structurally_reachable(start, connections)
-            required = {node.node_id for node in nodes.values() if node.kind in {NodeType.LEVEL, NodeType.WORLD_GOAL}}
+            required = {node.node_id for node in nodes.values() if node.kind in {NodeType.LEVEL, NodeType.BOSS, NodeType.WORLD_GOAL}}
             if not required <= reachable:
                 errors.append("normal campaign nodes are not structurally reachable from start")
         if errors:
@@ -168,7 +178,7 @@ def _point(value: object) -> bool:
     return isinstance(value, list) and len(value) == 2 and all(isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item) for item in value)
 
 
-def _requirement(raw: object, level_ids: tuple[str, ...], prefix: str, errors: list[str], valid_secret_exits: set[tuple[str, str]] | None) -> UnlockRequirement | None:
+def _requirement(raw: object, level_ids: tuple[str, ...], prefix: str, errors: list[str], valid_secret_exits: set[tuple[str, str]] | None, valid_boss_ids: set[str]) -> UnlockRequirement | None:
     if not isinstance(raw, dict):
         errors.append(f"{prefix}.unlock must be an object")
         return None
@@ -179,13 +189,18 @@ def _requirement(raw: object, level_ids: tuple[str, ...], prefix: str, errors: l
         return None
     level_id = raw.get("level_id")
     exit_id = raw.get("exit_id")
+    boss_id = raw.get("boss_id")
     if kind in {RequirementType.LEVEL_COMPLETE, RequirementType.SECRET_EXIT_DISCOVERED} and level_id not in level_ids:
         errors.append(f"{prefix}.unlock references unknown level")
     if kind is RequirementType.SECRET_EXIT_DISCOVERED and (not isinstance(exit_id, str) or not exit_id):
         errors.append(f"{prefix}.unlock requires exit_id")
     elif kind is RequirementType.SECRET_EXIT_DISCOVERED and valid_secret_exits is not None and (level_id, exit_id) not in valid_secret_exits:
         errors.append(f"{prefix}.unlock references unknown secret exit")
-    return UnlockRequirement(kind, level_id, exit_id)
+    if kind is RequirementType.BOSS_DEFEATED and (not isinstance(boss_id, str) or not boss_id):
+        errors.append(f"{prefix}.unlock requires boss_id")
+    elif kind is RequirementType.BOSS_DEFEATED and boss_id not in valid_boss_ids:
+        errors.append(f"{prefix}.unlock references unknown boss")
+    return UnlockRequirement(kind, level_id, exit_id, boss_id)
 
 
 def _structurally_reachable(start: str, connections: list[MapConnection]) -> set[str]:
@@ -226,6 +241,8 @@ class WorldMapRuntime:
         if node.kind is NodeType.LEVEL and node.level_id in self.progress.completed_levels_once:
             result = self.progress.results.get(node.level_id)
             return NodeState.MASTERED if result and result.rating is CompletionRating.GOLD else NodeState.COMPLETED
+        if node.kind is NodeType.BOSS and node.boss_id in self.progress.defeated_bosses:
+            return NodeState.COMPLETED
         if node.kind is NodeType.WORLD_GOAL and self.progress.world_completed_once:
             return NodeState.COMPLETED
         return NodeState.AVAILABLE if self._node_has_available_connection(node_id) else NodeState.LOCKED
@@ -311,5 +328,7 @@ class WorldMapRuntime:
             return requirement.level_id in self.progress.completed_levels_once
         if requirement.kind is RequirementType.SECRET_EXIT_DISCOVERED:
             return (requirement.level_id, requirement.exit_id) in self.progress.discovered_secret_exits
+        if requirement.kind is RequirementType.BOSS_DEFEATED:
+            return requirement.boss_id in self.progress.defeated_bosses
         return self.progress.world_completed_once
 

@@ -15,9 +15,9 @@ class WorldCompleteScreen:
         tokens = progress.aggregate("secret_tokens_collected", "secret_tokens_total")
         secrets = progress.secrets
         enemies = progress.aggregate("enemies_defeated", "enemies_total")
-        rows = [("LEVELS", f"{progress.levels_completed} / {len(progress.registry.level_ids)}"), ("SCORE", str(progress.score)), ("TIME", format_time(progress.completion_time)), ("EMBER SHARDS", f"{shards[0]} / {shards[1]}"), ("RARE CRYSTALS", f"{rare[0]} / {rare[1]}"), ("SECRET TOKENS", f"{tokens[0]} / {tokens[1]}"), ("SECRETS FOUND", f"{secrets[0]} / {secrets[1]}"), ("ENEMIES", f"{enemies[0]} / {enemies[1]}"), ("DEATHS", str(progress.deaths))]
+        rows = [("BOSS", "ASHEN WARDEN — DEFEATED" if "ashen_warden" in progress.defeated_bosses else "UNDEFEATED"), ("LEVELS", f"{progress.levels_completed} / {len(progress.registry.level_ids)}"), ("SCORE", str(progress.score)), ("TIME", format_time(progress.completion_time)), ("EMBER SHARDS", f"{shards[0]} / {shards[1]}"), ("RARE CRYSTALS", f"{rare[0]} / {rare[1]}"), ("SECRET TOKENS", f"{tokens[0]} / {tokens[1]}"), ("SECRETS FOUND", f"{secrets[0]} / {secrets[1]}"), ("ENEMIES", f"{enemies[0]} / {enemies[1]}"), ("DEATHS", str(progress.deaths))]
         for index, (label, value) in enumerate(rows):
-            y = 185 + index * 43
+            y = 165 + index * 40
             surface.blit(self.font.render(label, True, (178, 198, 226)), (390, y))
             image = self.font.render(value, True, (246, 239, 208))
             surface.blit(image, image.get_rect(topright=(890, y)))

@@ -85,6 +85,7 @@ def validate_level_data(data: Any) -> list[str]:
     errors.extend(validate_objects(data.get("objects", []), pixel_width, pixel_height))
     _validate_secrets(data.get("secrets", []), data.get("objects", []), pixel_width, pixel_height, errors)
     _validate_goal(data.get("goal"), pixel_width, pixel_height, errors)
+    _validate_boss_encounter(data.get("boss_encounter"), data.get("objects", []), pixel_width, pixel_height, errors)
     if isinstance(data.get("objects"), list):
         counts = {
             "shard_total": sum(entry.get("type") == "ember_shard" for entry in data["objects"] if isinstance(entry, dict)),
@@ -212,6 +213,65 @@ def _validate_goal(goal: object, pixel_width: int, pixel_height: int, errors: li
     elif "requires_interact" in properties and not isinstance(properties["requires_interact"], bool):
         errors.append("goal.properties.requires_interact must be boolean")
 
+
+
+def _validate_boss_encounter(raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:
+    if raw is None:
+        return
+    if not isinstance(raw, dict):
+        errors.append("boss_encounter must be an object")
+        return
+    allowed = {"boss_id", "boss_spawn", "arena_bounds", "trigger_bounds", "door_ids", "pulse_source"}
+    for key in raw.keys() - allowed:
+        errors.append(f"boss_encounter has unknown property: {key!r}")
+    boss_id = raw.get("boss_id")
+    if not isinstance(boss_id, str) or not boss_id:
+        errors.append("boss_encounter.boss_id must be non-empty")
+    else:
+        from settings import PROJECT_ROOT
+        from bosses.boss_base import BossConfigError, load_boss_config
+        config_path = PROJECT_ROOT / "data" / "bosses" / f"{boss_id}.json"
+        try:
+            config = load_boss_config(config_path)
+            if config.boss_id != boss_id:
+                errors.append("boss_encounter boss ID does not match configuration")
+        except BossConfigError as exc:
+            errors.append(f"boss_encounter has invalid boss configuration: {exc}")
+    def bounds(name: str) -> tuple[float, float, float, float] | None:
+        value = raw.get(name)
+        valid = isinstance(value, list) and len(value) == 4 and all(isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item) for item in value)
+        if not valid or value[2] <= 0 or value[3] <= 0 or value[0] < 0 or value[1] < 0 or value[0] + value[2] > pixel_width or value[1] + value[3] > pixel_height:
+            errors.append(f"boss_encounter.{name} is invalid")
+            return None
+        return tuple(float(item) for item in value)
+    arena = bounds("arena_bounds")
+    trigger = bounds("trigger_bounds")
+    for name in ("boss_spawn", "pulse_source"):
+        value = raw.get(name)
+        if not _numeric_pair(value) or not all(math.isfinite(float(item)) for item in value) or not (0 <= value[0] < pixel_width and 0 <= value[1] < pixel_height):
+            errors.append(f"boss_encounter.{name} is invalid")
+    if arena and _numeric_pair(raw.get("boss_spawn")) and not pygame_rect(arena).collidepoint(raw["boss_spawn"]):
+        errors.append("boss_encounter boss spawn must be inside arena")
+    if arena and trigger and not pygame_rect(arena).contains(pygame_rect(trigger)):
+        errors.append("boss_encounter trigger must be inside arena")
+    door_ids = raw.get("door_ids")
+    if not isinstance(door_ids, list) or not door_ids or not all(isinstance(item, str) and item for item in door_ids) or len(door_ids) != len(set(door_ids or [])):
+        errors.append("boss_encounter.door_ids must be a unique non-empty string list")
+    else:
+        types = {item.get("id"): item.get("type") for item in objects if isinstance(item, dict)} if isinstance(objects, list) else {}
+        for door_id in door_ids:
+            if types.get(door_id) != "door":
+                errors.append(f"boss_encounter references missing door: {door_id!r}")
+    if isinstance(objects, list):
+        has_checkpoint = any(item.get("type") == "checkpoint" for item in objects if isinstance(item, dict))
+        has_pulse = any(item.get("type") == "powerup" and item.get("powerup_type") == "ember_pulse" for item in objects if isinstance(item, dict))
+        if not has_checkpoint: errors.append("boss level requires a checkpoint")
+        if not has_pulse: errors.append("boss level requires an Ember Pulse source")
+
+
+def pygame_rect(values: tuple[float, float, float, float]):
+    import pygame
+    return pygame.Rect(*[round(item) for item in values])
 
 def load_and_validate_level(path: Path) -> dict[str, Any]:
     try:
