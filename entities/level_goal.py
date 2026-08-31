@@ -28,7 +28,7 @@ class EmberGate:
             return True
         return False
 
-    def draw(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
+    def draw(self, surface: pygame.Surface, offset: tuple[int, int], interact_prompt: str = "E") -> None:
         rect = self.rect.move(offset)
         pulse = (math.sin(self.age * 4.0) + 1.0) * 0.5
         color = (255, 213, 102) if self.activated or self.nearby else (201, 118, 70)
@@ -40,5 +40,5 @@ class EmberGate:
         pygame.draw.ellipse(surface, (255, 158 + round(55 * pulse), 93), inner, 4)
         if self.nearby and not self.activated:
             font = pygame.font.Font(None, 25)
-            label = font.render("E  ENTER EMBER GATE", True, (255, 244, 196))
+            label = font.render(f"[{interact_prompt}]  ENTER EMBER GATE", True, (255, 244, 196))
             surface.blit(label, label.get_rect(midbottom=(rect.centerx, rect.top - 8)))

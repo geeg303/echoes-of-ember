@@ -341,3 +341,8 @@ Phase 17 provides a normal title flow with Continue, New Game, three save slots,
 Application settings are independent from campaign saves and persist Master/Music/SFX/Ambience/UI volume, mute, effects quality, and fullscreen. Settings apply immediately and can be reset without touching campaign data. See [docs/SETTINGS_SYSTEM.md](docs/SETTINGS_SYSTEM.md).
 
 Pause freezes the complete gameplay simulation and offers Resume, Settings, Restart, World Map, and Main Menu. Losing the final life after Nova's death animation opens Game Over; Retry rebuilds a fresh authored level, including a full-health Phase 1 boss, without awarding failed-run progression. See [docs/GAME_OVER.md](docs/GAME_OVER.md).
+
+
+## Controller support
+
+Phase 18 adds full single-player gamepad support without changing keyboard controls. Left stick/D-pad move and navigate; south face jumps/confirms; west face attacks; north face interacts; east face backs out; Start pauses. Prompts switch automatically between keyboard and controller. Controllers may be connected or removed while running, and vibration can be disabled in Settings. See [docs/INPUT_SYSTEM.md](docs/INPUT_SYSTEM.md) and [docs/CONTROLLER_SUPPORT.md](docs/CONTROLLER_SUPPORT.md).

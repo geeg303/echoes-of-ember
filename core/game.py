@@ -8,6 +8,7 @@ import pygame
 
 from core.asset_manager import AssetManager
 from core.audio_manager import AudioManager
+from core.input_manager import Action, InputManager
 from core.save_manager import SaveManager, SlotState
 from core.settings_manager import SettingsManager
 from systems.save_data import SaveSession
@@ -35,7 +36,7 @@ from states.level_complete import LevelCompleteScreen
 from states.frontend import FrontendController
 from states.settings_menu import SettingsController
 from states.pause_menu import GameOverController, PauseController
-from ui.menu import action_for_key
+from ui.menu import MenuAction, menu_action_from_input
 from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
 from ui.debug_overlay import DebugOverlay
@@ -55,9 +56,10 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None, input_manager: InputManager | None = None) -> None:
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
+        self.input = input_manager or InputManager()
         self.settings_manager = settings_manager or SettingsManager()
         self.app_settings = self.settings_manager.load()
         self.fullscreen = self.app_settings.fullscreen
@@ -112,7 +114,7 @@ class Game:
             self.world_map_runtime.current_node_id = saved_node.node_id
             self.world_map_runtime.avatar_position.update(saved_node.position)
         self.world_map_screen = WorldMapScreen(
-            self.world_map_runtime, self.assets.font(None, 38), self.assets.font(None, 25), self.assets.font(None, 19)
+            self.world_map_runtime, self.assets.font(None, 38), self.assets.font(None, 25), self.assets.font(None, 19), self.input
         )
         if self.save_warning:
             self.world_map_screen.notify(self.save_warning)
@@ -184,6 +186,7 @@ class Game:
         try:
             while self.running and (frame_limit is None or frames < frame_limit):
                 dt = min(self.clock.tick(DISPLAY.target_fps) / 1000.0, 0.05)
+                self.input.begin_frame(dt)
                 self._handle_events()
                 self.update(dt)
                 self.draw()
@@ -195,87 +198,67 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if self.app_mode == "pause":
-                    action=action_for_key(event.key)
-                    if action is not None:self.pause_controller.handle(action)
-                    continue
-                if self.app_mode == "game_over":
-                    action=action_for_key(event.key)
-                    if action is not None:self.game_over_controller.handle(action)
-                    continue
-                if self.app_mode == "settings":
-                    action = action_for_key(event.key)
-                    if action is not None: self.settings_controller.handle(action)
-                    continue
-                if self.app_mode == "frontend":
-                    action = action_for_key(event.key)
-                    if action is not None: self.frontend.handle(action)
-                    continue
-                if self.app_mode == "map":
-                    self._handle_map_key(event.key)
-                    continue
-                if event.key == pygame.K_ESCAPE:
-                    self.open_pause()
-                elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key == pygame.K_r:
-                    self.reset_level()
-                elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_m):
-                    self.return_to_world_map()
-                elif event.key == pygame.K_m:
-                    self.return_to_world_map()
-                elif event.key == pygame.K_F11:
-                    self.toggle_fullscreen()
-                elif DEBUG_MODE and event.key == pygame.K_F5:
-                    self.player.trigger_attack()
-                elif DEBUG_MODE and event.key == pygame.K_F6:
-                    quality = self.effects.toggle_optional()
-                    self.notifications.push(f"OPTIONAL EFFECTS: {quality.value.upper()}")
-                elif DEBUG_MODE and event.key == pygame.K_F7:
-                    self.reset_level()
-                elif DEBUG_MODE and event.key == pygame.K_F8:
-                    muted = self.audio.toggle_mute()
-                    self.notifications.push(f"AUDIO: {'MUTED' if muted else 'ON'}")
-                elif event.key == pygame.K_f:
-                    self._attack_pressed = True
-                elif event.key == pygame.K_e:
-                    self._interact_pressed = True
-                elif event.key in (pygame.K_RETURN, pygame.K_SPACE) and self.boss_system and self.boss_system.active:
-                    self.boss_system.skip_intro()
-                    if event.key == pygame.K_SPACE:
-                        self._jump_pressed = True
-                elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
-                    self._jump_pressed = True
-            elif event.type == pygame.KEYUP and event.key in (
-                pygame.K_SPACE,
-                pygame.K_z,
-                pygame.K_UP,
-            ):
-                self._jump_released = True
+            else:
+                self.input.process_event(event)
+        self._dispatch_input()
 
-    def _handle_map_key(self, key: int) -> None:
-        if self.show_world_summary:
-            if key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE):
-                self.show_world_summary = False
+    def _dispatch_input(self) -> None:
+        menu_order=(Action.MENU_UP,Action.MENU_DOWN,Action.MENU_LEFT,Action.MENU_RIGHT,Action.CONFIRM,Action.BACK,Action.PAUSE)
+        if self.app_mode in {"pause","game_over","settings","frontend"}:
+            controller={"pause":self.pause_controller,"game_over":self.game_over_controller,"settings":self.settings_controller,"frontend":self.frontend}[self.app_mode]
+            for action in menu_order:
+                if self.input.was_pressed(action):
+                    mapped=menu_action_from_input(action)
+                    if mapped is not None:controller.handle(mapped)
+                    break
             return
-        directions = {
-            pygame.K_LEFT: (-1, 0), pygame.K_a: (-1, 0),
-            pygame.K_RIGHT: (1, 0), pygame.K_d: (1, 0),
-            pygame.K_UP: (0, -1), pygame.K_w: (0, -1),
-            pygame.K_DOWN: (0, 1), pygame.K_s: (0, 1),
-        }
+        if self.app_mode=="map":
+            self._handle_map_actions()
+            return
+        if self.input.was_pressed(Action.PAUSE) or self.input.was_pressed(Action.BACK):
+            self.open_pause();return
+        if self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE:
+            if self.input.was_pressed(Action.ATTACK):self.reset_level()
+            elif self.input.was_pressed(Action.CONFIRM) or self.input.was_pressed(Action.BACK):self.return_to_world_map()
+            return
+        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_ATTACK):self.player.trigger_attack()
+        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_EFFECTS):
+            quality=self.effects.toggle_optional();self.notifications.push(f"OPTIONAL EFFECTS: {quality.value.upper()}")
+        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_RESET):self.reset_level();return
+        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_MUTE):
+            muted=self.audio.toggle_mute();self.notifications.push(f"AUDIO: {'MUTED' if muted else 'ON'}")
+        if self.input.was_pressed(Action.ATTACK):self._attack_pressed=True
+        if self.input.was_pressed(Action.INTERACT):self._interact_pressed=True
+        if self.input.was_pressed(Action.CONFIRM) and self.boss_system and self.boss_system.active:self.boss_system.skip_intro()
+        if self.input.was_pressed(Action.JUMP):self._jump_pressed=True
+        if self.input.was_released(Action.JUMP):self._jump_released=True
+
+    def _handle_map_actions(self) -> None:
+        if self.show_world_summary:
+            if any(self.input.was_pressed(x) for x in (Action.CONFIRM,Action.BACK)):
+                self.show_world_summary=False;self.input.suppress_edges()
+            return
+        directions=((Action.MENU_LEFT,(-1,0)),(Action.MENU_RIGHT,(1,0)),(Action.MENU_UP,(0,-1)),(Action.MENU_DOWN,(0,1)))
+        for action,direction in directions:
+            if self.input.was_pressed(action):
+                moved=self.world_map_runtime.choose_direction(pygame.Vector2(direction));self.audio.play_sound("ui_move" if moved else "ui_locked");return
+        if self.input.was_pressed(Action.CONFIRM):
+            action,level_id=self.world_map_screen.activate_current();self.audio.play_sound("ui_confirm" if action in {"level","world_summary"} else "ui_locked")
+            if action=="level" and level_id:self.load_level(level_id)
+            elif action=="world_summary":self.show_world_summary=True;self.input.suppress_edges()
+        elif self.input.was_pressed(Action.BACK):
+            self.audio.play_sound("ui_cancel");self.return_to_main_menu()
+
+    def _handle_map_key(self,key:int)->None:
+        """Compatibility helper for older integration tests; runtime uses logical actions."""
+        directions={pygame.K_LEFT:(-1,0),pygame.K_a:(-1,0),pygame.K_RIGHT:(1,0),pygame.K_d:(1,0),pygame.K_UP:(0,-1),pygame.K_w:(0,-1),pygame.K_DOWN:(0,1),pygame.K_s:(0,1)}
         if key in directions:
-            moved = self.world_map_runtime.choose_direction(pygame.Vector2(directions[key]))
-            self.audio.play_sound("ui_move" if moved else "ui_locked")
-        elif key in (pygame.K_RETURN, pygame.K_SPACE):
-            action, level_id = self.world_map_screen.activate_current()
-            self.audio.play_sound("ui_confirm" if action in {"level", "world_summary"} else "ui_locked")
-            if action == "level" and level_id:
-                self.load_level(level_id)
-            elif action == "world_summary":
-                self.show_world_summary = True
-        elif key == pygame.K_ESCAPE:
-            self.audio.play_sound("ui_cancel")
-            self.running = False
+            moved=self.world_map_runtime.choose_direction(pygame.Vector2(directions[key]));self.audio.play_sound("ui_move" if moved else "ui_locked")
+        elif key in (pygame.K_RETURN,pygame.K_SPACE):
+            action,level_id=self.world_map_screen.activate_current();self.audio.play_sound("ui_confirm" if action in {"level","world_summary"} else "ui_locked")
+            if action=="level" and level_id:self.load_level(level_id)
+            elif action=="world_summary":self.show_world_summary=True
+        elif key==pygame.K_ESCAPE:self.audio.play_sound("ui_cancel");self.return_to_main_menu()
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
@@ -324,14 +307,10 @@ class Game:
             self._clear_frame_inputs()
             return
         self.elapsed_time += dt
-        keys = pygame.key.get_pressed()
-        move_axis = float(keys[pygame.K_RIGHT] or keys[pygame.K_d]) - float(
-            keys[pygame.K_LEFT] or keys[pygame.K_a]
-        )
         controls = PlayerControls(
-            move_axis=move_axis,
+            move_axis=self.input.axis(Action.MOVE_X),
             jump_pressed=self._jump_pressed,
-            jump_held=bool(keys[pygame.K_SPACE] or keys[pygame.K_z] or keys[pygame.K_UP]),
+            jump_held=self.input.is_down(Action.JUMP),
             jump_released=self._jump_released,
         )
         previous_grounded = self.player.grounded
@@ -386,6 +365,7 @@ class Game:
                 self.effects.spawn("player_death" if damage.died else "player_damage", self.player.rect.center)
                 self.effects.request_flash((142, 42, 37), 68, 0.16)
                 self.audio.play_sound("player_death" if damage.died else "player_damage")
+                self._rumble(.25,.55,140 if not damage.died else 240)
             if damage.applied and not damage.died:
                 self.player.reposition(self.world_objects.respawn_position)
                 self.camera.snap_to(self.player.rect)
@@ -400,6 +380,7 @@ class Game:
                     self.camera.set_bounds(None)
                 self.effects.clear(); self.audio.reset_context(); self.audio.stop_music(.5)
                 self.app_mode = "game_over"
+                self.input.suppress_edges()
                 self._clear_frame_inputs()
                 return
             if self.boss_system is not None:
@@ -423,6 +404,7 @@ class Game:
             if projectile.projectile_id not in prior_projectiles and projectile.faction.value == "enemy" and projectile.owner_id != "ashen_warden": self.audio.play_sound("turret_fire", position=projectile.rect.center, listener_x=self.player.rect.centerx)
         if enemy_result.player_damaged:
             self.hud.notify_health_changed()
+            self._rumble(.22,.52,140)
             self.audio.play_sound("player_death" if enemy_result.player_died else "player_damage")
             self.effects.spawn("player_death" if enemy_result.player_died else "player_damage", self.player.rect.center)
             self.effects.request_flash((142, 42, 37), 62, 0.14)
@@ -442,6 +424,7 @@ class Game:
                     self.camera.update(focus, pygame.Vector2(), dt)
             if boss_result.player_damaged:
                 self.hud.notify_health_changed()
+                self._rumble(.3,.62,180)
             if boss_result.score_awarded:
                 self.hud.notify_score_changed()
             if boss_result.shake:
@@ -475,6 +458,7 @@ class Game:
                 self.effects.spawn("stone_guard_break", self.player.rect.center)
                 self.effects.request_flash((170, 196, 218), 58, 0.14)
                 self.audio.play_sound("stone_guard_break")
+                self._rumble(.38,.68,180)
         secret_update = self.secrets.update(self.player.rect, self._interact_pressed, self.enemies.defeated_ids)
         if secret_update.score_awarded:
             self.progress.award_score(secret_update.score_awarded)
@@ -514,6 +498,7 @@ class Game:
         self._mark_save_dirty()
         self._autosave()
         self.gameplay_phase = GameplayPhase.COMPLETION_SEQUENCE
+        self.input.suppress_edges()
         self.completion_timer = LEVEL_COMPLETION_SEQUENCE_DURATION
         self.projectiles.clear()
         self.player.velocity.update()
@@ -564,7 +549,7 @@ class Game:
             self.world_map_screen.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
             if self.show_world_summary:
-                self.world_complete_screen.draw(self.canvas, self.world_progress)
+                self.world_complete_screen.draw(self.canvas, self.world_progress, self.input)
             scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
             self.screen.blit(scaled, (0, 0))
             pygame.display.flip()
@@ -578,7 +563,7 @@ class Game:
         self.level.tilemap.draw(self.canvas, tile_view, offset)
         self.world_objects.draw(self.canvas, self.camera.view_rect, offset)
         if self.boss_system is None:
-            self.goal.draw(self.canvas, offset)
+            self.goal.draw(self.canvas, offset, self.input.get_prompt(Action.INTERACT))
         else:
             self.boss_system.draw(self.canvas, offset)
         self.secrets.draw(self.canvas, self.camera.view_rect, offset)
@@ -606,7 +591,7 @@ class Game:
         if self.boss_system is not None:
             self.boss_hud.draw(self.canvas, self.boss_system.hud_state)
         if DEBUG_MODE:
-            self.debug_overlay.draw(self.canvas, self.player, self.effects)
+            self.debug_overlay.draw(self.canvas, self.player, self.effects, self.input)
         if SHOW_FPS:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
             position = (self.canvas.get_width() - 16, self.canvas.get_height() - 12)
@@ -616,7 +601,7 @@ class Game:
             fade.fill((255, 183, 78, round(35 * (1.0 - self.completion_timer / LEVEL_COMPLETION_SEQUENCE_DURATION))))
             self.canvas.blit(fade, (0, 0))
         elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
-            self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result)
+            self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result, self.input)
         if self.app_mode == "pause": self.pause_controller.draw(self.canvas)
         elif self.app_mode == "game_over": self.game_over_controller.draw(self.canvas)
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
@@ -646,6 +631,12 @@ class Game:
         for hook in result.audio_events:
             audio_id = mapping.get(hook)
             if audio_id: self.audio.play_sound(audio_id, position=self.boss_system.boss.rect.center, listener_x=self.player.rect.centerx)
+            if hook in {"ground_slam","slam"}:self._rumble(.45,.7,190)
+            elif hook=="phase":self._rumble(.42,.76,240)
+            elif hook=="defeat":self._rumble(.7,1.0,320)
+
+    def _rumble(self,low:float,high:float,duration_ms:int)->bool:
+        return bool(self.app_settings.vibration_enabled and self.input.rumble(low,high,duration_ms))
 
     def _configure_level_effects(self) -> None:
         theme = self.level.metadata.theme.lower()
@@ -709,9 +700,10 @@ class Game:
         if self.app_mode == "gameplay":
             self.app_mode = "pause"
             self.pause_controller.dialog = None
+            self.input.suppress_edges()
 
     def resume_game(self) -> None:
-        if self.app_mode in {"pause", "settings"}: self.app_mode = "gameplay"
+        if self.app_mode in {"pause", "settings"}: self.app_mode = "gameplay"; self.input.suppress_edges()
 
     def restart_from_menu(self) -> None:
         self.reset_level(); self.app_mode = "gameplay"
@@ -726,10 +718,12 @@ class Game:
     def open_settings(self, parent: str) -> None:
         self.settings_parent = parent
         self.app_mode = "settings"
+        self.input.suppress_edges()
         self.settings_controller._rebuild()
 
     def close_settings(self) -> None:
         self.app_mode = self.settings_parent
+        self.input.suppress_edges()
 
     def set_fullscreen(self, enabled: bool) -> None:
         if self.fullscreen != bool(enabled): self.toggle_fullscreen()
@@ -748,13 +742,13 @@ class Game:
         self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
         node = self.registry.map_definition.nodes[self.save_session.current_map_node]
         self.world_map_runtime.current_node_id = node.node_id; self.world_map_runtime.avatar_position.update(node.position)
-        self.world_map_screen = WorldMapScreen(self.world_map_runtime, self.assets.font(None,38), self.assets.font(None,25), self.assets.font(None,19))
+        self.world_map_screen = WorldMapScreen(self.world_map_runtime, self.assets.font(None,38), self.assets.font(None,25), self.assets.font(None,19),self.input)
         if self.save_warning: self.world_map_screen.notify(self.save_warning)
-        self.app_mode = "map"; self.show_world_summary = False; self.effects.clear(); self._configure_map_effects(); self._configure_map_audio()
+        self.app_mode = "map"; self.input.suppress_edges(); self.show_world_summary = False; self.effects.clear(); self._configure_map_effects(); self._configure_map_audio()
 
     def return_to_main_menu(self) -> None:
         self._autosave(force=True)
-        self.app_mode = "frontend"; self.effects.clear(); self.effects.start_emitter("frontend:title", "sanctum_available", (640,500)); self.audio.reset_context(); self.audio.play_music("music_world_map")
+        self.app_mode = "frontend"; self.input.suppress_edges(); self.effects.clear(); self.effects.start_emitter("frontend:title", "sanctum_available", (640,500)); self.audio.reset_context(); self.audio.play_music("music_world_map")
         self.frontend.refresh_slots(); self.frontend._main()
 
     def reset_level(self) -> None:
@@ -770,6 +764,7 @@ class Game:
 
     def load_level(self, level_id: str) -> None:
         self.app_mode = "gameplay"
+        self.input.suppress_edges()
         self.level_path = self.registry.level_paths[level_id]
         self.reset_level()
 
@@ -777,6 +772,7 @@ class Game:
         level_id = self.level.metadata.level_id
         self.world_map_runtime.return_to_level_node(level_id)
         self.app_mode = "map"
+        self.input.suppress_edges()
         self.show_world_summary = False
         self.effects.clear()
         self._configure_map_effects()

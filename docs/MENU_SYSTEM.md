@@ -15,3 +15,7 @@ The front-end presents exactly three slots from `SaveManager` summaries and neve
 ## Lifecycle and performance
 
 Fonts and controllers are created once. Save summaries refresh only when entering or mutating the slot flow. Title particles use the bounded `EffectsSystem`; audio uses stable `ui_move`, `ui_confirm`, and `ui_cancel` requests and remains safe when muted or unavailable. Front-end effects/audio are cleared and reconfigured on gameplay, map, and main-menu transitions.
+
+## Controller integration
+
+Menus now consume logical actions from `InputManager`. D-pad and stick navigation use bounded repeat; south face confirms, east face cancels, and Start resumes Pause. Focus and dialogs are unchanged, destructive dialogs still default to Cancel, and active-device prompt text updates without reloading a screen. Held transition inputs are suppressed until release.

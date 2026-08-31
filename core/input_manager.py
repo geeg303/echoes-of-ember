@@ -86,8 +86,8 @@ class InputManager:
     self._keyboard_keys.add(event.key);self._set_actions(KEY_ACTIONS.get(event.key,()),True,InputDevice.KEYBOARD)
   elif event.type==pygame.KEYUP:
    self._keyboard_keys.discard(event.key);self._set_actions(KEY_ACTIONS.get(event.key,()),False,InputDevice.KEYBOARD)
-  elif event.type in {getattr(pygame,"JOYDEVICEADDED",-1),getattr(pygame,"JOYDEVICEREMOVED",-1)}:
-   self.backend.handle_event(event);self._sync_controller(False)
+  elif event.type in {getattr(pygame,"JOYDEVICEADDED",-1),getattr(pygame,"JOYDEVICEREMOVED",-1),getattr(pygame,"JOYBUTTONDOWN",-1),getattr(pygame,"JOYBUTTONUP",-1),getattr(pygame,"JOYAXISMOTION",-1),getattr(pygame,"JOYHATMOTION",-1)}:
+   self.backend.handle_event(event);self._sync_controller(event.type not in {getattr(pygame,"JOYDEVICEADDED",-1),getattr(pygame,"JOYDEVICEREMOVED",-1)})
  def _set_actions(self,actions,down:bool,device:InputDevice)->None:
   for action in actions:
    if down:

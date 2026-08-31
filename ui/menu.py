@@ -4,9 +4,13 @@ from dataclasses import dataclass
 from enum import Enum
 from collections.abc import Callable
 import pygame
+from core.input_manager import Action
 
 class MenuAction(str,Enum):
     UP="menu_up"; DOWN="menu_down"; LEFT="menu_left"; RIGHT="menu_right"; CONFIRM="confirm"; BACK="back"; PAUSE="pause"
+
+def menu_action_from_input(action:Action)->MenuAction|None:
+    return {Action.MENU_UP:MenuAction.UP,Action.MENU_DOWN:MenuAction.DOWN,Action.MENU_LEFT:MenuAction.LEFT,Action.MENU_RIGHT:MenuAction.RIGHT,Action.CONFIRM:MenuAction.CONFIRM,Action.BACK:MenuAction.BACK,Action.PAUSE:MenuAction.PAUSE}.get(action)
 
 def action_for_key(key:int)->MenuAction|None:
     mapping={pygame.K_UP:MenuAction.UP,pygame.K_w:MenuAction.UP,pygame.K_DOWN:MenuAction.DOWN,pygame.K_s:MenuAction.DOWN,pygame.K_LEFT:MenuAction.LEFT,pygame.K_a:MenuAction.LEFT,pygame.K_RIGHT:MenuAction.RIGHT,pygame.K_d:MenuAction.RIGHT,pygame.K_RETURN:MenuAction.CONFIRM,pygame.K_SPACE:MenuAction.CONFIRM,pygame.K_ESCAPE:MenuAction.BACK}
@@ -50,7 +54,7 @@ class ConfirmationDialog:
             return False
         return True
 
-def draw_menu(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.font.Font,small:pygame.font.Font,title:str,menu:Menu,subtitle:str="")->None:
+def draw_menu(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.font.Font,small:pygame.font.Font,title:str,menu:Menu,subtitle:str="",footer:str="")->None:
     compact=len(menu.items)>7; panel=pygame.Rect(350,55 if compact else 105,580,610 if compact else 520);pygame.draw.rect(surface,(11,17,34,225),panel,border_radius=24);pygame.draw.rect(surface,(230,151,70),panel,3,border_radius=24)
     image=title_font.render(title,True,(255,218,143));surface.blit(image,image.get_rect(center=(640,102 if compact else 155)))
     if subtitle:
@@ -63,6 +67,8 @@ def draw_menu(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.fon
         marker="◆ " if focused else "  "; label=font.render(marker+item.label,True,color);surface.blit(label,(420,y))
         if item.detail:surface.blit(small.render(item.detail,True,color),(680,y+5))
         y+=step
+    if footer:
+        hint=small.render(footer,True,(172,188,214));surface.blit(hint,hint.get_rect(center=(640,panel.bottom-18)))
 
 def draw_dialog(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.font.Font,dialog:ConfirmationDialog)->None:
     shade=pygame.Surface(surface.get_size(),pygame.SRCALPHA);shade.fill((0,0,0,165));surface.blit(shade,(0,0));panel=pygame.Rect(330,220,620,280);pygame.draw.rect(surface,(20,24,43),panel,border_radius=20);pygame.draw.rect(surface,(236,146,74),panel,3,border_radius=20)

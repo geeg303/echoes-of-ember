@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Protocol
 import math,pygame
 from core.save_manager import SaveManager,SlotState,SlotSummary
+from core.input_manager import Action
 from ui.menu import ConfirmationDialog,Menu,MenuAction,MenuItem,draw_dialog,draw_menu
 class FrontendScreen(str,Enum):MAIN="main";SLOTS="slots";SLOT_ACTION="slot_action";SETTINGS="settings";CREDITS="credits"
 class FrontendHost(Protocol):
@@ -73,11 +74,13 @@ class FrontendController:
     def draw(self,surface:pygame.Surface)->None:
         self._background(surface)
         if self.screen is FrontendScreen.CREDITS:
-            draw_menu(surface,self.title_font,self.font,self.small,"CREDITS",self.menu,"Echoes of Ember · Built with Python and Pygame")
+            draw_menu(surface,self.title_font,self.font,self.small,"CREDITS",self.menu,"Echoes of Ember · Built with Python and Pygame",self._footer())
             lines=("Original game design and development","Procedural temporary art, effects, music and audio","No external commercial assets")
             for i,line in enumerate(lines):surface.blit(self.small.render(line,True,(210,215,228)),(430,245+i*42))
-        else:draw_menu(surface,self.title_font,self.font,self.small,"ECHOES OF EMBER" if self.screen is FrontendScreen.MAIN else self.screen.value.replace("_"," ").upper(),self.menu,"Nova's journey through Verdant Reaches")
+        else:draw_menu(surface,self.title_font,self.font,self.small,"ECHOES OF EMBER" if self.screen is FrontendScreen.MAIN else self.screen.value.replace("_"," ").upper(),self.menu,"Nova's journey through Verdant Reaches",self._footer())
         if self.dialog:draw_dialog(surface,self.title_font,self.font,self.dialog)
+    def _footer(self)->str:
+        i=self.host.input;return f"[{i.get_prompt(Action.CONFIRM)}] SELECT   [{i.get_prompt(Action.BACK)}] BACK"
     def _background(self,surface:pygame.Surface)->None:
         surface.fill((10,15,30));pygame.draw.circle(surface,(95,38,28),(640,500),240);pygame.draw.circle(surface,(231,98,48),(640,500),90)
         for i in range(24):

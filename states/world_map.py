@@ -7,12 +7,13 @@ import math
 import pygame
 
 from settings import DEBUG_MODE
+from core.input_manager import Action,InputManager
 from systems.level_completion import format_time
 from world.world_map import ConnectionState, NodeState, NodeType, WorldMapRuntime
 
 
 class WorldMapScreen:
-    def __init__(self, runtime: WorldMapRuntime, title: pygame.font.Font, font: pygame.font.Font, small: pygame.font.Font) -> None:
+    def __init__(self, runtime: WorldMapRuntime, title: pygame.font.Font, font: pygame.font.Font, small: pygame.font.Font, input_manager: InputManager | None = None) -> None:
         self.runtime = runtime
         self.title = title
         self.font = font
@@ -20,6 +21,7 @@ class WorldMapScreen:
         self.age = 0.0
         self.message = ""
         self.message_timer = 0.0
+        self.input = input_manager
 
     def update(self, dt: float) -> None:
         self.age += dt
@@ -162,7 +164,7 @@ class WorldMapScreen:
         elif node.kind is NodeType.SECRET:
             details = ["A HIDDEN PATH HAS BEEN REVEALED"]
         else:
-            details = ["ENTER / SPACE  SELECT", "ARROWS / WASD  TRAVEL", "M  RETURN TO MAP"]
+            details = ([f"[{self.input.get_prompt(Action.CONFIRM)}] SELECT", "STICK / D-PAD  TRAVEL", f"[{self.input.get_prompt(Action.BACK)}] MAIN MENU"] if self.input else ["ENTER / SPACE  SELECT", "ARROWS / WASD  TRAVEL", "ESC  MAIN MENU"])
         image = self.small.render("     ".join(details), True, (219, 224, 218))
         surface.blit(image, (300, 611))
         if DEBUG_MODE:

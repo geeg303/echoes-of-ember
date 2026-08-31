@@ -61,3 +61,7 @@ Boss systems emit attack/state event names; `Game` translates them to catalog ID
 ## Game Over contract
 
 Final-life death waits for Nova's death animation, then clears boss projectiles, vulnerability emitters, arena camera bounds, transient effects, and encounter audio without awarding defeat. Retry reconstructs the encounter at full health in Phase 1; World Map/Main Menu preserve only progress committed before the failed attempt.
+
+## Controller input and vibration
+
+The Ashen Warden receives only logical movement/jump/attack/pause input. South face skips the intro through Confirm, west face uses the normal Ember Pulse contract, and all phases remain governed by existing AI/combat systems. Central vibration covers damage, ground slam, phase transitions, and defeat; unsupported or disabled rumble is a safe no-op.

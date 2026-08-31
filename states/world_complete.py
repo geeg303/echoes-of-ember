@@ -2,11 +2,12 @@
 from __future__ import annotations
 import pygame
 from systems.level_completion import format_time
+from core.input_manager import Action,InputManager
 
 class WorldCompleteScreen:
     def __init__(self, title: pygame.font.Font, font: pygame.font.Font, small: pygame.font.Font) -> None:
         self.title, self.font, self.small = title, font, small
-    def draw(self, surface: pygame.Surface, progress: object) -> None:
+    def draw(self, surface: pygame.Surface, progress: object, input_manager: InputManager | None = None) -> None:
         surface.fill((10, 17, 38))
         heading = self.title.render("VERDANT REACHES COMPLETE", True, (255, 218, 128))
         surface.blit(heading, heading.get_rect(center=(640, 115)))
@@ -21,5 +22,6 @@ class WorldCompleteScreen:
             surface.blit(self.font.render(label, True, (178, 198, 226)), (390, y))
             image = self.font.render(value, True, (246, 239, 208))
             surface.blit(image, image.get_rect(topright=(890, y)))
-        prompt = self.small.render("ENTER / SPACE  RETURN TO MAP", True, (202, 215, 238))
+        prompt_text=f"[{input_manager.get_prompt(Action.CONFIRM)}] RETURN TO MAP" if input_manager else "ENTER / SPACE  RETURN TO MAP"
+        prompt = self.small.render(prompt_text, True, (202, 215, 238))
         surface.blit(prompt, prompt.get_rect(center=(640, 635)))

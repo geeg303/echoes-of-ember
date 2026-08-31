@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from entities.player import Player
+from core.input_manager import Action,InputManager
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from systems.effects_system import EffectsSystem
@@ -14,13 +15,15 @@ class DebugOverlay:
     def __init__(self, font: pygame.font.Font) -> None:
         self.font = font
 
-    def draw(self, surface: pygame.Surface, player: Player, effects: "EffectsSystem | None" = None) -> None:
+    def draw(self, surface: pygame.Surface, player: Player, effects: "EffectsSystem | None" = None, input_manager: InputManager | None = None) -> None:
         lines = [
             f"ANIM  {player.animation.current_name}  frame {player.animation.frame_index}",
             f"FACE  {'right' if player.facing > 0 else 'left'}",
             f"GROUND  {player.grounded}",
             f"VEL  {player.velocity.x:7.1f}, {player.velocity.y:7.1f}",
         ]
+        if input_manager is not None:
+            lines.extend((f"INPUT  {input_manager.active_device.value}  axis {input_manager.axis(Action.MOVE_X):+.2f}",f"PAD  {input_manager.controller_name or 'none'}  connected {input_manager.connected_count}"))
         if effects is not None:
             lines.extend((f"FX  {effects.particle_count}  emit {effects.emitter_count}", f"FX A/G/S  {effects.ambient_count}/{effects.gameplay_count}/{effects.screen_effect_count}"))
         panel = pygame.Surface((320, 12 + len(lines) * 23), pygame.SRCALPHA)
