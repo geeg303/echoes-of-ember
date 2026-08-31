@@ -185,3 +185,26 @@ def _integer_pair(value: object) -> bool:
         and len(value) == 2
         and all(isinstance(item, int) and not isinstance(item, bool) for item in value)
     )
+
+
+def main() -> int:
+    import argparse
+    from settings import PROJECT_ROOT
+    parser = argparse.ArgumentParser(description="Validate Echoes of Ember level data")
+    parser.add_argument("path", nargs="?", type=Path)
+    parser.add_argument("--all-levels", action="store_true")
+    args = parser.parse_args()
+    paths = sorted((PROJECT_ROOT / "data" / "levels").glob("*.json")) if args.all_levels else [args.path]
+    if not paths or paths == [None]:
+        parser.error("provide a level path or --all-levels")
+    for path in paths:
+        load_and_validate_level(path)
+        print(f"valid: {path}")
+    if args.all_levels:
+        from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
+        registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
+        print(f"valid world: {registry.world_id} ({len(registry.level_ids)} levels)")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

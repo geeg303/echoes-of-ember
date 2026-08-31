@@ -158,7 +158,7 @@ def test_f7_restores_destroyed_breakable_tile() -> None:
 
 
 def test_world_object_validation_rejects_malformed_values_and_references() -> None:
-    with open("data/levels/level_01.json", encoding="utf-8") as handle:
+    with open("data/levels/verdant_01.json", encoding="utf-8") as handle:
         data = json.load(handle)
     invalid = copy.deepcopy(data)
     invalid["objects"].append({"id": "bad_platform", "type": "moving_platform", "x": 10, "y": 10, "properties": {"movement": "diagonal", "distance": -1}})

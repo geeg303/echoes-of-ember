@@ -22,14 +22,16 @@ from systems.level_completion import (
     calculate_rating,
 )
 from systems.progression import LevelProgress
-from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, PROJECT_ROOT, SHOW_FPS
+from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
+from states.world_complete import WorldCompleteScreen
 from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
 from world.background import ParallaxBackground
 from world.camera import Camera
 from world.collision import CollisionEngine
 from world.level import Level
+from world.campaign import DEFAULT_WORLD_REGISTRY, WorldProgress, WorldRegistry
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None) -> None:
         pygame.init()
         try:
             pygame.mixer.init()
@@ -62,7 +64,12 @@ class Game:
         self.level_complete_screen = LevelCompleteScreen(
             self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
         )
-        self.level_path = PROJECT_ROOT / "data" / "levels" / "level_01.json"
+        self.world_complete_screen = WorldCompleteScreen(self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22))
+        self.registry = registry or WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
+        if level_id not in self.registry.level_paths:
+            raise ValueError(f"unknown registered level: {level_id}")
+        self.world_progress = WorldProgress(self.registry)
+        self.level_path = self.registry.level_paths[level_id]
         self._load_level_runtime()
         self._jump_pressed = False
         self._jump_released = False
@@ -124,7 +131,10 @@ class Game:
                 elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key == pygame.K_r:
                     self.reset_level()
                 elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self.level_complete_screen.continued = True
+                    self.continue_campaign()
+                elif self.gameplay_phase is GameplayPhase.WORLD_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    self.world_progress = WorldProgress(self.registry)
+                    self.load_level(self.registry.level_ids[0])
                 elif event.key == pygame.K_F11:
                     self.toggle_fullscreen()
                 elif DEBUG_MODE and event.key == pygame.K_F5:
@@ -152,7 +162,7 @@ class Game:
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
-        if self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE:
+        if self.gameplay_phase in {GameplayPhase.LEVEL_COMPLETE, GameplayPhase.WORLD_COMPLETE}:
             self._clear_frame_inputs()
             return
         if self.gameplay_phase is GameplayPhase.COMPLETION_SEQUENCE:
@@ -246,6 +256,7 @@ class Game:
             return
         self.gameplay_phase = GameplayPhase.GOAL_TRIGGERED
         self.level_result = self._build_level_result()
+        self.world_progress.record(self.level_result)
         self.gameplay_phase = GameplayPhase.COMPLETION_SEQUENCE
         self.completion_timer = LEVEL_COMPLETION_SEQUENCE_DURATION
         self.projectiles.clear()
@@ -317,6 +328,8 @@ class Game:
             self.canvas.blit(fade, (0, 0))
         elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
             self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result)
+        elif self.gameplay_phase is GameplayPhase.WORLD_COMPLETE:
+            self.world_complete_screen.draw(self.canvas, self.world_progress)
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
@@ -330,6 +343,17 @@ class Game:
         self._interact_pressed = False
         self.hud.reset_feedback()
         LOGGER.info("Restarted level: %s", self.level.name)
+
+    def load_level(self, level_id: str) -> None:
+        self.level_path = self.registry.level_paths[level_id]
+        self.reset_level()
+
+    def continue_campaign(self) -> None:
+        next_id = self.registry.next_level(self.level.metadata.level_id)
+        if next_id is None:
+            self.gameplay_phase = GameplayPhase.WORLD_COMPLETE
+        else:
+            self.load_level(next_id)
 
     def shutdown(self) -> None:
         if self._shutdown:

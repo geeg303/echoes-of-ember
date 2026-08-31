@@ -13,6 +13,7 @@ class GameplayPhase(str, Enum):
     GOAL_TRIGGERED = "goal_triggered"
     COMPLETION_SEQUENCE = "completion_sequence"
     LEVEL_COMPLETE = "level_complete"
+    WORLD_COMPLETE = "world_complete"
 
 
 class CompletionRating(str, Enum):

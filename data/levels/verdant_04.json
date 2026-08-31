@@ -1,0 +1,1076 @@
+{
+  "id": "verdant_04",
+  "name": "Verdant Reaches — Ruins of the First Flame",
+  "world_id": "verdant_reaches",
+  "level_number": 4,
+  "display_name": "Ruins of the First Flame",
+  "description": "Nature-bound Ember ruins test every lesson of Verdant Reaches.",
+  "theme": "first_flame_ruins",
+  "time_target": 600,
+  "shard_total": 68,
+  "rare_crystal_total": 4,
+  "secret_token_total": 1,
+  "completion_requirements": {
+    "reach_goal": true,
+    "minimum_ember_shards": 0
+  },
+  "rating_thresholds": {
+    "silver_score": 6100,
+    "gold_score": 10900,
+    "gold_shard_ratio": 0.8,
+    "gold_time": 690
+  },
+  "goal": {
+    "type": "ember_gate",
+    "x": 7726,
+    "y": 1024,
+    "properties": {
+      "requires_interact": true
+    }
+  },
+  "width": 124,
+  "height": 20,
+  "tile_size": 64,
+  "player_spawn": [
+    96,
+    1090
+  ],
+  "tiles": [
+    {
+      "id": 1,
+      "position": [
+        0,
+        0
+      ],
+      "size": [
+        1,
+        20
+      ]
+    },
+    {
+      "id": 1,
+      "position": [
+        123,
+        0
+      ],
+      "size": [
+        1,
+        20
+      ]
+    },
+    {
+      "id": 1,
+      "position": [
+        0,
+        18
+      ],
+      "size": [
+        124,
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "position": [
+        25,
+        17
+      ],
+      "size": [
+        2,
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "position": [
+        55,
+        17
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "position": [
+        85,
+        17
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "position": [
+        104,
+        17
+      ],
+      "size": [
+        2,
+        1
+      ]
+    },
+    {
+      "id": 6,
+      "position": [
+        14,
+        17
+      ]
+    },
+    {
+      "id": 6,
+      "position": [
+        38,
+        17
+      ]
+    },
+    {
+      "id": 5,
+      "position": [
+        44,
+        16
+      ],
+      "size": [
+        2,
+        2
+      ]
+    },
+    {
+      "id": 5,
+      "position": [
+        82,
+        16
+      ],
+      "size": [
+        2,
+        2
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        5,
+        15
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        11,
+        13
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        17,
+        11
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        23,
+        14
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        29,
+        10
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        35,
+        12
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        41,
+        8
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        47,
+        13
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        53,
+        9
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        59,
+        14
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        65,
+        11
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        71,
+        7
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        77,
+        12
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        83,
+        10
+      ],
+      "size": [
+        4,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "position": [
+        89,
+        14
+      ],
+      "size": [
+        3,
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        3,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        11,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        19,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        27,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        35,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        43,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        51,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        59,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        67,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        75,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        83,
+        17
+      ]
+    },
+    {
+      "id": 4,
+      "position": [
+        91,
+        17
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "shard_01",
+      "type": "ember_shard",
+      "x": 180,
+      "y": 1080
+    },
+    {
+      "id": "shard_02",
+      "type": "ember_shard",
+      "x": 275,
+      "y": 1080
+    },
+    {
+      "id": "shard_03",
+      "type": "ember_shard",
+      "x": 370,
+      "y": 1080
+    },
+    {
+      "id": "shard_04",
+      "type": "ember_shard",
+      "x": 465,
+      "y": 1080
+    },
+    {
+      "id": "shard_05",
+      "type": "ember_shard",
+      "x": 560,
+      "y": 1080
+    },
+    {
+      "id": "shard_06",
+      "type": "ember_shard",
+      "x": 655,
+      "y": 1080
+    },
+    {
+      "id": "shard_07",
+      "type": "ember_shard",
+      "x": 750,
+      "y": 1080
+    },
+    {
+      "id": "shard_08",
+      "type": "ember_shard",
+      "x": 1110,
+      "y": 1080
+    },
+    {
+      "id": "shard_09",
+      "type": "ember_shard",
+      "x": 1205,
+      "y": 1045
+    },
+    {
+      "id": "shard_10",
+      "type": "ember_shard",
+      "x": 1300,
+      "y": 1010
+    },
+    {
+      "id": "shard_11",
+      "type": "ember_shard",
+      "x": 1395,
+      "y": 980
+    },
+    {
+      "id": "shard_12",
+      "type": "ember_shard",
+      "x": 1490,
+      "y": 1010
+    },
+    {
+      "id": "shard_13",
+      "type": "ember_shard",
+      "x": 1585,
+      "y": 1045
+    },
+    {
+      "id": "shard_14",
+      "type": "ember_shard",
+      "x": 1680,
+      "y": 1080
+    },
+    {
+      "id": "shard_15",
+      "type": "ember_shard",
+      "x": 2039,
+      "y": 1080
+    },
+    {
+      "id": "shard_16",
+      "type": "ember_shard",
+      "x": 2134,
+      "y": 1025
+    },
+    {
+      "id": "shard_17",
+      "type": "ember_shard",
+      "x": 2229,
+      "y": 970
+    },
+    {
+      "id": "shard_18",
+      "type": "ember_shard",
+      "x": 2324,
+      "y": 915
+    },
+    {
+      "id": "shard_19",
+      "type": "ember_shard",
+      "x": 2419,
+      "y": 860
+    },
+    {
+      "id": "shard_20",
+      "type": "ember_shard",
+      "x": 2514,
+      "y": 915
+    },
+    {
+      "id": "shard_21",
+      "type": "ember_shard",
+      "x": 2609,
+      "y": 970
+    },
+    {
+      "id": "shard_22",
+      "type": "ember_shard",
+      "x": 2704,
+      "y": 1025
+    },
+    {
+      "id": "shard_23",
+      "type": "ember_shard",
+      "x": 2969,
+      "y": 1080
+    },
+    {
+      "id": "shard_24",
+      "type": "ember_shard",
+      "x": 3064,
+      "y": 1080
+    },
+    {
+      "id": "shard_25",
+      "type": "ember_shard",
+      "x": 3159,
+      "y": 1035
+    },
+    {
+      "id": "shard_26",
+      "type": "ember_shard",
+      "x": 3254,
+      "y": 990
+    },
+    {
+      "id": "shard_27",
+      "type": "ember_shard",
+      "x": 3349,
+      "y": 1035
+    },
+    {
+      "id": "shard_28",
+      "type": "ember_shard",
+      "x": 3444,
+      "y": 1080
+    },
+    {
+      "id": "shard_29",
+      "type": "ember_shard",
+      "x": 3539,
+      "y": 1080
+    },
+    {
+      "id": "shard_30",
+      "type": "ember_shard",
+      "x": 3898,
+      "y": 1080
+    },
+    {
+      "id": "shard_31",
+      "type": "ember_shard",
+      "x": 3993,
+      "y": 1010
+    },
+    {
+      "id": "shard_32",
+      "type": "ember_shard",
+      "x": 4088,
+      "y": 940
+    },
+    {
+      "id": "shard_33",
+      "type": "ember_shard",
+      "x": 4183,
+      "y": 1010
+    },
+    {
+      "id": "shard_34",
+      "type": "ember_shard",
+      "x": 4278,
+      "y": 1080
+    },
+    {
+      "id": "shard_35",
+      "type": "ember_shard",
+      "x": 4373,
+      "y": 1080
+    },
+    {
+      "id": "shard_36",
+      "type": "ember_shard",
+      "x": 4468,
+      "y": 1020
+    },
+    {
+      "id": "shard_37",
+      "type": "ember_shard",
+      "x": 4828,
+      "y": 1080
+    },
+    {
+      "id": "shard_38",
+      "type": "ember_shard",
+      "x": 4923,
+      "y": 1040
+    },
+    {
+      "id": "shard_39",
+      "type": "ember_shard",
+      "x": 5018,
+      "y": 1000
+    },
+    {
+      "id": "shard_40",
+      "type": "ember_shard",
+      "x": 5113,
+      "y": 960
+    },
+    {
+      "id": "shard_41",
+      "type": "ember_shard",
+      "x": 5208,
+      "y": 1000
+    },
+    {
+      "id": "shard_42",
+      "type": "ember_shard",
+      "x": 5303,
+      "y": 1040
+    },
+    {
+      "id": "shard_43",
+      "type": "ember_shard",
+      "x": 5398,
+      "y": 1080
+    },
+    {
+      "id": "shard_44",
+      "type": "ember_shard",
+      "x": 5757,
+      "y": 1080
+    },
+    {
+      "id": "shard_45",
+      "type": "ember_shard",
+      "x": 5852,
+      "y": 990
+    },
+    {
+      "id": "shard_46",
+      "type": "ember_shard",
+      "x": 5947,
+      "y": 900
+    },
+    {
+      "id": "shard_47",
+      "type": "ember_shard",
+      "x": 6042,
+      "y": 990
+    },
+    {
+      "id": "shard_48",
+      "type": "ember_shard",
+      "x": 6137,
+      "y": 1080
+    },
+    {
+      "id": "shard_49",
+      "type": "ember_shard",
+      "x": 6232,
+      "y": 1030
+    },
+    {
+      "id": "shard_50",
+      "type": "ember_shard",
+      "x": 6327,
+      "y": 980
+    },
+    {
+      "id": "shard_51",
+      "type": "ember_shard",
+      "x": 6687,
+      "y": 1080
+    },
+    {
+      "id": "shard_52",
+      "type": "ember_shard",
+      "x": 6782,
+      "y": 1080
+    },
+    {
+      "id": "shard_53",
+      "type": "ember_shard",
+      "x": 6877,
+      "y": 1050
+    },
+    {
+      "id": "shard_54",
+      "type": "ember_shard",
+      "x": 6972,
+      "y": 1020
+    },
+    {
+      "id": "shard_55",
+      "type": "ember_shard",
+      "x": 7067,
+      "y": 1050
+    },
+    {
+      "id": "shard_56",
+      "type": "ember_shard",
+      "x": 7162,
+      "y": 1080
+    },
+    {
+      "id": "shard_57",
+      "type": "ember_shard",
+      "x": 7257,
+      "y": 1080
+    },
+    {
+      "id": "shard_58",
+      "type": "ember_shard",
+      "x": 7352,
+      "y": 1080
+    },
+    {
+      "id": "shard_59",
+      "type": "ember_shard",
+      "x": 6806,
+      "y": 1080
+    },
+    {
+      "id": "shard_60",
+      "type": "ember_shard",
+      "x": 6876,
+      "y": 1080
+    },
+    {
+      "id": "shard_61",
+      "type": "ember_shard",
+      "x": 6946,
+      "y": 1080
+    },
+    {
+      "id": "shard_62",
+      "type": "ember_shard",
+      "x": 7016,
+      "y": 1080
+    },
+    {
+      "id": "shard_63",
+      "type": "ember_shard",
+      "x": 7086,
+      "y": 1080
+    },
+    {
+      "id": "shard_64",
+      "type": "ember_shard",
+      "x": 7156,
+      "y": 1080
+    },
+    {
+      "id": "shard_65",
+      "type": "ember_shard",
+      "x": 7226,
+      "y": 1080
+    },
+    {
+      "id": "shard_66",
+      "type": "ember_shard",
+      "x": 7296,
+      "y": 1080
+    },
+    {
+      "id": "shard_67",
+      "type": "ember_shard",
+      "x": 7366,
+      "y": 1080
+    },
+    {
+      "id": "shard_68",
+      "type": "ember_shard",
+      "x": 7436,
+      "y": 1080
+    },
+    {
+      "id": "rare_1",
+      "type": "rare_crystal",
+      "x": 1800,
+      "y": 650
+    },
+    {
+      "id": "rare_2",
+      "type": "rare_crystal",
+      "x": 3900,
+      "y": 520
+    },
+    {
+      "id": "rare_3",
+      "type": "rare_crystal",
+      "x": 5900,
+      "y": 620
+    },
+    {
+      "id": "rare_4",
+      "type": "rare_crystal",
+      "x": 7150,
+      "y": 520
+    },
+    {
+      "id": "secret_01",
+      "type": "secret_token",
+      "x": 6650,
+      "y": 390
+    },
+    {
+      "id": "health_01",
+      "type": "health_item",
+      "x": 3333.12,
+      "y": 1080
+    },
+    {
+      "id": "health_02",
+      "type": "health_item",
+      "x": 5713.92,
+      "y": 1080
+    },
+    {
+      "id": "crawler_1",
+      "type": "enemy",
+      "enemy_type": "crawler",
+      "x": 650,
+      "y": 1100,
+      "properties": {}
+    },
+    {
+      "id": "crawler_2",
+      "type": "enemy",
+      "enemy_type": "crawler",
+      "x": 2400,
+      "y": 1100,
+      "properties": {}
+    },
+    {
+      "id": "crawler_3",
+      "type": "enemy",
+      "enemy_type": "crawler",
+      "x": 5200,
+      "y": 1100,
+      "properties": {}
+    },
+    {
+      "id": "flyer_4",
+      "type": "enemy",
+      "enemy_type": "flyer",
+      "x": 2700,
+      "y": 700,
+      "properties": {}
+    },
+    {
+      "id": "flyer_5",
+      "type": "enemy",
+      "enemy_type": "flyer",
+      "x": 4800,
+      "y": 600,
+      "properties": {}
+    },
+    {
+      "id": "flyer_6",
+      "type": "enemy",
+      "enemy_type": "flyer",
+      "x": 6800,
+      "y": 650,
+      "properties": {}
+    },
+    {
+      "id": "jumper_7",
+      "type": "enemy",
+      "enemy_type": "jumper",
+      "x": 1500,
+      "y": 1080,
+      "properties": {}
+    },
+    {
+      "id": "jumper_8",
+      "type": "enemy",
+      "enemy_type": "jumper",
+      "x": 3800,
+      "y": 1080,
+      "properties": {}
+    },
+    {
+      "id": "jumper_9",
+      "type": "enemy",
+      "enemy_type": "jumper",
+      "x": 6200,
+      "y": 1080,
+      "properties": {}
+    },
+    {
+      "id": "turret_10",
+      "type": "enemy",
+      "enemy_type": "turret",
+      "x": 3300,
+      "y": 850,
+      "properties": {}
+    },
+    {
+      "id": "turret_11",
+      "type": "enemy",
+      "enemy_type": "turret",
+      "x": 5600,
+      "y": 850,
+      "properties": {}
+    },
+    {
+      "id": "turret_12",
+      "type": "enemy",
+      "enemy_type": "turret",
+      "x": 7000,
+      "y": 850,
+      "properties": {}
+    },
+    {
+      "id": "armored_13",
+      "type": "enemy",
+      "enemy_type": "armored",
+      "x": 3500,
+      "y": 1080,
+      "properties": {}
+    },
+    {
+      "id": "armored_14",
+      "type": "enemy",
+      "enemy_type": "armored",
+      "x": 6500,
+      "y": 1080,
+      "properties": {}
+    },
+    {
+      "id": "ember_pulse_1",
+      "type": "powerup",
+      "powerup_type": "ember_pulse",
+      "x": 2900,
+      "y": 1080
+    },
+    {
+      "id": "wind_boots_2",
+      "type": "powerup",
+      "powerup_type": "wind_boots",
+      "x": 4700,
+      "y": 1080
+    },
+    {
+      "id": "aether_wing_3",
+      "type": "powerup",
+      "powerup_type": "aether_wing",
+      "x": 4900,
+      "y": 760
+    },
+    {
+      "id": "stone_guard_4",
+      "type": "powerup",
+      "powerup_type": "stone_guard",
+      "x": 6100,
+      "y": 1080
+    },
+    {
+      "id": "checkpoint_1",
+      "type": "checkpoint",
+      "x": 2100,
+      "y": 1090
+    },
+    {
+      "id": "checkpoint_2",
+      "type": "checkpoint",
+      "x": 4300,
+      "y": 1090
+    },
+    {
+      "id": "checkpoint_3",
+      "type": "checkpoint",
+      "x": 6400,
+      "y": 1090
+    },
+    {
+      "id": "moving_h_1",
+      "type": "moving_platform",
+      "x": 3412.48,
+      "y": 850,
+      "properties": {
+        "movement": "horizontal",
+        "distance": 260,
+        "speed": 90
+      }
+    },
+    {
+      "id": "moving_v_1",
+      "type": "moving_platform",
+      "x": 4364.8,
+      "y": 650,
+      "properties": {
+        "movement": "vertical",
+        "distance": 260,
+        "speed": 80
+      }
+    },
+    {
+      "id": "falling_1",
+      "type": "falling_platform",
+      "x": 5079.04,
+      "y": 820,
+      "properties": {
+        "activation_delay": 0.7,
+        "fall_acceleration": 1450,
+        "reset_delay": 3
+      }
+    },
+    {
+      "id": "fading_1",
+      "type": "disappearing_platform",
+      "x": 5793.28,
+      "y": 760,
+      "properties": {
+        "visible_duration": 2.3,
+        "warning_duration": 0.7,
+        "hidden_duration": 1.5
+      }
+    },
+    {
+      "id": "switch_1",
+      "type": "switch",
+      "x": 6886,
+      "y": 1100,
+      "properties": {
+        "target_id": "door_1"
+      }
+    },
+    {
+      "id": "door_1",
+      "type": "door",
+      "x": 7086,
+      "y": 1024,
+      "properties": {
+        "width": 48,
+        "height": 128,
+        "opening_duration": 0.55
+      }
+    }
+  ]
+}

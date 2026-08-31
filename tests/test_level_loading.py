@@ -13,8 +13,8 @@ from world.tile import TileKind
 from systems.progression import CollectibleType
 
 
-def test_level_01_loads_from_json() -> None:
-    level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
+def test_verdant_01_loads_from_json() -> None:
+    level = Level.load(PROJECT_ROOT / "data" / "levels" / "verdant_01.json")
     assert level.tilemap.width == 108
     assert level.tilemap.pixel_width > 1280
     assert level.tilemap.pixel_height > 720

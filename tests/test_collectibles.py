@@ -12,7 +12,7 @@ from world.level import Level
 
 
 def loaded_level() -> Level:
-    return Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
+    return Level.load(PROJECT_ROOT / "data" / "levels" / "verdant_01.json")
 
 
 def progress_for(level: Level) -> LevelProgress:

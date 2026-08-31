@@ -20,7 +20,7 @@ from world.tilemap import TileMap
 
 
 def level_data() -> dict[str, object]:
-    with open("data/levels/level_01.json", encoding="utf-8") as handle:
+    with open("data/levels/verdant_01.json", encoding="utf-8") as handle:
         return json.load(handle)
 
 

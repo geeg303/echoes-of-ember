@@ -31,7 +31,7 @@ def floor_world() -> tuple[TileMap, CollisionEngine]:
 
 
 def test_level_spawns_all_five_enemy_types() -> None:
-    level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
+    level = Level.load(PROJECT_ROOT / "data" / "levels" / "verdant_01.json")
     assert len(level.enemy_spawns) == 10
     assert {spawn.kind for spawn in level.enemy_spawns} == set(EnemyType)
 
