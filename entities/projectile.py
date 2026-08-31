@@ -41,6 +41,7 @@ class Projectile:
         self.active = True
         self.rect = pygame.Rect(0, 0, *size)
         self.rect.center = (round(self.position.x), round(self.position.y))
+        self.break_positions: list[pygame.Vector2] = []
 
     def update(self, dt: float, tilemap: TileMap) -> None:
         if not self.active:
@@ -54,6 +55,11 @@ class Projectile:
         for _ in range(steps):
             self.position += self.velocity * (dt / steps)
             self.rect.center = (round(self.position.x), round(self.position.y))
+            destroyed = tilemap.destroy_breakables(self.rect) if self.terrain_collision and self.faction is Faction.PLAYER else ()
+            if destroyed:
+                self.break_positions.extend(destroyed)
+                self.active = False
+                break
             if self.terrain_collision and any(
                 self.rect.colliderect(tile.rect)
                 for tile in tilemap.tiles_in_rect(self.rect, BLOCKING_KINDS)

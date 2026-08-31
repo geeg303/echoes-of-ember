@@ -35,6 +35,14 @@ class PowerUpSpawn:
     duration: float | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class WorldObjectSpawn:
+    object_id: str
+    kind: str
+    position: tuple[float, float]
+    properties: dict[str, object]
+
+
 @dataclass(slots=True)
 class Level:
     name: str
@@ -43,6 +51,7 @@ class Level:
     collectible_spawns: tuple[CollectibleSpawn, ...]
     enemy_spawns: tuple[EnemySpawn, ...]
     powerup_spawns: tuple[PowerUpSpawn, ...]
+    world_object_spawns: tuple[WorldObjectSpawn, ...]
     source_path: Path
 
     @classmethod
@@ -56,7 +65,7 @@ class Level:
                 position=(float(entry["x"]), float(entry["y"])),
             )
             for index, entry in enumerate(data.get("objects", []))
-            if entry["type"] not in {"enemy", "powerup"}
+            if entry["type"] not in {"enemy", "powerup", "moving_platform", "falling_platform", "disappearing_platform", "switch", "door", "checkpoint"}
         )
         enemy_spawns = tuple(
             EnemySpawn(
@@ -78,6 +87,17 @@ class Level:
             for entry in data.get("objects", [])
             if entry["type"] == "powerup"
         )
+        world_kinds = {"moving_platform", "falling_platform", "disappearing_platform", "switch", "door", "checkpoint"}
+        world_object_spawns = tuple(
+            WorldObjectSpawn(
+                object_id=str(entry["id"]),
+                kind=str(entry["type"]),
+                position=(float(entry["x"]), float(entry["y"])),
+                properties=_world_properties(entry),
+            )
+            for entry in data.get("objects", [])
+            if entry["type"] in world_kinds
+        )
         return cls(
             name=str(data["name"]),
             player_spawn=(float(spawn[0]), float(spawn[1])),
@@ -85,5 +105,15 @@ class Level:
             collectible_spawns=collectible_spawns,
             enemy_spawns=enemy_spawns,
             powerup_spawns=powerup_spawns,
+            world_object_spawns=world_object_spawns,
             source_path=path,
         )
+
+
+def _world_properties(entry: dict[str, object]) -> dict[str, object]:
+    properties = dict(entry.get("properties", {}))
+    if entry["type"] == "switch":
+        target = properties.pop("target_id", None)
+        if target is not None:
+            properties["target_ids"] = [target]
+    return properties

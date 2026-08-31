@@ -85,3 +85,11 @@ class TileMap:
         view = viewport or pygame.Rect(0, 0, surface.get_width(), surface.get_height())
         for tile in self.tiles_in_rect(view):
             draw_tile(surface, tile.definition, tile.rect.move(offset), self.tile_size)
+
+    def destroy_breakables(self, rect: pygame.Rect) -> tuple[pygame.Vector2, ...]:
+        destroyed: list[pygame.Vector2] = []
+        for tile in tuple(self.tiles_in_rect(rect, {TileKind.BREAKABLE})):
+            if rect.colliderect(tile.rect):
+                self.grid[tile.grid_y][tile.grid_x] = 0
+                destroyed.append(pygame.Vector2(tile.rect.center))
+        return tuple(destroyed)

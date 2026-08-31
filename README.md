@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 8 is playable. Four data-driven power-ups now use a reusable single-slot lifecycle while preserving the existing platforming, enemies, damage, and faction-aware combat systems.
+Phase 9 is playable. Four data-driven power-ups now combine with moving, falling, and disappearing platforms, breakable shortcuts, linked switches and doors, and persistent level-run checkpoints.
 
 ## Requirements
 
@@ -44,6 +44,7 @@ python main.py
 - Move: `A`/`D` or left/right arrows
 - Jump: `Space`, `Z`, or up arrow (release early for a shorter jump)
 - Ember Pulse: `F` while the Ember Pulse power-up is active
+- Interact with switches: `E`
 - Toggle fullscreen: `F11`
 - Quit: `Esc`
 - Debug attack animation: `F5` when `DEBUG_MODE` is enabled
@@ -74,6 +75,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `systems/enemy_system.py`: activation, stomps, damage, scoring, and cleanup
 - `systems/player_combat.py`: Ember Pulse ownership, cooldown, and projectile spawning
 - `systems/projectile_system.py`: shared projectile lifetime, terrain collision, and culling
+- `systems/powerup_system.py`: active slot, timed modifiers, shield interception, and world pickups
+- `systems/world_object_system.py`: platform riding, dynamic collision, triggers, and checkpoint state
 - `ui/debug_overlay.py`: animation and movement diagnostics in debug builds
 - `ui/hud.py`: fixed-screen health, lives, shard, score, level, and power-up display
 - `data/levels/`: external JSON level content
@@ -198,4 +201,39 @@ The optional `duration` override must be finite and positive. Supported types ar
 - Audio assets are absent; combat and pickup hooks safely fall back to silence.
 - Collection and enemy state are held in memory only.
 - Lives stop at zero without a Game Over transition; the existing death/respawn loop remains safe.
-- Breakable tiles, level goals, and permanent progression belong to later phases.
+- Level goals and permanent progression belong to later phases.
+
+## Interactive world objects
+
+All interactive mechanics are authored in the shared level `objects` array, use world coordinates, and render with camera offsets only. Their IDs share the same uniqueness namespace as enemies, collectibles, and power-ups.
+
+Horizontal and vertical moving platforms travel smoothly between an origin and configured endpoint. Nova inherits the platform's per-frame displacement while riding, detaches naturally when jumping, and is left safely behind instead of being pushed through static terrain. Falling platforms warn for 0.65 seconds, accelerate at 1,500 px/s², and reset after 3 seconds. Disappearing platforms cycle through 2.2 seconds solid, 0.65 seconds flashing, and 1.6 seconds hidden/non-solid.
+
+```json
+{
+  "id": "platform_horizontal_01",
+  "type": "moving_platform",
+  "x": 3480,
+  "y": 820,
+  "properties": {
+    "movement": "horizontal",
+    "distance": 260,
+    "speed": 95,
+    "width": 128,
+    "height": 22
+  }
+}
+```
+
+Ember Pulse destroys cracked breakable tiles; hostile projectiles and ordinary collisions do not. Destroyed blocks remain absent through ordinary damage and life respawns, while `F7` reloads them from JSON.
+
+Switches are activated with `E` and may reference one or several compatible door IDs. Closed and opening doors are solid; fully open doors are non-solid. Validation rejects missing or incompatible references.
+
+```json
+{"id": "switch_01", "type": "switch", "x": 4210, "y": 966,
+ "properties": {"target_id": "door_01"}}
+{"id": "door_01", "type": "door", "x": 4380, "y": 896,
+ "properties": {"width": 48, "height": 128, "opening_duration": 0.55}}
+```
+
+Checkpoints activate on contact and replace the current respawn position. Nonfatal hazards and life loss return Nova to the latest checkpoint while preserving collectibles, score, defeated enemies, broken blocks, switches, and doors. `F7` restores the initial spawn and all authored state.

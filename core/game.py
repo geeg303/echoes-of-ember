@@ -14,6 +14,7 @@ from systems.enemy_system import EnemyManager
 from systems.player_combat import PlayerCombatController
 from systems.projectile_system import ProjectileManager
 from systems.powerup_system import PowerUpManager, PowerUpSystem, PowerUpType
+from systems.world_object_system import WorldObjectManager
 from systems.progression import LevelProgress
 from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PROJECT_ROOT, SHOW_FPS
 from ui.debug_overlay import DebugOverlay
@@ -75,6 +76,8 @@ class Game:
         self.player_combat = PlayerCombatController()
         self.powerups = PowerUpSystem(self.player)
         self.powerup_pickups = PowerUpManager(self.level.powerup_spawns)
+        self.world_objects = WorldObjectManager(self.level.world_object_spawns, self.level.player_spawn)
+        self._interact_pressed = False
 
     def _create_display(self) -> pygame.Surface:
         if self.fullscreen:
@@ -111,6 +114,8 @@ class Game:
                     self.reset_level()
                 elif event.key == pygame.K_f:
                     self._attack_pressed = True
+                elif event.key == pygame.K_e:
+                    self._interact_pressed = True
                 elif event.key in (pygame.K_SPACE, pygame.K_z, pygame.K_UP):
                     self._jump_pressed = True
             elif event.type == pygame.KEYUP and event.key in (
@@ -137,7 +142,10 @@ class Game:
             jump_released=self._jump_released,
         )
         self.powerups.update(dt)
+        self.world_objects.update_before_player(dt, self.player, self.level.tilemap)
         self.player.update(dt, controls, self.collision, self.powerups.movement_modifiers)
+        if self.world_objects.resolve_after_player(self.player, self._interact_pressed, self.level.tilemap):
+            self.assets.sound("sounds/world_object_activate.wav").play()
         self.player_combat.ember_pulse_enabled = self.powerups.grants_ranged_attack
         self.player_combat.update(dt)
         if self._attack_pressed and self.player_combat.try_attack(self.player, self.projectiles):
@@ -148,12 +156,12 @@ class Game:
                 self.hud.notify_health_changed()
                 self.camera.shake(8.0, 0.18)
             if damage.applied and not damage.died:
-                self.player.reposition(self.level.player_spawn)
+                self.player.reposition(self.world_objects.respawn_position)
                 self.camera.snap_to(self.player.rect)
         if self.player.death_animation_finished:
             self.player.lose_life_and_restore()
             self.powerups.clear("life_lost")
-            self.player.respawn(self.level.player_spawn)
+            self.player.respawn(self.world_objects.respawn_position)
             self.camera.snap_to(self.player.rect)
         self.camera.update(self.player.rect, self.player.velocity, dt)
         enemy_result = self.enemies.update(
@@ -189,6 +197,7 @@ class Game:
         self._jump_pressed = False
         self._jump_released = False
         self._attack_pressed = False
+        self._interact_pressed = False
 
     def draw(self) -> None:
         self.background.draw(self.canvas, self.camera.position)
@@ -198,6 +207,7 @@ class Game:
         )
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
+        self.world_objects.draw(self.canvas, self.camera.view_rect, offset)
         self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
         self.powerup_pickups.draw(self.canvas, self.camera.view_rect, offset)
         self.enemies.draw(self.canvas, self.camera.view_rect, offset)
@@ -231,6 +241,7 @@ class Game:
         self._jump_pressed = False
         self._jump_released = False
         self._attack_pressed = False
+        self._interact_pressed = False
         self.hud.reset_feedback()
         LOGGER.info("Restarted level: %s", self.level.name)
 
