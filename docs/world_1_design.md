@@ -21,3 +21,15 @@ Registry order is Verdant Beginning → Whispering Canopy → Emberfall Ravine �
 - Featured power-ups receive a safe demonstration before combination.
 
 Checkpoints follow meaningful milestones. Optional upper, breakable, and power-assisted routes reconnect to the mandatory path. Timed effects improve safety, speed, combat, or collection but never become permanent progression gates.
+
+
+## Exploration pass
+
+| Level | Secrets | Categories | Clue language | Secret Token concept |
+|---|---:|---|---|---|
+| Verdant Beginning | 2 | Breakable cache, high alternate route | Cracked stone and rising shards | Visible on the optional high path |
+| Whispering Canopy | 3 | Upper cache, Wing reach challenge, hollow-tree room | Crystal glow, wing-shaped trail, glowing vines | High-canopy challenge reward |
+| Emberfall Ravine | 3 | Mine room, lower alternate route, defeat-all chamber | Cracked brace, recoverable lower trail, ruin sigil | Suspicious falling-platform route |
+| Ruins of the First Flame | 4 | Ancient cache, side room, ascent challenge, secret exit | Warm cracks, ruin symbol, ascending shards, violet arch | Ancient ascent reward |
+
+The Emberfall chamber tracks only its authored Jumper and Turret. The single World 1 secret exit sits on an upper ruin branch in 1-4; it advances through existing campaign order until the future world map gives alternate exits a destination.

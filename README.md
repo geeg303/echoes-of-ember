@@ -278,3 +278,8 @@ python -m tools.validation --all-levels
 ```
 
 Unknown level IDs fail cleanly. See `docs/world_1_design.md` for themes, pacing, encounter patterns, checkpoint philosophy, and mechanic progression.
+
+
+## Secrets and exploration
+
+World 1 contains twelve optional, data-driven discoveries: caches, rooms, challenge rooms, alternate routes, and one secret exit in Ruins of the First Flame. Discoveries award score once, produce queued screen-space notifications, and appear in frozen level/world results. The secret exit records alternate completion while preserving normal campaign order. See `docs/SECRETS_AND_EXPLORATION.md` for schemas, triggers, reset rules, and clue conventions.
