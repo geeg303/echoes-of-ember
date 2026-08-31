@@ -101,3 +101,7 @@ Validation covers root structure, schema and slot IDs, UTC-compatible timestamps
 Schema 2 adds the monotonic `defeated_bosses` list and makes authored boss defeat the source of truth for world completion. The real v1→v2 migration preserves timestamps, play time, map node, level results, completed levels, secret exits, revealed nodes, tokens, and Ember Veil. It initializes `defeated_bosses` to empty.
 
 Phase 13 considered Verdant Reaches complete after all four platforming levels, before a boss existed. Migration deliberately clears that legacy `completed_worlds_once` flag rather than falsely claiming the Ashen Warden was defeated. Ruins remains completed, so First Flame Sanctum is available immediately; the player must defeat the boss once to establish true World 1 completion. The next successful save writes the migrated snapshot atomically as schema 2.
+
+## Phase 17 front-end integration
+
+Normal startup inspects three slots through summaries. Continue chooses the newest valid or recovered slot; corrupt slots can be explicitly reset/deleted and unsupported versions are protected. Pause/Game Over exits never serialize unfinished runtime state or create a failed result. Application preferences live in separate schema-1 `settings.json`; campaign schema remains 2.

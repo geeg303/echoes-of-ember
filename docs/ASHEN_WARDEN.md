@@ -60,3 +60,7 @@ Automation verifies state safety, not fun. Physical playtesting should review to
 ## Audio presentation
 
 Original placeholder cues cover awakening, ground slam, bolts, Ember Rain, leap, charge, core burst, phase transitions, hurt, and defeat. The dedicated boss loop begins during awakening and is independent of phase/state timing. A muted or unavailable mixer leaves every telegraph and encounter rule unchanged.
+
+## Pause and Game Over
+
+Pause freezes every Warden state, timer, projectile, arena hazard, and effect update while audio context may continue. A final-life loss never counts as a Warden defeat. Game Over releases the arena and Retry recreates the Ashen Warden at 18 health, Phase 1, with no stale projectiles or vulnerability state.

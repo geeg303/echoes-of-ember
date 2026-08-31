@@ -10,6 +10,7 @@ class FrontendScreen(str,Enum):MAIN="main";SLOTS="slots";SLOT_ACTION="slot_actio
 class FrontendHost(Protocol):
     running:bool
     def start_campaign(self,slot_id:int,new_game:bool=False)->None:...
+    def open_settings(self,parent:str)->None:...
 class FrontendController:
     def __init__(self,host:FrontendHost,manager:SaveManager,title:pygame.font.Font,font:pygame.font.Font,small:pygame.font.Font,audio)->None:
         self.host=host;self.manager=manager;self.title_font=title;self.font=font;self.small=small;self.audio=audio;self.screen=FrontendScreen.MAIN;self.menu=Menu();self.dialog:ConfirmationDialog|None=None;self.slot_mode="load";self.selected_slot=1;self.age=0.;self.summaries:tuple[SlotSummary,...]=();self.refresh_slots();self._main()
@@ -50,7 +51,7 @@ class FrontendController:
             if item_id=="continue":self.host.start_campaign(self.continue_slot or 1)
             elif item_id=="new":self.open_slots("new")
             elif item_id=="load":self.open_slots("load")
-            elif item_id=="settings":self.screen=FrontendScreen.SETTINGS;self.menu.set_items([MenuItem("SETTINGS READY — PHASE 17B","label",False),MenuItem("BACK","back")])
+            elif item_id=="settings":self.host.open_settings("frontend")
             elif item_id=="credits":self.screen=FrontendScreen.CREDITS;self.menu.set_items([MenuItem("BACK","back")])
             elif item_id=="quit":self.host.running=False
         elif self.screen is FrontendScreen.SLOTS:

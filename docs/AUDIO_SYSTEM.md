@@ -59,3 +59,7 @@ With `DEBUG_MODE`, F8 toggles master mute while preserving context. Clean volume
 The suite covers mixer success/failure, disabled mode, catalogs, unknown and missing assets, bus validation, volume clamp, mute, cooldowns, instance limits, priority metadata, positional playback, music transitions, ambience ownership, reset, player/world/map/boss event requests, no-audio gameplay, and save isolation.
 
 600-frame audio-only results: normal 0.0098 ms mean, rapid shards 0.0296 ms, combat 0.0183 ms, and boss Phase 3 requests 0.0192 ms. Integrated boss gameplay measured 9.896 ms mean, 11.320 ms p95, 31.337 ms max, and three peak channels. The Phase 15 mean was 9.018 ms; audio added about 0.878 ms while p95 remained below the 16.67 ms frame budget.
+
+## Phase 17 menu and settings integration
+
+Front-end, slot, settings, Pause, and Game Over controls request stable UI cues. Master/Music/SFX/Ambience/UI sliders and mute apply immediately through `AudioManager` and persist in application settings, not campaign saves. Menus and all transitions remain functional with no audio device or with mute enabled.

@@ -24,7 +24,8 @@ def test_startup_frontend_continue_disabled_and_routes(tmp_path):
  try:
   assert game.app_mode=="frontend" and game.frontend.screen is FrontendScreen.MAIN
   assert not next(x for x in game.frontend.menu.items if x.item_id=="continue").enabled
-  choose(game.frontend,"settings");assert game.frontend.screen is FrontendScreen.SETTINGS;game.frontend.handle(MenuAction.BACK)
+  choose(game.frontend,"settings");assert game.app_mode=="settings" and game.settings_parent=="frontend"
+  game.settings_controller.handle(MenuAction.BACK);assert game.app_mode=="frontend"
   choose(game.frontend,"credits");assert game.frontend.screen is FrontendScreen.CREDITS
  finally:game.shutdown()
 

@@ -69,3 +69,7 @@ The map graph remains authored data. Phase 13 saves only the latest results, mon
 ## Map audio
 
 The map owns one music context and one Verdant ambience owner. Navigation, confirm, locked paths, route unlock, Ember Veil reveal, Sanctum access, and world completion use reusable UI IDs. Map/level transitions replace rather than layer ambience and never serialize playback state.
+
+## Phase 17 front-end and failed-run flow
+
+A chosen slot enters this map; Continue chooses the newest usable slot. Pause or Game Over may return here without recording an unfinished level. Previously committed results and monotonic unlocks remain intact, while Retry starts a fresh authored level runtime.

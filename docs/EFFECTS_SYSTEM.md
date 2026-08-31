@@ -68,3 +68,7 @@ Effects remain procedural placeholders and sound assets remain absent. Quality s
 ## Audio coordination
 
 Effects and audio independently observe the same authoritative gameplay outcomes. Particle creation never triggers sound, sound completion never triggers effects, and either presentation layer may be disabled without changing the other or gameplay.
+
+## Phase 17 quality and menu integration
+
+Settings exposes Full, Reduced, and Off through the authoritative `EffectsSystem`. The bounded title emitter is cleared on gameplay/map transitions, and gameplay effects are cleared on return to the front-end. Pause freezes particle simulation. Menu readability and critical boss telegraphs do not depend on optional particles.

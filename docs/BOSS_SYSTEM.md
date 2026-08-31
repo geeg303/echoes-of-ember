@@ -57,3 +57,7 @@ Optional sound hooks currently resolve through silent asset fallbacks: awaken, s
 ## Audio integration
 
 Boss systems emit attack/state event names; `Game` translates them to catalog IDs and `AudioManager` plays them. Boss AI never reads playback state. The dedicated track starts once at encounter activation, phase changes use stingers without restarting music, life/reset cleanup prevents duplicate loops, and defeat fades music while visuals remain authoritative when muted.
+
+## Game Over contract
+
+Final-life death waits for Nova's death animation, then clears boss projectiles, vulnerability emitters, arena camera bounds, transient effects, and encounter audio without awarding defeat. Retry reconstructs the encounter at full health in Phase 1; World Map/Main Menu preserve only progress committed before the failed attempt.

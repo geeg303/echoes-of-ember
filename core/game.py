@@ -9,6 +9,7 @@ import pygame
 from core.asset_manager import AssetManager
 from core.audio_manager import AudioManager
 from core.save_manager import SaveManager, SlotState
+from core.settings_manager import SettingsManager
 from systems.save_data import SaveSession
 from systems.boss_system import BossSystem
 from entities.level_goal import EmberGate
@@ -32,6 +33,8 @@ from systems.secret_system import SecretSystem
 from settings import DEBUG_MODE, DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
 from states.frontend import FrontendController
+from states.settings_menu import SettingsController
+from states.pause_menu import GameOverController, PauseController
 from ui.menu import action_for_key
 from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
@@ -52,15 +55,17 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None) -> None:
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
-        self.fullscreen = DISPLAY.fullscreen
+        self.settings_manager = settings_manager or SettingsManager()
+        self.app_settings = self.settings_manager.load()
+        self.fullscreen = self.app_settings.fullscreen
         self.screen = self._create_display()
         self.canvas = pygame.Surface(DISPLAY.internal_size).convert()
         self.clock = pygame.time.Clock()
         self.assets = AssetManager()
-        self.audio = audio_manager or AudioManager()
+        self.audio = audio_manager or AudioManager(settings=self.app_settings.audio)
         self.running = True
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
@@ -75,7 +80,7 @@ class Game:
             self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
         )
         self.notifications = NotificationQueue(self.assets.font(None, 30))
-        self.effects = EffectsSystem(capacity=EFFECT_PARTICLE_CAP)
+        self.effects = EffectsSystem(capacity=EFFECT_PARTICLE_CAP, quality=EffectQuality(self.app_settings.effects_quality))
         self._effect_trail_timer = 0.0
         self.world_complete_screen = WorldCompleteScreen(self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22))
         self.registry = registry or WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
@@ -113,6 +118,10 @@ class Game:
             self.world_map_screen.notify(self.save_warning)
         self.show_world_summary = False
         self.frontend = FrontendController(self, self.save_manager or SaveManager(self.registry), self.assets.font(None, 48), self.assets.font(None, 29), self.assets.font(None, 20), self.audio)
+        self.settings_parent = "frontend"
+        self.settings_controller = SettingsController(self, self.settings_manager, self.app_settings, self.audio, self.effects, self.assets.font(None,44), self.assets.font(None,27), self.assets.font(None,19))
+        self.pause_controller = PauseController(self,self.assets.font(None,46),self.assets.font(None,29),self.assets.font(None,20),self.audio)
+        self.game_over_controller = GameOverController(self,self.assets.font(None,48),self.assets.font(None,29),self.assets.font(None,20),self.audio)
         self.app_mode = "frontend" if start_frontend else "map" if start_on_map else "gameplay"
         self.level_path = self.registry.level_paths[level_id]
         if start_frontend:
@@ -187,6 +196,18 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
+                if self.app_mode == "pause":
+                    action=action_for_key(event.key)
+                    if action is not None:self.pause_controller.handle(action)
+                    continue
+                if self.app_mode == "game_over":
+                    action=action_for_key(event.key)
+                    if action is not None:self.game_over_controller.handle(action)
+                    continue
+                if self.app_mode == "settings":
+                    action = action_for_key(event.key)
+                    if action is not None: self.settings_controller.handle(action)
+                    continue
                 if self.app_mode == "frontend":
                     action = action_for_key(event.key)
                     if action is not None: self.frontend.handle(action)
@@ -195,7 +216,7 @@ class Game:
                     self._handle_map_key(event.key)
                     continue
                 if event.key == pygame.K_ESCAPE:
-                    self.running = False
+                    self.open_pause()
                 elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key == pygame.K_r:
                     self.reset_level()
                 elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_m):
@@ -259,16 +280,24 @@ class Game:
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
         self.screen = self._create_display()
+        self.app_settings.fullscreen = self.fullscreen
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
-        if self.save_session is not None:
-            self.save_session.play_time_seconds += dt
+        if self.app_mode in {"pause", "game_over"}:
+            self.audio.update(dt)
+            self._clear_frame_inputs()
+            return
+        if self.app_mode == "settings":
+            self.audio.update(dt)
+            return
         if self.app_mode == "frontend":
             self.frontend.update(dt)
             self.effects.update(dt)
             self.audio.update(dt)
             return
+        if self.save_session is not None:
+            self.save_session.play_time_seconds += dt
         if self.app_mode == "map":
             previous_node = self.world_map_runtime.current_node_id
             self.world_map_screen.update(dt)
@@ -364,6 +393,15 @@ class Game:
             self.deaths += 1
             self.player.lose_life_and_restore()
             self.powerups.clear("life_lost")
+            if self.player.lives <= 0:
+                self.projectiles.clear()
+                if self.boss_system is not None:
+                    self.boss_system.reset_encounter(self.powerups)
+                    self.camera.set_bounds(None)
+                self.effects.clear(); self.audio.reset_context(); self.audio.stop_music(.5)
+                self.app_mode = "game_over"
+                self._clear_frame_inputs()
+                return
             if self.boss_system is not None:
                 self.boss_system.reset_encounter(self.powerups)
                 self.camera.set_bounds(None)
@@ -514,6 +552,9 @@ class Game:
         )
 
     def draw(self) -> None:
+        if self.app_mode == "settings":
+            self.settings_controller.draw(self.canvas)
+            scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
         if self.app_mode == "frontend":
             self.frontend.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
@@ -576,6 +617,8 @@ class Game:
             self.canvas.blit(fade, (0, 0))
         elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
             self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result)
+        if self.app_mode == "pause": self.pause_controller.draw(self.canvas)
+        elif self.app_mode == "game_over": self.game_over_controller.draw(self.canvas)
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
@@ -661,6 +704,36 @@ class Game:
         self.effects.update(dt, self.camera.view_rect)
         self.effects.apply_shake(self.camera)
         self.audio.update(dt)
+
+    def open_pause(self) -> None:
+        if self.app_mode == "gameplay":
+            self.app_mode = "pause"
+            self.pause_controller.dialog = None
+
+    def resume_game(self) -> None:
+        if self.app_mode in {"pause", "settings"}: self.app_mode = "gameplay"
+
+    def restart_from_menu(self) -> None:
+        self.reset_level(); self.app_mode = "gameplay"
+
+    def retry_after_game_over(self) -> None:
+        self.reset_level(); self.app_mode = "gameplay"
+
+    def abandon_to_map(self) -> None:
+        self.level_result = None
+        self.return_to_world_map()
+
+    def open_settings(self, parent: str) -> None:
+        self.settings_parent = parent
+        self.app_mode = "settings"
+        self.settings_controller._rebuild()
+
+    def close_settings(self) -> None:
+        self.app_mode = self.settings_parent
+
+    def set_fullscreen(self, enabled: bool) -> None:
+        if self.fullscreen != bool(enabled): self.toggle_fullscreen()
+        self.app_settings.fullscreen = self.fullscreen
 
     def start_campaign(self, slot_id: int, new_game: bool = False) -> None:
         if self.save_manager is None: self.save_manager = SaveManager(self.registry)
@@ -749,6 +822,7 @@ class Game:
         if self.persistence_enabled and self.save_session is not None:
             self.save_session.dirty = True
             self._autosave(force=True)
+        self.settings_manager.save(self.app_settings)
         self.running = False
         self.audio.shutdown()
         pygame.quit()
