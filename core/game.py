@@ -15,6 +15,7 @@ from entities.player import Player, PlayerControls
 from systems.combat import DamageSource
 from systems.collectible_system import CollectibleManager
 from systems.enemy_system import EnemyManager
+from systems.effects_system import EffectQuality, EffectsSystem
 from systems.player_combat import PlayerCombatController
 from systems.projectile_system import ProjectileManager
 from systems.powerup_system import PowerUpManager, PowerUpSystem, PowerUpType
@@ -27,7 +28,7 @@ from systems.level_completion import (
 )
 from systems.progression import LevelProgress
 from systems.secret_system import SecretSystem
-from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
+from settings import DEBUG_MODE, DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
 from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
@@ -75,6 +76,8 @@ class Game:
             self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
         )
         self.notifications = NotificationQueue(self.assets.font(None, 30))
+        self.effects = EffectsSystem(capacity=EFFECT_PARTICLE_CAP)
+        self._effect_trail_timer = 0.0
         self.world_complete_screen = WorldCompleteScreen(self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22))
         self.registry = registry or WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
         if level_id not in self.registry.level_paths:
@@ -114,12 +117,15 @@ class Game:
         self.level_path = self.registry.level_paths[level_id]
         if not start_on_map:
             self._load_level_runtime()
+        else:
+            self._configure_map_effects()
         self._jump_pressed = False
         self._jump_released = False
         self._attack_pressed = False
         LOGGER.info("Initialized %s at %sx%s", GAME_TITLE, *DISPLAY.internal_size)
 
     def _load_level_runtime(self) -> None:
+        self.effects.clear()
         self.level = Level.load(self.level_path)
         self.collision = CollisionEngine(self.level.tilemap)
         self.player = Player(self.level.player_spawn)
@@ -150,6 +156,7 @@ class Game:
         self.level_result: LevelResult | None = None
         self.level_complete_screen.reset()
         self._interact_pressed = False
+        self._configure_level_effects()
 
     def _create_display(self) -> pygame.Surface:
         if self.fullscreen:
@@ -190,7 +197,8 @@ class Game:
                 elif DEBUG_MODE and event.key == pygame.K_F5:
                     self.player.trigger_attack()
                 elif DEBUG_MODE and event.key == pygame.K_F6:
-                    self.player.trigger_hurt()
+                    quality = self.effects.toggle_optional()
+                    self.notifications.push(f"OPTIONAL EFFECTS: {quality.value.upper()}")
                 elif DEBUG_MODE and event.key == pygame.K_F7:
                     self.reset_level()
                 elif event.key == pygame.K_f:
@@ -243,7 +251,9 @@ class Game:
         if self.app_mode == "map":
             previous_node = self.world_map_runtime.current_node_id
             self.world_map_screen.update(dt)
+            self.effects.update(dt)
             if self.world_map_runtime.current_node_id != previous_node:
+                self.effects.spawn("route_unlocked", self.world_map_runtime.avatar_position)
                 self._mark_save_dirty()
                 self._autosave()
             return
@@ -255,6 +265,8 @@ class Game:
             self.goal.update(dt, self.player.rect)
             self.camera.update(self.player.rect, pygame.Vector2(), dt)
             self.hud.update(dt)
+            self.effects.update(dt, self.camera.view_rect)
+            self.effects.apply_shake(self.camera)
             if self.completion_timer <= 0.0:
                 self.gameplay_phase = GameplayPhase.LEVEL_COMPLETE
             self._clear_frame_inputs()
@@ -270,20 +282,44 @@ class Game:
             jump_held=bool(keys[pygame.K_SPACE] or keys[pygame.K_z] or keys[pygame.K_UP]),
             jump_released=self._jump_released,
         )
+        previous_grounded = self.player.grounded
+        previous_double_jump_fx = self.player.double_jump_effect_timer
+        previous_health = self.player.health
+        previous_checkpoints = set(self.world_objects.activated_checkpoint_ids)
+        previous_switches = {item.object_id for item in self.world_objects.switches if item.active}
         self.powerups.update(dt)
         self.world_objects.update_before_player(dt, self.player, self.level.tilemap)
         self.player.update(dt, controls, self.collision, self.powerups.movement_modifiers)
+        if previous_grounded and not self.player.grounded and self.player.velocity.y < 0:
+            self.effects.spawn("player_jump_dust", self.player.rect.midbottom)
+        if not previous_grounded and self.player.grounded:
+            self.effects.spawn("player_land_dust", self.player.rect.midbottom)
+        if self.player.double_jump_effect_timer > previous_double_jump_fx:
+            self.effects.spawn("aether_double_jump", self.player.rect.center)
         if self.world_objects.resolve_after_player(self.player, self._interact_pressed, self.level.tilemap):
             self.assets.sound("sounds/world_object_activate.wav").play()
+            new_checkpoints = self.world_objects.activated_checkpoint_ids - previous_checkpoints
+            for item in self.world_objects.checkpoints:
+                if item.object_id in new_checkpoints:
+                    self.effects.spawn("checkpoint_activate", item.rect.center)
+                    self.effects.start_emitter(f"checkpoint:{item.object_id}", "checkpoint_idle", item.rect.center)
+            new_switches = {item.object_id for item in self.world_objects.switches if item.active} - previous_switches
+            for item in self.world_objects.switches:
+                if item.object_id in new_switches: self.effects.spawn("switch_activate", item.rect.center)
+            for door in self.world_objects.doors:
+                if any(door.object_id in switch.target_ids for switch in self.world_objects.switches if switch.object_id in new_switches): self.effects.spawn("door_open", door.rect.center)
         self.player_combat.ember_pulse_enabled = self.powerups.grants_ranged_attack
         self.player_combat.update(dt)
         if self._attack_pressed and self.player_combat.try_attack(self.player, self.projectiles):
             self.assets.sound("sounds/ember_pulse.wav").play()
+            self.effects.spawn("ember_pulse_launch", self.player.rect.center)
         if self.player.hit_hazard and not self.player.is_dead:
             damage = self.player.apply_damage(1, DamageSource.HAZARD)
             if damage.applied:
                 self.hud.notify_health_changed()
-                self.camera.shake(8.0, 0.18)
+                self.effects.request_shake(8.0, 0.18)
+                self.effects.spawn("player_death" if damage.died else "player_damage", self.player.rect.center)
+                self.effects.request_flash((142, 42, 37), 68, 0.16)
             if damage.applied and not damage.died:
                 self.player.reposition(self.world_objects.respawn_position)
                 self.camera.snap_to(self.player.rect)
@@ -296,6 +332,7 @@ class Game:
                 self.camera.set_bounds(None)
             self.player.respawn(self.world_objects.respawn_position)
             self.camera.snap_to(self.player.rect)
+            self._reset_transient_effects()
         self.camera.update(self.player.rect, self.player.velocity, dt)
         enemy_result = self.enemies.update(
             dt,
@@ -307,10 +344,13 @@ class Game:
         )
         if enemy_result.player_damaged:
             self.hud.notify_health_changed()
+            self.effects.spawn("player_death" if enemy_result.player_died else "player_damage", self.player.rect.center)
+            self.effects.request_flash((142, 42, 37), 62, 0.14)
         if enemy_result.score_awarded:
             self.hud.notify_score_changed()
         if enemy_result.shake:
-            self.camera.shake(enemy_result.shake, 0.12)
+            self.effects.request_shake(enemy_result.shake, 0.12)
+        self._drain_combat_effects(self.enemies.effects)
         if self.boss_system is not None:
             boss_result = self.boss_system.update(dt, self.player, self.powerups, self.progress)
             self.camera.set_bounds(self.boss_system.arena.camera_bounds)
@@ -325,7 +365,9 @@ class Game:
             if boss_result.score_awarded:
                 self.hud.notify_score_changed()
             if boss_result.shake:
-                self.camera.shake(boss_result.shake, 0.25)
+                self.effects.request_shake(boss_result.shake, 0.25)
+            self._emit_boss_effects(boss_result)
+            self._drain_combat_effects(self.boss_system.effects, boss=True)
             for hook in boss_result.audio_events:
                 self.assets.sound(f"sounds/boss_{hook}.wav").play()
             if boss_result.defeat_sequence_complete:
@@ -340,17 +382,25 @@ class Game:
             ):
                 self.assets.sound(result.sound_path).play()
                 self.hud.notify_pickup(result)
+                pickup_fx = {"ember_shard":"ember_shard_pickup", "rare_crystal":"rare_crystal_pickup", "secret_token":"secret_token_pickup"}.get(result.kind.value)
+                if pickup_fx: self.effects.spawn(pickup_fx, result.position)
             for kind in self.powerup_pickups.collect_overlaps(self.player.rect, self.powerups):
                 self.assets.sound(f"sounds/{kind.value}_pickup.wav").play()
+                pickup_fx = {PowerUpType.EMBER_PULSE:"ember_pulse_pickup", PowerUpType.WIND_BOOTS:"wind_boots_trail", PowerUpType.AETHER_WING:"aether_double_jump", PowerUpType.STONE_GUARD:"stone_guard_activate"}[kind]
+                self.effects.spawn(pickup_fx, self.player.rect.center)
         power_event = self.powerups.consume_event()
         if power_event in {"expired", "absorbed"}:
             self.assets.sound(f"sounds/powerup_{power_event}.wav").play()
+            if power_event == "absorbed":
+                self.effects.spawn("stone_guard_break", self.player.rect.center)
+                self.effects.request_flash((170, 196, 218), 58, 0.14)
         secret_update = self.secrets.update(self.player.rect, self._interact_pressed, self.enemies.defeated_ids)
         if secret_update.score_awarded:
             self.progress.award_score(secret_update.score_awarded)
             self.hud.notify_score_changed()
         for message in secret_update.messages:
             self.notifications.push(message)
+            self.effects.spawn("challenge_complete" if "CHALLENGE" in message else "secret_discovered", self.player.rect.center)
         if secret_update.secret_exit_id:
             self._begin_completion(secret_update.secret_exit_id, ExitType.SECRET)
         self.notifications.update(dt)
@@ -359,6 +409,7 @@ class Game:
             if self.level.metadata.requirements.evaluate(True, self.progress):
                 self._begin_completion("ember_gate", ExitType.NORMAL)
         self.hud.update(dt)
+        self._update_effects(dt)
         self._clear_frame_inputs()
 
     def _clear_frame_inputs(self) -> None:
@@ -383,7 +434,8 @@ class Game:
         self.projectiles.clear()
         self.player.velocity.update()
         self.assets.sound("sounds/level_complete.wav").play()
-        self.camera.shake(4.0, 0.2)
+        self.effects.request_shake(4.0, 0.2)
+        self.effects.spawn("world_complete" if exit_id == "ashen_warden" else "route_unlocked", (self.canvas.get_width()/2, self.canvas.get_height()/2))
 
     def _build_level_result(self, exit_id: str = "ember_gate", exit_type: ExitType = ExitType.NORMAL) -> LevelResult:
         from systems.progression import CollectibleType
@@ -415,6 +467,7 @@ class Game:
     def draw(self) -> None:
         if self.app_mode == "map":
             self.world_map_screen.draw(self.canvas)
+            self.effects.draw_screen(self.canvas)
             if self.show_world_summary:
                 self.world_complete_screen.draw(self.canvas, self.world_progress)
             scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
@@ -440,6 +493,7 @@ class Game:
         if self.powerups.has(PowerUpType.STONE_GUARD):
             pygame.draw.circle(self.canvas, (185, 213, 235), self.player.rect.move(offset).center, 42, 3)
         self.player.draw(self.canvas, offset)
+        self.effects.draw_world(self.canvas, offset, self.camera.view_rect)
         self.hud.draw(
             self.canvas,
             self.player.health,
@@ -453,10 +507,11 @@ class Game:
             self.elapsed_time,
         )
         self.notifications.draw(self.canvas)
+        self.effects.draw_screen(self.canvas)
         if self.boss_system is not None:
             self.boss_hud.draw(self.canvas, self.boss_system.hud_state)
         if DEBUG_MODE:
-            self.debug_overlay.draw(self.canvas, self.player)
+            self.debug_overlay.draw(self.canvas, self.player, self.effects)
         if SHOW_FPS:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
             position = (self.canvas.get_width() - 16, self.canvas.get_height() - 12)
@@ -470,6 +525,60 @@ class Game:
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
+
+    def _configure_level_effects(self) -> None:
+        theme = self.level.metadata.theme.lower()
+        effect_id = "sanctum_motes" if self.level.boss_encounter else ("ravine_embers" if "ravine" in theme or "lava" in theme else "ruins_dust" if "ruin" in theme else "drifting_leaves")
+        bounds = pygame.Rect(0, 0, self.level.tilemap.pixel_width, self.level.tilemap.pixel_height)
+        self.effects.start_emitter(f"ambient:{self.level.metadata.level_id}", effect_id, (0, 0), region=bounds)
+        if effect_id == "drifting_leaves": self.effects.start_emitter(f"ambient:{self.level.metadata.level_id}:pollen", "pollen_motes", (0, 0), region=bounds)
+
+    def _configure_map_effects(self) -> None:
+        self.effects.start_emitter("map:sanctum", "sanctum_available", (1080, 500))
+
+    def _reset_transient_effects(self) -> None:
+        quality = self.effects.quality
+        self.effects.clear(); self.effects.quality = quality
+        self._configure_level_effects()
+        for checkpoint in self.world_objects.checkpoints:
+            if checkpoint.active: self.effects.start_emitter(f"checkpoint:{checkpoint.object_id}", "checkpoint_idle", checkpoint.rect.center)
+
+    def _drain_combat_effects(self, legacy: list[object], boss: bool = False) -> None:
+        for effect in legacy:
+            strong = bool(getattr(effect, "strong", False))
+            if boss:
+                effect_id = "warden_defeat" if strong else "warden_core_hit"
+            elif effect.color[2] > effect.color[0]:
+                effect_id = "armored_stomp_block"
+            else:
+                effect_id = "enemy_defeat" if strong else "enemy_hit"
+                if strong and effect.color[1] >= 180: self.effects.spawn("stomp_impact", effect.position)
+            self.effects.spawn(effect_id, effect.position)
+        legacy.clear()
+
+    def _emit_boss_effects(self, result: object) -> None:
+        if result.triggered: self.effects.spawn("warden_awaken", self.boss_system.boss.rect.center)
+        mapping = {"phase":"warden_phase_three" if self.boss_system.boss.phase >= 3 else "warden_phase_two", "slam":"warden_ground_slam", "projectile":"warden_bolt_launch", "hurt":"warden_core_hit", "defeat":"warden_defeat"}
+        for hook in result.audio_events:
+            effect_id = mapping.get(hook)
+            if effect_id: self.effects.spawn(effect_id, self.boss_system.boss.rect.center)
+        owner = "boss:warden:vulnerable"
+        if self.boss_system.boss.vulnerable:
+            if owner not in self.effects.emitters: self.effects.start_emitter(owner, "warden_core_vulnerable", self.boss_system.boss.rect.center)
+            self.effects.update_emitter_position(owner, self.boss_system.boss.rect.center)
+        else: self.effects.stop_emitter(owner)
+
+    def _update_effects(self, dt: float) -> None:
+        for event in self.projectiles.consume_effect_events():
+            self.effects.spawn(event.effect_id, event.position)
+        self._effect_trail_timer -= dt
+        if self._effect_trail_timer <= 0:
+            for projectile in self.projectiles.projectiles:
+                if projectile.faction.value == "player": self.effects.spawn("ember_pulse_trail", projectile.rect.center)
+            if self.powerups.has(PowerUpType.WIND_BOOTS) and abs(self.player.velocity.x) > 80: self.effects.spawn("wind_boots_trail", self.player.rect.midbottom)
+            self._effect_trail_timer = .05
+        self.effects.update(dt, self.camera.view_rect)
+        self.effects.apply_shake(self.camera)
 
     def reset_level(self) -> None:
         """Reload original level state, including collectibles and current score."""
@@ -492,6 +601,12 @@ class Game:
         self.world_map_runtime.return_to_level_node(level_id)
         self.app_mode = "map"
         self.show_world_summary = False
+        self.effects.clear()
+        self._configure_map_effects()
+        if self.level_result is not None:
+            center = (self.canvas.get_width() / 2, self.canvas.get_height() / 2)
+            self.effects.spawn("ember_veil_reveal" if self.level_result.exit_type is ExitType.SECRET else "route_unlocked", center)
+            if self.world_progress.world_completed_once: self.effects.spawn("world_complete", center)
         self._mark_save_dirty()
         self._autosave()
         if self.level_result is not None:

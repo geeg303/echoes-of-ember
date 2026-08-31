@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 10B is playable. Verdant Reaches is a four-level in-memory campaign with explicit registry order, sequential Continue flow, aggregate world progress, direct debug launching, and a temporary World Complete screen.
+Phase 15 is playable. Verdant Reaches now combines the complete campaign, secrets, world map, persistent saves, Ashen Warden boss encounter, and a centralized bounded particle/effects layer with procedural presentation polish.
 
 ## Requirements
 
@@ -48,7 +48,7 @@ python main.py
 - Toggle fullscreen: `F11`
 - Quit: `Esc`
 - Debug attack animation: `F5` when `DEBUG_MODE` is enabled
-- Debug hurt animation: `F6` when `DEBUG_MODE` is enabled
+- Toggle optional visual effects: `F6` when `DEBUG_MODE` is enabled
 - Debug full-level restart: `F7` when `DEBUG_MODE` is enabled
 
 For CI or headless verification:
@@ -74,13 +74,15 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `systems/collectible_system.py`: pickup lifecycle, culling, and lightweight effects
 - `systems/enemy_system.py`: activation, stomps, damage, scoring, and cleanup
 - `systems/player_combat.py`: Ember Pulse ownership, cooldown, and projectile spawning
-- `systems/projectile_system.py`: shared projectile lifetime, terrain collision, and culling
+- `systems/projectile_system.py`: shared projectile lifetime, terrain collision, culling, and effect events
+- `effects/`: typed procedural particle definitions and primitives
+- `systems/effects_system.py`: bounded particles, owned emitters, screen effects, and shake requests
 - `systems/powerup_system.py`: active slot, timed modifiers, shield interception, and world pickups
 - `systems/world_object_system.py`: platform riding, dynamic collision, triggers, and checkpoint state
 - `systems/level_completion.py`: lifecycle phases, requirements, results, ratings, and timer formatting
 - `entities/level_goal.py`: reusable world-space Ember Gate
 - `states/level_complete.py`: fixed-screen results presentation
-- `ui/debug_overlay.py`: animation and movement diagnostics in debug builds
+- `ui/debug_overlay.py`: animation, movement, particle, emitter, and screen-effect diagnostics
 - `ui/hud.py`: fixed-screen health, lives, shard, score, level, and power-up display
 - `data/levels/`: external JSON level content
 - `tools/`: content validation utilities
@@ -296,3 +298,23 @@ Campaign startup now uses one of three versioned JSON slots (`python main.py --s
 ## World 1 boss
 
 First Flame Sanctum is now a playable boss destination. Completing Ruins unlocks the Sanctum but no longer completes Verdant Reaches; defeating the original three-phase Ashen Warden is the true world-completion condition. The fight uses shared projectiles, player damage, Stone Guard, an encounter-safe Ember Pulse grant, arena doors, camera bounds, a segmented boss HUD, and persistent boss progression. See [docs/BOSS_SYSTEM.md](docs/BOSS_SYSTEM.md) and [docs/ASHEN_WARDEN.md](docs/ASHEN_WARDEN.md).
+
+
+## Particle and visual effects
+
+Phase 15 routes transient presentation through one `EffectsSystem`. Definitions are typed, authored once in `effects/definitions.py`, and rendered from Pygame primitives without external artwork. World particles use camera offsets only while screen particles and flashes remain fixed to the 1280×720 canvas. Gameplay remains authoritative: particles never modify collision, damage, timing, AI, progression, results, or save data.
+
+The system covers Nova's jump/land/damage/death feedback; all four power-ups; Ember Pulse launch, trail, and impact; enemy hits, stomps, armor blocks, and defeats; collectible pickups; checkpoints, secrets, breakables, switches, doors, and platform warnings; per-level ambience; Ashen Warden awakening, attacks, vulnerable core, phases, hits, and defeat; plus map route/reveal/world-completion presentation. Existing boss telegraphs, HUD warnings, sprites, and geometry remain readable with optional effects disabled.
+
+At most 600 particles are active. `AMBIENT`, `NORMAL`, and `CRITICAL` priorities drop lower-value work first under load; effect definitions also impose local caps. Continuous emitters have explicit owners and are cleared on F7, life/boss resets, level loads, map transitions, and shutdown. Full, reduced, and optional-off quality modes are supported; debug `F6` toggles optional effects. The debug panel reports total particles, emitters, ambient/gameplay counts, and screen effects. Save schema remains version 2 and contains no transient effect state.
+
+Run repeatable 600-frame performance scenarios with:
+
+```bash
+python tools/effects_benchmark.py normal
+python tools/effects_benchmark.py stress
+python tools/effects_benchmark.py phase3
+python tools/effects_benchmark.py defeat
+```
+
+See [docs/EFFECTS_SYSTEM.md](docs/EFFECTS_SYSTEM.md) for architecture, authoring rules, integration contracts, reset policy, quality behavior, test coverage, and benchmark results.

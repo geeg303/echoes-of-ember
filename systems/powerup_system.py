@@ -134,25 +134,6 @@ class PowerUpSystem:
         return bool(self.active and self.active.remaining is not None and self.active.remaining <= 5.0)
 
 
-@dataclass(slots=True)
-class PowerUpEffect:
-    position: pygame.Vector2
-    color: tuple[int, int, int]
-    age: float = 0.0
-
-    @property
-    def active(self) -> bool:
-        return self.age < 0.45
-
-    def update(self, dt: float) -> None:
-        self.age += dt
-
-    def draw(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
-        center = (round(self.position.x + offset[0]), round(self.position.y + offset[1]))
-        radius = round(10 + 32 * min(1.0, self.age / 0.45))
-        pygame.draw.circle(surface, self.color, center, radius, 3)
-
-
 class PowerUpManager:
     """Owns level pickup state separately from the active player slot."""
 
@@ -163,23 +144,18 @@ class PowerUpManager:
             PowerUpPickup(spawn.object_id, spawn.kind, spawn.position, spawn.duration)
             for spawn in spawns
         ]
-        self.effects: list[PowerUpEffect] = []
 
     def update(self, dt: float, camera_view: pygame.Rect) -> None:
         padded = camera_view.inflate(320, 240)
         for pickup in self.pickups:
             if pickup.active and padded.colliderect(pickup.pickup_rect):
                 pickup.update(dt)
-        for effect in self.effects:
-            effect.update(dt)
-        self.effects = [effect for effect in self.effects if effect.active]
 
     def collect_overlaps(self, player_rect: pygame.Rect, system: PowerUpSystem) -> tuple[PowerUpType, ...]:
         collected: list[PowerUpType] = []
         for pickup in self.pickups:
             if pickup.try_collect(player_rect, system):
                 collected.append(pickup.kind)
-                self.effects.append(PowerUpEffect(pygame.Vector2(pickup.pickup_rect.center), POWERUP_DEFINITIONS[pickup.kind].color))
         return tuple(collected)
 
     def draw(self, surface: pygame.Surface, view: pygame.Rect, offset: tuple[int, int]) -> None:
@@ -187,6 +163,3 @@ class PowerUpManager:
         for pickup in self.pickups:
             if pickup.active and padded.colliderect(pickup.pickup_rect):
                 pickup.draw(surface, offset)
-        for effect in self.effects:
-            if padded.collidepoint(effect.position):
-                effect.draw(surface, offset)

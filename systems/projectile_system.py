@@ -1,40 +1,26 @@
-"""Shared projectile lifecycle and viewport rendering."""
+"""Shared projectile lifecycle, visual-event output, and viewport rendering."""
 
 from __future__ import annotations
 
-import pygame
 from dataclasses import dataclass
 
-from entities.projectile import Projectile
+import pygame
+
+from entities.projectile import Faction, Projectile
 from world.tilemap import TileMap
 
 
-@dataclass(slots=True)
-class BreakEffect:
+@dataclass(frozen=True, slots=True)
+class ProjectileEffectEvent:
+    effect_id: str
     position: pygame.Vector2
-    age: float = 0.0
-
-    def update(self, dt: float) -> None:
-        self.age += dt
-
-    @property
-    def active(self) -> bool:
-        return self.age < 0.4
-
-    def draw(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
-        center = pygame.Vector2(self.position.x + offset[0], self.position.y + offset[1])
-        life = self.age / 0.4
-        for index in range(6):
-            direction = pygame.Vector2(1, 0).rotate(index * 60)
-            point = center + direction * (8 + life * 28)
-            pygame.draw.rect(surface, (225, 151, 82), (round(point.x) - 3, round(point.y) - 3, 6, 6))
 
 
 class ProjectileManager:
     def __init__(self) -> None:
         self.projectiles: list[Projectile] = []
         self._next_id = 1
-        self.break_effects: list[BreakEffect] = []
+        self.effect_events: list[ProjectileEffectEvent] = []
 
     def spawn(self, projectile: Projectile) -> None:
         self.projectiles.append(projectile)
@@ -46,23 +32,41 @@ class ProjectileManager:
 
     def update(self, dt: float, tilemap: TileMap) -> None:
         for projectile in self.projectiles:
+            was_active = projectile.active
             projectile.update(dt, tilemap)
-            self.break_effects.extend(BreakEffect(position) for position in projectile.break_positions)
-            projectile.break_positions.clear()
+            if projectile.break_positions:
+                self.effect_events.extend(
+                    ProjectileEffectEvent("breakable_destroy", pygame.Vector2(position))
+                    for position in projectile.break_positions
+                )
+                projectile.break_positions.clear()
+            elif was_active and not projectile.active and projectile.lifetime > 0:
+                effect_id = (
+                    "ember_pulse_impact"
+                    if projectile.faction is Faction.PLAYER
+                    else "warden_bolt_impact"
+                )
+                self.effect_events.append(
+                    ProjectileEffectEvent(effect_id, pygame.Vector2(projectile.rect.center))
+                )
         self.projectiles = [projectile for projectile in self.projectiles if projectile.active]
-        for effect in self.break_effects:
-            effect.update(dt)
-        self.break_effects = [effect for effect in self.break_effects if effect.active]
 
-    def draw(self, surface: pygame.Surface, view: pygame.Rect, offset: tuple[int, int]) -> None:
+    def consume_effect_events(self) -> tuple[ProjectileEffectEvent, ...]:
+        events = tuple(self.effect_events)
+        self.effect_events.clear()
+        return events
+
+    def draw(
+        self,
+        surface: pygame.Surface,
+        view: pygame.Rect,
+        offset: tuple[int, int],
+    ) -> None:
         padded = view.inflate(128, 128)
         for projectile in self.projectiles:
             if projectile.active and padded.colliderect(projectile.rect):
                 projectile.draw(surface, offset)
-        for effect in self.break_effects:
-            if padded.collidepoint(effect.position):
-                effect.draw(surface, offset)
 
     def clear(self) -> None:
         self.projectiles.clear()
-        self.break_effects.clear()
+        self.effect_events.clear()
