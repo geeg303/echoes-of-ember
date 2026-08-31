@@ -1,5 +1,176 @@
 {
   "id": "verdant_reaches",
   "display_name": "Verdant Reaches",
-  "levels": ["verdant_01", "verdant_02", "verdant_03", "verdant_04"]
+  "levels": [
+    "verdant_01",
+    "verdant_02",
+    "verdant_03",
+    "verdant_04"
+  ],
+  "map": {
+    "start_node": "starting_grove",
+    "nodes": [
+      {
+        "id": "starting_grove",
+        "type": "start",
+        "title": "Starting Grove",
+        "x": 145,
+        "y": 475
+      },
+      {
+        "id": "node_verdant_01",
+        "type": "level",
+        "level_id": "verdant_01",
+        "title": "1-1  Verdant Beginning",
+        "x": 285,
+        "y": 455
+      },
+      {
+        "id": "node_verdant_02",
+        "type": "level",
+        "level_id": "verdant_02",
+        "title": "1-2  Whispering Canopy",
+        "x": 455,
+        "y": 255
+      },
+      {
+        "id": "node_verdant_03",
+        "type": "level",
+        "level_id": "verdant_03",
+        "title": "1-3  Emberfall Ravine",
+        "x": 735,
+        "y": 430
+      },
+      {
+        "id": "node_verdant_04",
+        "type": "level",
+        "level_id": "verdant_04",
+        "title": "1-4  Ruins of the First Flame",
+        "x": 955,
+        "y": 245
+      },
+      {
+        "id": "first_flame_sanctum",
+        "type": "world_goal",
+        "title": "First Flame Sanctum",
+        "x": 1100,
+        "y": 145
+      },
+      {
+        "id": "ember_veil",
+        "type": "secret",
+        "title": "???  Ember Veil",
+        "x": 1120,
+        "y": 390
+      }
+    ],
+    "connections": [
+      {
+        "id": "grove_to_01",
+        "from": "starting_grove",
+        "to": "node_verdant_01",
+        "waypoints": [
+          [
+            210,
+            500
+          ]
+        ],
+        "unlock": {
+          "type": "always"
+        }
+      },
+      {
+        "id": "route_01_02",
+        "from": "node_verdant_01",
+        "to": "node_verdant_02",
+        "waypoints": [
+          [
+            350,
+            400
+          ],
+          [
+            385,
+            310
+          ]
+        ],
+        "unlock": {
+          "type": "level_complete",
+          "level_id": "verdant_01"
+        }
+      },
+      {
+        "id": "route_02_03",
+        "from": "node_verdant_02",
+        "to": "node_verdant_03",
+        "waypoints": [
+          [
+            560,
+            285
+          ],
+          [
+            640,
+            375
+          ]
+        ],
+        "unlock": {
+          "type": "level_complete",
+          "level_id": "verdant_02"
+        }
+      },
+      {
+        "id": "route_03_04",
+        "from": "node_verdant_03",
+        "to": "node_verdant_04",
+        "waypoints": [
+          [
+            820,
+            385
+          ],
+          [
+            875,
+            300
+          ]
+        ],
+        "unlock": {
+          "type": "level_complete",
+          "level_id": "verdant_03"
+        }
+      },
+      {
+        "id": "route_04_goal",
+        "from": "node_verdant_04",
+        "to": "first_flame_sanctum",
+        "waypoints": [
+          [
+            1035,
+            205
+          ]
+        ],
+        "unlock": {
+          "type": "level_complete",
+          "level_id": "verdant_04"
+        }
+      },
+      {
+        "id": "route_04_secret",
+        "from": "node_verdant_04",
+        "to": "ember_veil",
+        "waypoints": [
+          [
+            1010,
+            315
+          ],
+          [
+            1065,
+            360
+          ]
+        ],
+        "unlock": {
+          "type": "secret_exit_discovered",
+          "level_id": "verdant_04",
+          "exit_id": "v04_secret_exit"
+        }
+      }
+    ]
+  }
 }

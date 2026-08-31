@@ -33,17 +33,16 @@ def complete(game: Game) -> None:
     game.player.reposition((game.goal.rect.x + 10, game.goal.rect.bottom - game.player.rect.height))
     game._interact_pressed = True; game.update(0); game.update(2)
 
-def test_continue_flow_reaches_world_complete_and_replay_world() -> None:
+def test_continue_returns_to_map_and_preserves_completed_result() -> None:
     game = Game()
     try:
-        for expected in ("verdant_01", "verdant_02", "verdant_03", "verdant_04"):
-            assert game.level.metadata.level_id == expected
-            complete(game)
-            assert game.gameplay_phase is GameplayPhase.LEVEL_COMPLETE
-            game.continue_campaign()
-        assert game.gameplay_phase is GameplayPhase.WORLD_COMPLETE and game.world_progress.complete
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)); game._handle_events()
-        assert game.level.metadata.level_id == "verdant_01" and not game.world_progress.results
+        complete(game)
+        assert game.gameplay_phase is GameplayPhase.LEVEL_COMPLETE
+        game.continue_campaign()
+        assert game.app_mode == "map"
+        assert game.world_map_runtime.current_node_id == "node_verdant_01"
+        assert "verdant_01" in game.world_progress.completed_levels_once
+        assert game.world_map_runtime.node_state("node_verdant_02").value == "available"
     finally:
         game.shutdown()
 
@@ -51,3 +50,16 @@ def test_game_can_launch_registered_level_directly() -> None:
     game = Game(level_id="verdant_03")
     try: assert game.level.metadata.level_id == "verdant_03"
     finally: game.shutdown()
+
+
+def test_abandoning_replay_does_not_replace_previous_result() -> None:
+    game = Game()
+    try:
+        complete(game)
+        previous = game.world_progress.results["verdant_01"]
+        game.reset_level()
+        game.return_to_world_map()
+        assert game.world_progress.results["verdant_01"] is previous
+        assert "verdant_01" in game.world_progress.completed_levels_once
+    finally:
+        game.shutdown()

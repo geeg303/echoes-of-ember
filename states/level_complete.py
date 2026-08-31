@@ -45,6 +45,6 @@ class LevelCompleteScreen:
         if result.exit_type.value == "secret_exit":
             banner = self.small_font.render("SECRET EXIT FOUND!", True, (219, 155, 255))
             surface.blit(banner, banner.get_rect(center=(640, 196)))
-        message = "Campaign progression coming later" if self.continued else "ENTER / SPACE  CONTINUE     R  REPLAY     ESC  QUIT"
+        message = "Campaign progression coming later" if self.continued else "ENTER / SPACE  CONTINUE TO MAP     R  REPLAY     M  WORLD MAP"
         prompt = self.small_font.render(message, True, (197, 211, 238))
         surface.blit(prompt, prompt.get_rect(center=(640, 604)))

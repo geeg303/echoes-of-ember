@@ -38,7 +38,7 @@ def main() -> int:
     except WorldRegistryError as exc:
         logging.error("Cannot launch: %s", exc)
         return 2
-    game = Game(level_id=level_id, registry=registry)
+    game = Game(level_id=level_id, registry=registry, start_on_map=args.level is None)
     game.run(frame_limit=5 if args.smoke_test else None)
     return 0
 

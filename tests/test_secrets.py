@@ -123,7 +123,8 @@ def test_runtime_secret_exit_freezes_result_and_keeps_campaign_destination() -> 
         game.update(2)
         assert game.level_result.score == frozen_score
         game.continue_campaign()
-        assert game.gameplay_phase is GameplayPhase.WORLD_COMPLETE
+        assert game.app_mode == "map"
+        assert ("verdant_04", "v04_secret_exit") in game.world_progress.discovered_secret_exits
     finally:
         game.shutdown()
 

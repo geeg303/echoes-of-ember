@@ -27,6 +27,7 @@ from systems.secret_system import SecretSystem
 from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
 from states.world_complete import WorldCompleteScreen
+from states.world_map import WorldMapScreen
 from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
 from ui.notifications import NotificationQueue
@@ -35,6 +36,7 @@ from world.camera import Camera
 from world.collision import CollisionEngine
 from world.level import Level
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldProgress, WorldRegistry
+from world.world_map import WorldMapRuntime
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False) -> None:
         pygame.init()
         try:
             pygame.mixer.init()
@@ -73,8 +75,15 @@ class Game:
         if level_id not in self.registry.level_paths:
             raise ValueError(f"unknown registered level: {level_id}")
         self.world_progress = WorldProgress(self.registry)
+        self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
+        self.world_map_screen = WorldMapScreen(
+            self.world_map_runtime, self.assets.font(None, 38), self.assets.font(None, 25), self.assets.font(None, 19)
+        )
+        self.show_world_summary = False
+        self.app_mode = "map" if start_on_map else "gameplay"
         self.level_path = self.registry.level_paths[level_id]
-        self._load_level_runtime()
+        if not start_on_map:
+            self._load_level_runtime()
         self._jump_pressed = False
         self._jump_released = False
         self._attack_pressed = False
@@ -131,15 +140,17 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
+                if self.app_mode == "map":
+                    self._handle_map_key(event.key)
+                    continue
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                 elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key == pygame.K_r:
                     self.reset_level()
-                elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self.continue_campaign()
-                elif self.gameplay_phase is GameplayPhase.WORLD_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self.world_progress = WorldProgress(self.registry)
-                    self.load_level(self.registry.level_ids[0])
+                elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_m):
+                    self.return_to_world_map()
+                elif event.key == pygame.K_m:
+                    self.return_to_world_map()
                 elif event.key == pygame.K_F11:
                     self.toggle_fullscreen()
                 elif DEBUG_MODE and event.key == pygame.K_F5:
@@ -161,12 +172,37 @@ class Game:
             ):
                 self._jump_released = True
 
+    def _handle_map_key(self, key: int) -> None:
+        if self.show_world_summary:
+            if key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE):
+                self.show_world_summary = False
+            return
+        directions = {
+            pygame.K_LEFT: (-1, 0), pygame.K_a: (-1, 0),
+            pygame.K_RIGHT: (1, 0), pygame.K_d: (1, 0),
+            pygame.K_UP: (0, -1), pygame.K_w: (0, -1),
+            pygame.K_DOWN: (0, 1), pygame.K_s: (0, 1),
+        }
+        if key in directions:
+            self.world_map_runtime.choose_direction(pygame.Vector2(directions[key]))
+        elif key in (pygame.K_RETURN, pygame.K_SPACE):
+            action, level_id = self.world_map_screen.activate_current()
+            if action == "level" and level_id:
+                self.load_level(level_id)
+            elif action == "world_summary":
+                self.show_world_summary = True
+        elif key == pygame.K_ESCAPE:
+            self.running = False
+
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
         self.screen = self._create_display()
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
+        if self.app_mode == "map":
+            self.world_map_screen.update(dt)
+            return
         if self.gameplay_phase in {GameplayPhase.LEVEL_COMPLETE, GameplayPhase.WORLD_COMPLETE}:
             self._clear_frame_inputs()
             return
@@ -306,6 +342,14 @@ class Game:
         )
 
     def draw(self) -> None:
+        if self.app_mode == "map":
+            self.world_map_screen.draw(self.canvas)
+            if self.show_world_summary:
+                self.world_complete_screen.draw(self.canvas, self.world_progress)
+            scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
+            self.screen.blit(scaled, (0, 0))
+            pygame.display.flip()
+            return
         self.background.draw(self.canvas, self.camera.position)
         tile_view = self.camera.view_rect.inflate(
             self.level.tilemap.tile_size * 2,
@@ -347,8 +391,6 @@ class Game:
             self.canvas.blit(fade, (0, 0))
         elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
             self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result)
-        elif self.gameplay_phase is GameplayPhase.WORLD_COMPLETE:
-            self.world_complete_screen.draw(self.canvas, self.world_progress)
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
@@ -365,15 +407,21 @@ class Game:
         LOGGER.info("Restarted level: %s", self.level.name)
 
     def load_level(self, level_id: str) -> None:
+        self.app_mode = "gameplay"
         self.level_path = self.registry.level_paths[level_id]
         self.reset_level()
 
+    def return_to_world_map(self) -> None:
+        level_id = self.level.metadata.level_id
+        self.world_map_runtime.return_to_level_node(level_id)
+        self.app_mode = "map"
+        self.show_world_summary = False
+        if self.level_result is not None:
+            self.world_map_screen.notify("PATH OPENED — CHOOSE YOUR NEXT DESTINATION")
+
     def continue_campaign(self) -> None:
-        next_id = self.registry.next_level(self.level.metadata.level_id)
-        if next_id is None:
-            self.gameplay_phase = GameplayPhase.WORLD_COMPLETE
-        else:
-            self.load_level(next_id)
+        """Compatibility alias: Continue now returns to the authored World Map."""
+        self.return_to_world_map()
 
     def shutdown(self) -> None:
         if self._shutdown:

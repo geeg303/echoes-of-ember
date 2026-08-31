@@ -21,5 +21,5 @@ class WorldCompleteScreen:
             surface.blit(self.font.render(label, True, (178, 198, 226)), (390, y))
             image = self.font.render(value, True, (246, 239, 208))
             surface.blit(image, image.get_rect(topright=(890, y)))
-        prompt = self.small.render("ENTER / SPACE  REPLAY WORLD     ESC  QUIT", True, (202, 215, 238))
+        prompt = self.small.render("ENTER / SPACE  RETURN TO MAP", True, (202, 215, 238))
         surface.blit(prompt, prompt.get_rect(center=(640, 635)))
