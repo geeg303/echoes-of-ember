@@ -103,7 +103,7 @@ def test_enemy_contact_invulnerability_death_and_restart_cleanup() -> None:
 
         game.projectiles.projectiles.extend([])
         game.reset_level()
-        assert len(game.enemies.enemies) == 5
+        assert len(game.enemies.enemies) == 10
         assert game.projectiles.projectiles == []
     finally:
         game.shutdown()

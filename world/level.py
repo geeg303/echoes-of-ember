@@ -9,6 +9,7 @@ from tools.validation import load_and_validate_level
 from systems.progression import CollectibleType
 from systems.enemy_config import EnemyType
 from systems.powerup_system import PowerUpType
+from systems.level_completion import CompletionRequirements, RatingThresholds
 from world.tilemap import TileMap
 
 
@@ -43,9 +44,34 @@ class WorldObjectSpawn:
     properties: dict[str, object]
 
 
+@dataclass(frozen=True, slots=True)
+class GoalDefinition:
+    kind: str
+    position: tuple[float, float]
+    requires_interact: bool
+
+
+@dataclass(frozen=True, slots=True)
+class LevelMetadata:
+    level_id: str
+    world_id: str
+    level_number: int
+    display_name: str
+    description: str
+    theme: str
+    time_target: float
+    declared_shards: int
+    declared_rare_crystals: int
+    declared_secret_tokens: int
+    requirements: CompletionRequirements
+    ratings: RatingThresholds
+
+
 @dataclass(slots=True)
 class Level:
     name: str
+    metadata: LevelMetadata
+    goal: GoalDefinition
     player_spawn: tuple[float, float]
     tilemap: TileMap
     collectible_spawns: tuple[CollectibleSpawn, ...]
@@ -98,8 +124,24 @@ class Level:
             for entry in data.get("objects", [])
             if entry["type"] in world_kinds
         )
+        requirements = data["completion_requirements"]
+        ratings = data["rating_thresholds"]
+        metadata = LevelMetadata(
+            level_id=str(data["id"]), world_id=str(data["world_id"]),
+            level_number=int(data["level_number"]), display_name=str(data["display_name"]),
+            description=str(data["description"]), theme=str(data["theme"]),
+            time_target=float(data["time_target"]), declared_shards=int(data["shard_total"]),
+            declared_rare_crystals=int(data["rare_crystal_total"]),
+            declared_secret_tokens=int(data["secret_token_total"]),
+            requirements=CompletionRequirements(bool(requirements["reach_goal"]), int(requirements.get("minimum_ember_shards", 0))),
+            ratings=RatingThresholds(int(ratings["silver_score"]), int(ratings["gold_score"]), float(ratings["gold_shard_ratio"]), float(ratings["gold_time"])),
+        )
+        goal_data = data["goal"]
+        goal = GoalDefinition(str(goal_data["type"]), (float(goal_data["x"]), float(goal_data["y"])), bool(goal_data.get("properties", {}).get("requires_interact", True)))
         return cls(
             name=str(data["name"]),
+            metadata=metadata,
+            goal=goal,
             player_spawn=(float(spawn[0]), float(spawn[1])),
             tilemap=TileMap.from_data(data),
             collectible_spawns=collectible_spawns,

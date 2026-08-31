@@ -9,6 +9,7 @@ import pygame
 from entities.collectible import PickupResult
 from settings import PLAYER_NAME, PRIMARY_COLLECTIBLE_NAME
 from systems.progression import CollectibleType, LevelProgress
+from systems.level_completion import format_time
 
 
 class HUD:
@@ -60,11 +61,14 @@ class HUD:
         active_power: str = "—",
         power_feedback: float = 0.0,
         power_warning: bool = False,
+        elapsed_time: float = 0.0,
     ) -> None:
         self._draw_vitals(surface, health, max_health, lives)
         self._draw_shards(surface, progress)
         self._draw_score_and_level(surface, progress.score, level_name)
         self._draw_powerup_slot(surface, active_power, power_feedback, power_warning)
+        timer = self.small_font.render(f"TIME  {format_time(elapsed_time)}", True, (183, 198, 224))
+        surface.blit(timer, timer.get_rect(center=(656, 80)))
 
     def _draw_vitals(
         self,

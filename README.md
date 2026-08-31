@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 9 is playable. Four data-driven power-ups now combine with moving, falling, and disappearing platforms, breakable shortcuts, linked switches and doors, and persistent level-run checkpoints.
+Phase 10A is playable. Verdant Beginning is now a complete vertical slice with formal metadata, an Ember Gate, a safe completion sequence, frozen results, ratings, replay, and a Level Complete screen.
 
 ## Requirements
 
@@ -77,6 +77,9 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python main.py --smoke-test
 - `systems/projectile_system.py`: shared projectile lifetime, terrain collision, and culling
 - `systems/powerup_system.py`: active slot, timed modifiers, shield interception, and world pickups
 - `systems/world_object_system.py`: platform riding, dynamic collision, triggers, and checkpoint state
+- `systems/level_completion.py`: lifecycle phases, requirements, results, ratings, and timer formatting
+- `entities/level_goal.py`: reusable world-space Ember Gate
+- `states/level_complete.py`: fixed-screen results presentation
 - `ui/debug_overlay.py`: animation and movement diagnostics in debug builds
 - `ui/hud.py`: fixed-screen health, lives, shard, score, level, and power-up display
 - `data/levels/`: external JSON level content
@@ -201,7 +204,7 @@ The optional `duration` override must be finite and positive. Supported types ar
 - Audio assets are absent; combat and pickup hooks safely fall back to silence.
 - Collection and enemy state are held in memory only.
 - Lives stop at zero without a Game Over transition; the existing death/respawn loop remains safe.
-- Level goals and permanent progression belong to later phases.
+- Campaign progression and permanent result persistence belong to later phases.
 
 ## Interactive world objects
 
@@ -237,3 +240,29 @@ Switches are activated with `E` and may reference one or several compatible door
 ```
 
 Checkpoints activate on contact and replace the current respawn position. Nonfatal hazards and life loss return Nova to the latest checkpoint while preserving collectibles, score, defeated enemies, broken blocks, switches, and doors. `F7` restores the initial spawn and all authored state.
+
+## Level metadata and goals
+
+Level identity is explicit and never derived from filenames. Required metadata includes `id`, `world_id`, `level_number`, `display_name`, description, theme, time target, declared collectible totals, completion requirements, rating thresholds, dimensions, spawn, and a top-level goal. Declared totals are checked against authored objects.
+
+Verdant Beginning is `verdant_01` in `verdant_reach`. Its only required objective is reaching the Ember Gate; collection remains optional. The procedural world-space gate highlights in interaction range and activates with `E`.
+
+```json
+"completion_requirements": {"reach_goal": true, "minimum_ember_shards": 0},
+"goal": {
+  "type": "ember_gate",
+  "x": 6690,
+  "y": 896,
+  "properties": {"requires_interact": true}
+}
+```
+
+Completion freezes elapsed time, score, collections, unique enemy defeats, deaths, checkpoints, health, and lives in an immutable `LevelResult`. After a 1.5-second safe sequence, the Level Complete screen shows the result and a metadata-driven Bronze, Silver, or Gold rating. Enter/Space displays “Campaign progression coming later”; `R` uses the same full reconstruction as F7.
+
+## Verdant Beginning design
+
+The level follows teach → test → twist across eight sections: a safe arrival trail, a first-enemy lesson, one-way and bounce-pad platforming, Ember Pulse combat and breakables, moving-world traversal, an optional Wind Boots/Aether Wing route choice, a combined checkpointed challenge, and a calm Ember Gate clearing.
+
+Its 52 Ember Shards form lines, arcs, rising trails, route clusters, and a final breadcrumb path. Three Rare Crystals reward raised routes, while one Secret Token occupies a demanding optional path. Timed powers improve shortcuts but are never mandatory.
+
+See [docs/LEVEL_AUTHORING.md](docs/LEVEL_AUTHORING.md) for the reusable authoring workflow, schemas, validation command, and design conventions.

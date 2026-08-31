@@ -15,12 +15,14 @@ from systems.progression import CollectibleType
 
 def test_level_01_loads_from_json() -> None:
     level = Level.load(PROJECT_ROOT / "data" / "levels" / "level_01.json")
-    assert level.tilemap.width == 72
+    assert level.tilemap.width == 108
     assert level.tilemap.pixel_width > 1280
     assert level.tilemap.pixel_height > 720
     assert level.tilemap.tile_at(12, 16).definition.kind is TileKind.HAZARD
     assert level.tilemap.tile_at(9, 11).definition.kind is TileKind.BREAKABLE
-    assert len(level.collectible_spawns) == 42
+    assert len(level.collectible_spawns) == 58
+    assert level.metadata.level_id == "verdant_01"
+    assert level.goal.kind == "ember_gate"
     assert level.collectible_spawns[0].kind is CollectibleType.EMBER_SHARD
 
 

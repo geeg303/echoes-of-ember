@@ -37,11 +37,13 @@ class EnemyManager:
         self.projectiles = projectiles
         self.enemies: list[Enemy] = []
         self.effects: list[CombatEffect] = []
+        self.defeated_ids: set[str] = set()
         self.reset()
 
     def reset(self) -> None:
         self.enemies = [create_enemy(spawn) for spawn in self.spawns]
         self.effects.clear()
+        self.defeated_ids.clear()
 
     def update(
         self,
@@ -83,6 +85,7 @@ class EnemyManager:
                                 pygame.Vector2(direction * EMBER_PULSE_KNOCKBACK, -45),
                             )
                             if newly_dead:
+                                self.defeated_ids.add(enemy.enemy_id)
                                 reward = enemy.claim_score()
                                 progress.award_score(reward)
                                 outcome.score_awarded += reward
@@ -142,6 +145,7 @@ class EnemyManager:
             if enemy.stompable:
                 newly_dead = enemy.take_damage(1)
                 if newly_dead:
+                    self.defeated_ids.add(enemy.enemy_id)
                     reward = enemy.claim_score()
                     progress.award_score(reward)
                     outcome.score_awarded += reward

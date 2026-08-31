@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -19,11 +20,19 @@ def validate_level_data(data: Any) -> list[str]:
     if not isinstance(data, dict):
         return ["level root must be a JSON object"]
 
-    required = {"name", "width", "height", "tile_size", "player_spawn", "tiles"}
-    for field in sorted(required - data.keys()):
+    core_required = {"name", "width", "height", "tile_size", "player_spawn", "tiles"}
+    metadata_required = {
+        "id", "name", "world_id", "level_number", "display_name", "description",
+        "theme", "time_target", "shard_total", "rare_crystal_total",
+        "secret_token_total", "completion_requirements", "rating_thresholds", "goal",
+    }
+    for field in sorted(core_required - data.keys()):
         errors.append(f"missing required field: {field}")
     if errors:
         return errors
+    for field in sorted(metadata_required - data.keys()):
+        errors.append(f"missing required field: {field}")
+    _validate_metadata(data, errors)
 
     width = data.get("width")
     height = data.get("height")
@@ -38,6 +47,9 @@ def validate_level_data(data: Any) -> list[str]:
     spawn = data.get("player_spawn")
     if not _numeric_pair(spawn):
         errors.append("player_spawn must contain two numeric coordinates")
+    elif isinstance(width, int) and isinstance(height, int) and isinstance(tile_size, int):
+        if not all(math.isfinite(float(value)) for value in spawn) or not (0 <= spawn[0] < width * tile_size and 0 <= spawn[1] < height * tile_size):
+            errors.append("player_spawn is outside level pixel bounds or non-finite")
 
     tiles = data.get("tiles")
     if not isinstance(tiles, list):
@@ -70,7 +82,80 @@ def validate_level_data(data: Any) -> list[str]:
     pixel_width = width * tile_size if isinstance(tile_size, int) else 0
     pixel_height = height * tile_size if isinstance(tile_size, int) else 0
     errors.extend(validate_objects(data.get("objects", []), pixel_width, pixel_height))
+    _validate_goal(data.get("goal"), pixel_width, pixel_height, errors)
+    if isinstance(data.get("objects"), list):
+        counts = {
+            "shard_total": sum(entry.get("type") == "ember_shard" for entry in data["objects"] if isinstance(entry, dict)),
+            "rare_crystal_total": sum(entry.get("type") == "rare_crystal" for entry in data["objects"] if isinstance(entry, dict)),
+            "secret_token_total": sum(entry.get("type") == "secret_token" for entry in data["objects"] if isinstance(entry, dict)),
+        }
+        for field, derived in counts.items():
+            if data.get(field) != derived:
+                errors.append(f"{field} does not match derived object total {derived}")
     return errors
+
+
+def _validate_metadata(data: dict[str, Any], errors: list[str]) -> None:
+    for field in ("id", "world_id", "display_name", "description", "theme"):
+        value = data.get(field)
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"{field} must be a non-empty string")
+    world_id = data.get("world_id")
+    if isinstance(world_id, str) and (not world_id.replace("_", "").isalnum() or world_id.lower() != world_id):
+        errors.append("world_id must use lowercase letters, numbers, and underscores")
+    if not isinstance(data.get("level_number"), int) or isinstance(data.get("level_number"), bool) or data["level_number"] <= 0:
+        errors.append("level_number must be a positive integer")
+    for field in ("time_target",):
+        value = data.get(field)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
+            errors.append(f"{field} must be positive")
+    for field in ("shard_total", "rare_crystal_total", "secret_token_total"):
+        value = data.get(field)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"{field} must be a non-negative integer")
+    requirements = data.get("completion_requirements")
+    if not isinstance(requirements, dict):
+        errors.append("completion_requirements must be an object")
+    else:
+        allowed = {"reach_goal", "minimum_ember_shards"}
+        if set(requirements) - allowed:
+            errors.append("completion_requirements contains unsupported values")
+        if not isinstance(requirements.get("reach_goal"), bool):
+            errors.append("completion_requirements.reach_goal must be boolean")
+        minimum = requirements.get("minimum_ember_shards", 0)
+        if not isinstance(minimum, int) or isinstance(minimum, bool) or minimum < 0:
+            errors.append("completion_requirements.minimum_ember_shards must be non-negative")
+    ratings = data.get("rating_thresholds")
+    required_ratings = {"silver_score", "gold_score", "gold_shard_ratio", "gold_time"}
+    if not isinstance(ratings, dict) or not required_ratings <= ratings.keys():
+        errors.append("rating_thresholds is malformed")
+    else:
+        for field in ("silver_score", "gold_score", "gold_time"):
+            value = ratings[field]
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value < 0:
+                errors.append(f"rating_thresholds.{field} must be non-negative")
+        ratio = ratings["gold_shard_ratio"]
+        if not isinstance(ratio, (int, float)) or isinstance(ratio, bool) or not math.isfinite(ratio) or not 0 <= ratio <= 1:
+            errors.append("rating_thresholds.gold_shard_ratio must be between 0 and 1")
+
+
+def _validate_goal(goal: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:
+    if not isinstance(goal, dict):
+        errors.append("goal must be an object")
+        return
+    if goal.get("type") != "ember_gate":
+        errors.append(f"goal has unsupported type: {goal.get('type')!r}")
+    if not _numeric_pair([goal.get("x"), goal.get("y")]) or not all(math.isfinite(float(value)) for value in (goal.get("x"), goal.get("y")) if isinstance(value, (int, float))):
+        errors.append("goal coordinates must be numeric")
+    else:
+        x, y = float(goal["x"]), float(goal["y"])
+        if not (0 <= x < pixel_width and 0 <= y < pixel_height):
+            errors.append("goal is outside level bounds")
+    properties = goal.get("properties", {})
+    if not isinstance(properties, dict) or any(key != "requires_interact" for key in properties):
+        errors.append("goal properties are malformed")
+    elif "requires_interact" in properties and not isinstance(properties["requires_interact"], bool):
+        errors.append("goal.properties.requires_interact must be boolean")
 
 
 def load_and_validate_level(path: Path) -> dict[str, Any]:

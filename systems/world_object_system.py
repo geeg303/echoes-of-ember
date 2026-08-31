@@ -20,6 +20,7 @@ class WorldObjectManager:
         self.checkpoints: list[Checkpoint] = []
         self.respawn_position = pygame.Vector2(initial_spawn)
         self.riding_id: str | None = None
+        self.activated_checkpoint_ids: set[str] = set()
         for spawn in spawns:
             props = spawn.properties
             if spawn.kind == "moving_platform":
@@ -94,6 +95,7 @@ class WorldObjectManager:
                 for other in self.checkpoints:
                     other.active = False
                 checkpoint.active = True
+                self.activated_checkpoint_ids.add(checkpoint.object_id)
                 self.respawn_position.update(checkpoint.respawn_position)
                 activated = True
         return activated

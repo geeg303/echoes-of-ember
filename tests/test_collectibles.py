@@ -27,7 +27,7 @@ def overlap_player(player: Player, collectible_rect: pygame.Rect) -> None:
 def test_level_collectible_totals_match_authored_content() -> None:
     level = loaded_level()
     progress = progress_for(level)
-    assert progress.total(CollectibleType.EMBER_SHARD) == 36
+    assert progress.total(CollectibleType.EMBER_SHARD) == 52
     assert progress.total(CollectibleType.RARE_CRYSTAL) == 3
     assert progress.total(CollectibleType.SECRET_TOKEN) == 1
     assert progress.total(CollectibleType.HEALTH_ITEM) == 2
@@ -110,4 +110,3 @@ def test_player_health_and_lives_are_bounded() -> None:
     player.lose_life_and_restore()
     assert player.health == player.max_health
     assert player.lives == 2
-

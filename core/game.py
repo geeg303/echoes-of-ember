@@ -7,6 +7,7 @@ import logging
 import pygame
 
 from core.asset_manager import AssetManager
+from entities.level_goal import EmberGate
 from entities.player import Player, PlayerControls
 from systems.combat import DamageSource
 from systems.collectible_system import CollectibleManager
@@ -15,8 +16,14 @@ from systems.player_combat import PlayerCombatController
 from systems.projectile_system import ProjectileManager
 from systems.powerup_system import PowerUpManager, PowerUpSystem, PowerUpType
 from systems.world_object_system import WorldObjectManager
+from systems.level_completion import (
+    GameplayPhase,
+    LevelResult,
+    calculate_rating,
+)
 from systems.progression import LevelProgress
-from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PROJECT_ROOT, SHOW_FPS
+from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, PROJECT_ROOT, SHOW_FPS
+from states.level_complete import LevelCompleteScreen
 from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
 from world.background import ParallaxBackground
@@ -52,6 +59,9 @@ class Game:
             self.assets.font(None, 20),
             self.assets.font(None, 32),
         )
+        self.level_complete_screen = LevelCompleteScreen(
+            self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
+        )
         self.level_path = PROJECT_ROOT / "data" / "levels" / "level_01.json"
         self._load_level_runtime()
         self._jump_pressed = False
@@ -77,6 +87,13 @@ class Game:
         self.powerups = PowerUpSystem(self.player)
         self.powerup_pickups = PowerUpManager(self.level.powerup_spawns)
         self.world_objects = WorldObjectManager(self.level.world_object_spawns, self.level.player_spawn)
+        self.goal = EmberGate(self.level.goal.position, self.level.goal.requires_interact)
+        self.gameplay_phase = GameplayPhase.PLAYING
+        self.elapsed_time = 0.0
+        self.deaths = 0
+        self.completion_timer = 0.0
+        self.level_result: LevelResult | None = None
+        self.level_complete_screen.reset()
         self._interact_pressed = False
 
     def _create_display(self) -> pygame.Surface:
@@ -104,6 +121,10 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
+                elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key == pygame.K_r:
+                    self.reset_level()
+                elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    self.level_complete_screen.continued = True
                 elif event.key == pygame.K_F11:
                     self.toggle_fullscreen()
                 elif DEBUG_MODE and event.key == pygame.K_F5:
@@ -131,6 +152,19 @@ class Game:
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
+        if self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE:
+            self._clear_frame_inputs()
+            return
+        if self.gameplay_phase is GameplayPhase.COMPLETION_SEQUENCE:
+            self.completion_timer = max(0.0, self.completion_timer - dt)
+            self.goal.update(dt, self.player.rect)
+            self.camera.update(self.player.rect, pygame.Vector2(), dt)
+            self.hud.update(dt)
+            if self.completion_timer <= 0.0:
+                self.gameplay_phase = GameplayPhase.LEVEL_COMPLETE
+            self._clear_frame_inputs()
+            return
+        self.elapsed_time += dt
         keys = pygame.key.get_pressed()
         move_axis = float(keys[pygame.K_RIGHT] or keys[pygame.K_d]) - float(
             keys[pygame.K_LEFT] or keys[pygame.K_a]
@@ -159,6 +193,7 @@ class Game:
                 self.player.reposition(self.world_objects.respawn_position)
                 self.camera.snap_to(self.player.rect)
         if self.player.death_animation_finished:
+            self.deaths += 1
             self.player.lose_life_and_restore()
             self.powerups.clear("life_lost")
             self.player.respawn(self.world_objects.respawn_position)
@@ -193,11 +228,54 @@ class Game:
         power_event = self.powerups.consume_event()
         if power_event in {"expired", "absorbed"}:
             self.assets.sound(f"sounds/powerup_{power_event}.wav").play()
+        self.goal.update(dt, self.player.rect)
+        if not self.player.is_dead and self.goal.try_activate(self.player.rect, self._interact_pressed):
+            if self.level.metadata.requirements.evaluate(True, self.progress):
+                self._begin_completion()
         self.hud.update(dt)
+        self._clear_frame_inputs()
+
+    def _clear_frame_inputs(self) -> None:
         self._jump_pressed = False
         self._jump_released = False
         self._attack_pressed = False
         self._interact_pressed = False
+
+    def _begin_completion(self) -> None:
+        if self.gameplay_phase is not GameplayPhase.PLAYING:
+            return
+        self.gameplay_phase = GameplayPhase.GOAL_TRIGGERED
+        self.level_result = self._build_level_result()
+        self.gameplay_phase = GameplayPhase.COMPLETION_SEQUENCE
+        self.completion_timer = LEVEL_COMPLETION_SEQUENCE_DURATION
+        self.projectiles.clear()
+        self.player.velocity.update()
+        self.assets.sound("sounds/level_complete.wav").play()
+        self.camera.shake(4.0, 0.2)
+
+    def _build_level_result(self) -> LevelResult:
+        from systems.progression import CollectibleType
+
+        shards = self.progress.count(CollectibleType.EMBER_SHARD)
+        rating = calculate_rating(
+            self.progress.score, shards, self.progress.total(CollectibleType.EMBER_SHARD),
+            self.elapsed_time, self.level.metadata.ratings,
+        )
+        return LevelResult(
+            level_id=self.level.metadata.level_id, completed=True,
+            completion_time=self.elapsed_time, score=self.progress.score,
+            ember_shards_collected=shards,
+            ember_shards_total=self.progress.total(CollectibleType.EMBER_SHARD),
+            rare_crystals_collected=self.progress.count(CollectibleType.RARE_CRYSTAL),
+            rare_crystals_total=self.progress.total(CollectibleType.RARE_CRYSTAL),
+            secret_tokens_collected=self.progress.count(CollectibleType.SECRET_TOKEN),
+            secret_tokens_total=self.progress.total(CollectibleType.SECRET_TOKEN),
+            enemies_defeated=len(self.enemies.defeated_ids), enemies_total=len(self.level.enemy_spawns),
+            deaths=self.deaths, lives_remaining=self.player.lives,
+            health_remaining=self.player.health,
+            checkpoints_activated=len(self.world_objects.activated_checkpoint_ids),
+            rating=rating,
+        )
 
     def draw(self) -> None:
         self.background.draw(self.canvas, self.camera.position)
@@ -208,6 +286,7 @@ class Game:
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
         self.world_objects.draw(self.canvas, self.camera.view_rect, offset)
+        self.goal.draw(self.canvas, offset)
         self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
         self.powerup_pickups.draw(self.canvas, self.camera.view_rect, offset)
         self.enemies.draw(self.canvas, self.camera.view_rect, offset)
@@ -224,6 +303,7 @@ class Game:
             self.powerups.hud_text,
             self.powerups.feedback,
             self.powerups.timer_low,
+            self.elapsed_time,
         )
         if DEBUG_MODE:
             self.debug_overlay.draw(self.canvas, self.player)
@@ -231,6 +311,12 @@ class Game:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
             position = (self.canvas.get_width() - 16, self.canvas.get_height() - 12)
             self.canvas.blit(label, label.get_rect(bottomright=position))
+        if self.gameplay_phase is GameplayPhase.COMPLETION_SEQUENCE:
+            fade = pygame.Surface(self.canvas.get_size(), pygame.SRCALPHA)
+            fade.fill((255, 183, 78, round(35 * (1.0 - self.completion_timer / LEVEL_COMPLETION_SEQUENCE_DURATION))))
+            self.canvas.blit(fade, (0, 0))
+        elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
+            self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result)
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
