@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 10A is playable. Verdant Beginning is now a complete vertical slice with formal metadata, an Ember Gate, a safe completion sequence, frozen results, ratings, replay, and a Level Complete screen.
+Phase 10B is playable. Verdant Reaches is a four-level in-memory campaign with explicit registry order, sequential Continue flow, aggregate world progress, direct debug launching, and a temporary World Complete screen.
 
 ## Requirements
 
@@ -245,7 +245,7 @@ Checkpoints activate on contact and replace the current respawn position. Nonfat
 
 Level identity is explicit and never derived from filenames. Required metadata includes `id`, `world_id`, `level_number`, `display_name`, description, theme, time target, declared collectible totals, completion requirements, rating thresholds, dimensions, spawn, and a top-level goal. Declared totals are checked against authored objects.
 
-Verdant Beginning is `verdant_01` in `verdant_reach`. Its only required objective is reaching the Ember Gate; collection remains optional. The procedural world-space gate highlights in interaction range and activates with `E`.
+Verdant Beginning is `verdant_01` in `verdant_reaches`. Its only required objective is reaching the Ember Gate; collection remains optional. The procedural world-space gate highlights in interaction range and activates with `E`.
 
 ```json
 "completion_requirements": {"reach_goal": true, "minimum_ember_shards": 0},
@@ -266,3 +266,15 @@ The level follows teach → test → twist across eight sections: a safe arrival
 Its 52 Ember Shards form lines, arcs, rising trails, route clusters, and a final breadcrumb path. Three Rare Crystals reward raised routes, while one Secret Token occupies a demanding optional path. Timed powers improve shortcuts but are never mandatory.
 
 See [docs/LEVEL_AUTHORING.md](docs/LEVEL_AUTHORING.md) for the reusable authoring workflow, schemas, validation command, and design conventions.
+
+
+## Verdant Reaches campaign
+
+The registry at `data/worlds/verdant_reaches.json` explicitly orders `verdant_01`, `verdant_02`, `verdant_03`, and `verdant_04`. Continue advances through Verdant Beginning, Whispering Canopy, Emberfall Ravine, and Ruins of the First Flame before showing aggregate runtime statistics. Replays replace the latest result for that level rather than double-counting it; nothing is saved to disk.
+
+```bash
+python main.py --level verdant_03
+python -m tools.validation --all-levels
+```
+
+Unknown level IDs fail cleanly. See `docs/world_1_design.md` for themes, pacing, encounter patterns, checkpoint philosophy, and mechanic progression.

@@ -1,6 +1,6 @@
 # Echoes of Ember level authoring
 
-Levels are validated JSON files loaded independently of their filenames. To create one, duplicate `data/levels/level_01.json`, immediately replace its stable `id`, and keep the raw definition separate from runtime state.
+Levels are validated JSON files loaded independently of their filenames. To create one, duplicate `data/levels/verdant_01.json`, immediately replace its stable `id`, and keep the raw definition separate from runtime state.
 
 ## Required metadata
 
@@ -32,10 +32,11 @@ Validate and run:
 
 ```bash
 python -m tools.validation data/levels/your_level.json
-python main.py
+python -m tools.validation --all-levels
+python main.py --level your_level_id
 ```
 
-The current build loads `level_01.json`. A future selector should pass another path through the same `Level.load` and runtime reconstruction flow without changing gameplay code.
+Register the level ID in explicit campaign order in `data/worlds/verdant_reaches.json`. The command-line selector accepts registered IDs only; it never accepts arbitrary paths. Continue uses this registry rather than filename sorting.
 
 ## Design template
 
