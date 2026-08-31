@@ -53,3 +53,7 @@ To author a future boss:
 6. Add progression, reset, persistence, telegraph, and softlock tests.
 
 Optional sound hooks currently resolve through silent asset fallbacks: awaken, slam, projectile, phase, hurt, and defeat. Lightweight shake and combat effects are used; the full particle and audio phases remain deferred.
+
+## Audio integration
+
+Boss systems emit attack/state event names; `Game` translates them to catalog IDs and `AudioManager` plays them. Boss AI never reads playback state. The dedicated track starts once at encounter activation, phase changes use stingers without restarting music, life/reset cleanup prevents duplicate loops, and defeat fades music while visuals remain authoritative when muted.

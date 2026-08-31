@@ -28,6 +28,12 @@ def test_volume_clamp_effective_and_mute(audio):
     audio.set_muted(True); assert audio.effective_volume(AudioBus.SFX)==0
     audio.set_muted(False); assert audio.effective_volume(AudioBus.SFX)==pytest.approx(.5)
 
+def test_mute_updates_already_playing_sfx(audio):
+    assert audio.play_sound("player_death")
+    channel=audio._active_sfx[-1].channel
+    audio.set_muted(True); assert channel.get_volume()==0
+    audio.set_muted(False); assert channel.get_volume()>0
+
 def test_sound_play_cooldown_unknown_and_disabled(audio):
     assert audio.play_sound("player_jump"); assert not audio.play_sound("player_jump")
     audio.update(.07); assert audio.play_sound("player_jump")

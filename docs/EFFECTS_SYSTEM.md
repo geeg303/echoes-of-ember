@@ -64,3 +64,7 @@ The recorded comparable pre-effects boss benchmark was 6.260 ms mean, 6.846 ms p
 ## Intentional limitations
 
 Effects remain procedural placeholders and sound assets remain absent. Quality selection is currently a programmatic/debug facility rather than a finished settings menu. Map celebration events are lightweight because persistent animation choreography and the full audio pass belong to later phases.
+
+## Audio coordination
+
+Effects and audio independently observe the same authoritative gameplay outcomes. Particle creation never triggers sound, sound completion never triggers effects, and either presentation layer may be disabled without changing the other or gameplay.

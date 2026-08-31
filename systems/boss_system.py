@@ -73,11 +73,21 @@ class BossSystem:
         if "phase_transition" in events:
             result.shake = 8.0
             audio.append("phase")
-        if any(item in events for item in ("ground_slam", "fast_ground_slam", "leap_slam", "charge_leap")):
+        if any(item in events for item in ("ground_slam", "fast_ground_slam")):
             result.shake = max(result.shake, 7.0)
-            audio.append("slam")
-        if any(item in events for item in ("ember_bolt", "double_ember_bolt", "ember_rain", "core_burst")):
-            audio.append("projectile")
+            audio.append("ground_slam")
+        if "leap_slam" in events:
+            result.shake = max(result.shake, 7.0)
+            audio.append("leap")
+        if "charge_leap" in events:
+            result.shake = max(result.shake, 7.0)
+            audio.append("charge")
+        if any(item in events for item in ("ember_bolt", "double_ember_bolt")):
+            audio.append("bolt")
+        if "ember_rain" in events:
+            audio.append("ember_rain")
+        if "core_burst" in events:
+            audio.append("core_burst")
         result.audio_events = tuple(audio)
         for projectile in self.projectiles.projectiles:
             if not projectile.active or projectile.faction is not Faction.PLAYER or not projectile.rect.colliderect(self.boss.rect):

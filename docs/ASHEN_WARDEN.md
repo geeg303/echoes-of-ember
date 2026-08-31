@@ -56,3 +56,7 @@ Defeat creates the `verdant_boss` result with exit ID `ashen_warden`, adds the m
 ## Human tuning review still required
 
 Automation verifies state safety, not fun. Physical playtesting should review total 2–4 minute duration, core visibility, Ground Slam jump timing, rain warning readability, Phase 2/3 pressure, projectile speed, camera framing, HUD readability, arena width, Stone Guard usefulness, and whether an 18-health encounter feels satisfying rather than repetitive.
+
+## Audio presentation
+
+Original placeholder cues cover awakening, ground slam, bolts, Ember Rain, leap, charge, core burst, phase transitions, hurt, and defeat. The dedicated boss loop begins during awakening and is independent of phase/state timing. A muted or unavailable mixer leaves every telegraph and encounter rule unchanged.

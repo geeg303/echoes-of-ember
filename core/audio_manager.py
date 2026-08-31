@@ -35,6 +35,9 @@ class MusicDefinition:
 class AudioEvent:
     kind:str; audio_id:str; played:bool
 @dataclass(slots=True)
+class SoundPlayback:
+    channel:Any; definition:SoundDefinition; left_factor:float=1.0; right_factor:float=1.0
+@dataclass(slots=True)
 class AmbiencePlayback:
     owner_id:str; sound_id:str; channel:Any
 
@@ -58,7 +61,7 @@ class AudioManager:
     def __init__(self,*,asset_root:Path=ASSET_ROOT,catalog_path:Path|None=None,settings:AudioSettings|None=None,enabled:bool=True,channel_count:int=24)->None:
         self.asset_root=asset_root; self.settings=settings or AudioSettings(); self.enabled=enabled; self.available=False; self.disabled_reason=""
         self.sounds,self.music=load_audio_catalog(catalog_path or PROJECT_ROOT/"data"/"audio"/"audio.json")
-        self._cache:dict[str,pygame.mixer.Sound|None]={}; self._failed:set[str]=set(); self._cooldowns:dict[str,float]={}; self._ambience:dict[str,AmbiencePlayback]={}
+        self._cache:dict[str,pygame.mixer.Sound|None]={}; self._failed:set[str]=set(); self._cooldowns:dict[str,float]={}; self._ambience:dict[str,AmbiencePlayback]={}; self._active_sfx:list[SoundPlayback]=[]
         self.current_music:str|None=None; self.pending_music:str|None=None; self._music_transition=0.0; self._clock=0.0; self.events:list[AudioEvent]=[]; self.peak_channels=0
         if not enabled:self.disabled_reason="disabled by runtime setting"; return
         try:
@@ -68,6 +71,7 @@ class AudioManager:
             self.disabled_reason=str(exc); LOGGER.warning("Audio disabled: %s",exc)
     def update(self,dt:float)->None:
         self._clock+=max(0,dt)
+        if self.available and pygame.mixer.get_init(): self._active_sfx=[item for item in self._active_sfx if item.channel.get_busy()]
         if self.pending_music:
             self._music_transition=max(0,self._music_transition-dt)
             if self._music_transition<=0:self._start_music(self.pending_music); self.pending_music=None
@@ -84,10 +88,10 @@ class AudioManager:
         if sound is None or sound.get_num_channels()>=definition.max_instances:self._record("sound",sound_id,False); return False
         channel=pygame.mixer.find_channel(force=definition.priority>=AudioPriority.IMPORTANT)
         if channel is None:self._record("sound",sound_id,False); return False
-        volume=self.effective_volume(definition.category,definition.base_volume); left=right=volume
+        left_factor=right_factor=1.0
         if position is not None and listener_x is not None:
-            delta=max(-1.0,min(1.0,(position[0]-listener_x)/max(1,max_distance))); attenuation=max(.35,1-abs(position[0]-listener_x)/max_distance*.65); left=volume*attenuation*(1-max(0,delta)*.65); right=volume*attenuation*(1-max(0,-delta)*.65)
-        channel.set_volume(left,right); channel.play(sound,loops=-1 if definition.loop else 0); self._cooldowns[sound_id]=self._clock+definition.cooldown; self._record("sound",sound_id,True); return True
+            delta=max(-1.0,min(1.0,(position[0]-listener_x)/max(1,max_distance))); attenuation=max(.35,1-abs(position[0]-listener_x)/max_distance*.65); left_factor=attenuation*(1-max(0,delta)*.65); right_factor=attenuation*(1-max(0,-delta)*.65)
+        volume=self.effective_volume(definition.category,definition.base_volume); channel.set_volume(volume*left_factor,volume*right_factor); channel.play(sound,loops=-1 if definition.loop else 0); self._active_sfx.append(SoundPlayback(channel,definition,left_factor,right_factor)); self._cooldowns[sound_id]=self._clock+definition.cooldown; self._record("sound",sound_id,True); return True
     def play_music(self,track_id:str,*,immediate:bool=False)->bool:
         if track_id not in self.music:self._warn_once(track_id,"unknown music ID"); self._record("music",track_id,False); return False
         if track_id==self.current_music or track_id==self.pending_music:return True
@@ -100,7 +104,7 @@ class AudioManager:
         try: pygame.mixer.music.load(path); pygame.mixer.music.set_volume(self.effective_volume(AudioBus.MUSIC,d.base_volume)); pygame.mixer.music.play(-1 if d.loop else 0,fade_ms=round(d.fade_in*1000)); self.current_music=track_id; self._record("music",track_id,True); return True
         except (FileNotFoundError,pygame.error,OSError) as exc:self._warn_once(track_id,f"music unavailable: {exc}"); self.current_music=track_id; self._record("music",track_id,False); return False
     def stop_music(self,fade:float=0)->None:
-        if self.available:
+        if self.available and pygame.mixer.get_init():
             if fade>0:pygame.mixer.music.fadeout(round(fade*1000))
             else:pygame.mixer.music.stop()
         self.current_music=None; self.pending_music=None; self._music_transition=0
@@ -115,14 +119,14 @@ class AudioManager:
         channel.set_volume(self.effective_volume(AudioBus.AMBIENCE,d.base_volume)); channel.play(sound,loops=-1); self._ambience[owner_id]=AmbiencePlayback(owner_id,sound_id,channel); self._record("ambience",sound_id,True); return True
     def stop_ambience(self,owner_id:str)->None:
         playback=self._ambience.pop(owner_id,None)
-        if playback and playback.channel:playback.channel.stop()
+        if playback and playback.channel and pygame.mixer.get_init(): playback.channel.stop()
     def stop_all_ambience(self)->None:
         for owner in tuple(self._ambience):self.stop_ambience(owner)
     def reset_context(self)->None:
         self.stop_all_ambience()
-        if self.available:
+        if self.available and pygame.mixer.get_init():
             for index in range(pygame.mixer.get_num_channels()):pygame.mixer.Channel(index).stop()
-        self._cooldowns.clear()
+        self._cooldowns.clear(); self._active_sfx.clear()
     def _load_sound(self,d:SoundDefinition):
         if d.sound_id not in self._cache:
             try:self._cache[d.sound_id]=pygame.mixer.Sound(self.asset_root/d.path)
@@ -131,6 +135,10 @@ class AudioManager:
     def _apply_volumes(self)->None:
         if not self.available:return
         if self.current_music and self.current_music in self.music:pygame.mixer.music.set_volume(self.effective_volume(AudioBus.MUSIC,self.music[self.current_music].base_volume))
+        for playback in self._active_sfx:
+            volume=self.effective_volume(playback.definition.category,playback.definition.base_volume)
+            if self.settings.muted: playback.channel.set_volume(0.0)
+            else: playback.channel.set_volume(volume*playback.left_factor,volume*playback.right_factor)
         for playback in self._ambience.values():
             if playback.channel:
                 d=self.sounds[playback.sound_id]; playback.channel.set_volume(self.effective_volume(AudioBus.AMBIENCE,d.base_volume))
@@ -146,5 +154,4 @@ class AudioManager:
         return sum(pygame.mixer.Channel(i).get_busy() for i in range(pygame.mixer.get_num_channels()))
     def shutdown(self)->None:
         self.reset_context(); self.stop_music()
-        if self.available and pygame.mixer.get_init(): pygame.mixer.quit()
         self.available=False
