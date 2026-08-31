@@ -4,7 +4,7 @@ An original, colorful 2D platform adventure starring Nova, an explorer searching
 
 ## Current status
 
-Phase 7 is playable. The multi-screen level includes five data-driven enemy archetypes, stomp combat, contact knockback, temporary invulnerability, faction-aware projectiles, and a responsive Ember Pulse ranged attack built on shared animation and collision systems.
+Phase 8 is playable. Four data-driven power-ups now use a reusable single-slot lifecycle while preserving the existing platforming, enemies, damage, and faction-aware combat systems.
 
 ## Requirements
 
@@ -43,7 +43,7 @@ python main.py
 
 - Move: `A`/`D` or left/right arrows
 - Jump: `Space`, `Z`, or up arrow (release early for a shorter jump)
-- Ember Pulse: `F` while `DEBUG_MODE` grants the temporary test ability
+- Ember Pulse: `F` while the Ember Pulse power-up is active
 - Toggle fullscreen: `F11`
 - Quit: `Esc`
 - Debug attack animation: `F5` when `DEBUG_MODE` is enabled
@@ -161,7 +161,7 @@ Supported enemy types are `crawler`, `flyer`, `jumper`, `turret`, and `armored`.
 
 ## Ember Pulse combat
 
-Ember Pulse is temporarily enabled for Nova whenever `DEBUG_MODE` is true; permanent acquisition is intentionally deferred to the power-up phase. Press `F` to start Nova's existing attack animation and immediately launch a pulse in the facing direction. The HUD's reserved power-up slot reports the test ability while it is available.
+Press `F` while Ember Pulse is active to start Nova's existing attack animation and immediately launch a pulse in the facing direction. Debug mode no longer grants the ability automatically.
 
 Each pulse deals 1 damage, travels at 720 pixels per second, lasts 0.85 seconds, and uses a 0.35-second firing cooldown. At most four player pulses may exist at once. Pulses disappear on solid terrain, enemy impact, or lifetime expiry. Crawler and Flyer have 1 health, Jumper and Turret have 2, and the Armored Enemy has 4; unlike an ordinary stomp, Ember Pulse can defeat armor.
 
@@ -169,9 +169,32 @@ The shared projectile foundation labels ownership with `PLAYER`, `ENEMY`, or `NE
 
 Enemy death rewards remain one-shot when attacks overlap a dying target. Pulse impacts briefly flash and spark; enemy death produces stronger feedback. These lightweight effects are deliberately local until the full particle-system phase.
 
+## Power-ups
+
+Nova has one primary power-up slot. Picking up a different type replaces the current effect; picking up the same timed type refreshes it to full duration. Losing a life or pressing `F7` clears the slot, while ordinary enemy or hazard damage does not. World pickups are restored only by a full level restart.
+
+- Ember Pulse lasts 20 seconds and grants the existing ranged attack.
+- Wind Boots last 18 seconds and provide +20% run speed, +15% acceleration, and +5% jump strength without mutating base physics.
+- Aether Wing lasts 18 seconds and grants one extra airborne jump, reset by landing. Bounce pads and stomps do not consume or reset it.
+- Stone Guard holds one charge until hit, absorbs enemy, projectile, or hazard damage, and grants 0.55 seconds of follow-up protection.
+
+The HUD shows the active name, remaining timed duration or shield charge, pickup/expiration feedback, and a low-time warning. Power-up pickups and effects use procedural original shapes and remain in world space.
+
+```json
+{
+  "id": "ember_pulse_01",
+  "type": "powerup",
+  "powerup_type": "ember_pulse",
+  "x": 2720,
+  "y": 900,
+  "properties": {"duration": 20}
+}
+```
+
+The optional `duration` override must be finite and positive. Supported types are `ember_pulse`, `wind_boots`, `aether_wing`, and `stone_guard`; IDs share the collectible/enemy uniqueness namespace.
+
 ## Current limitations
 
-- Ember Pulse is a debug-owned testing ability, not yet a collectible power-up.
 - Audio assets are absent; combat and pickup hooks safely fall back to silence.
 - Collection and enemy state are held in memory only.
 - Lives stop at zero without a Game Over transition; the existing death/respawn loop remains safe.

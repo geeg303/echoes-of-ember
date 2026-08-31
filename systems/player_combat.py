@@ -7,7 +7,6 @@ import pygame
 from entities.player import Player
 from entities.projectile import EmberPulseProjectile, Faction
 from settings import (
-    DEBUG_MODE,
     EMBER_PULSE_COOLDOWN,
     EMBER_PULSE_DAMAGE,
     EMBER_PULSE_LIFETIME,
@@ -20,7 +19,7 @@ from systems.projectile_system import ProjectileManager
 class PlayerCombatController:
     """Own attack cooldown/count rules without placing combat in Player movement."""
 
-    def __init__(self, ember_pulse_enabled: bool = DEBUG_MODE) -> None:
+    def __init__(self, ember_pulse_enabled: bool = False) -> None:
         self.ember_pulse_enabled = ember_pulse_enabled
         self.cooldown_timer = 0.0
 

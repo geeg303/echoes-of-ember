@@ -13,6 +13,7 @@ from systems.collectible_system import CollectibleManager
 from systems.enemy_system import EnemyManager
 from systems.player_combat import PlayerCombatController
 from systems.projectile_system import ProjectileManager
+from systems.powerup_system import PowerUpManager, PowerUpSystem, PowerUpType
 from systems.progression import LevelProgress
 from settings import DEBUG_MODE, DISPLAY, GAME_TITLE, PROJECT_ROOT, SHOW_FPS
 from ui.debug_overlay import DebugOverlay
@@ -72,6 +73,8 @@ class Game:
         self.projectiles = ProjectileManager()
         self.enemies = EnemyManager(self.level.enemy_spawns, self.projectiles)
         self.player_combat = PlayerCombatController()
+        self.powerups = PowerUpSystem(self.player)
+        self.powerup_pickups = PowerUpManager(self.level.powerup_spawns)
 
     def _create_display(self) -> pygame.Surface:
         if self.fullscreen:
@@ -133,7 +136,9 @@ class Game:
             jump_held=bool(keys[pygame.K_SPACE] or keys[pygame.K_z] or keys[pygame.K_UP]),
             jump_released=self._jump_released,
         )
-        self.player.update(dt, controls, self.collision)
+        self.powerups.update(dt)
+        self.player.update(dt, controls, self.collision, self.powerups.movement_modifiers)
+        self.player_combat.ember_pulse_enabled = self.powerups.grants_ranged_attack
         self.player_combat.update(dt)
         if self._attack_pressed and self.player_combat.try_attack(self.player, self.projectiles):
             self.assets.sound("sounds/ember_pulse.wav").play()
@@ -147,6 +152,7 @@ class Game:
                 self.camera.snap_to(self.player.rect)
         if self.player.death_animation_finished:
             self.player.lose_life_and_restore()
+            self.powerups.clear("life_lost")
             self.player.respawn(self.level.player_spawn)
             self.camera.snap_to(self.player.rect)
         self.camera.update(self.player.rect, self.player.velocity, dt)
@@ -165,6 +171,7 @@ class Game:
         if enemy_result.shake:
             self.camera.shake(enemy_result.shake, 0.12)
         self.collectibles.update(dt, self.camera.view_rect)
+        self.powerup_pickups.update(dt, self.camera.view_rect)
         if not self.player.is_dead:
             for result in self.collectibles.collect_overlaps(
                 self.player.rect,
@@ -173,6 +180,11 @@ class Game:
             ):
                 self.assets.sound(result.sound_path).play()
                 self.hud.notify_pickup(result)
+            for kind in self.powerup_pickups.collect_overlaps(self.player.rect, self.powerups):
+                self.assets.sound(f"sounds/{kind.value}_pickup.wav").play()
+        power_event = self.powerups.consume_event()
+        if power_event in {"expired", "absorbed"}:
+            self.assets.sound(f"sounds/powerup_{power_event}.wav").play()
         self.hud.update(dt)
         self._jump_pressed = False
         self._jump_released = False
@@ -187,7 +199,10 @@ class Game:
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
         self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
+        self.powerup_pickups.draw(self.canvas, self.camera.view_rect, offset)
         self.enemies.draw(self.canvas, self.camera.view_rect, offset)
+        if self.powerups.has(PowerUpType.STONE_GUARD):
+            pygame.draw.circle(self.canvas, (185, 213, 235), self.player.rect.move(offset).center, 42, 3)
         self.player.draw(self.canvas, offset)
         self.hud.draw(
             self.canvas,
@@ -196,7 +211,9 @@ class Game:
             self.player.lives,
             self.progress,
             self.level.name,
-            "EMBER PULSE" if self.player_combat.ember_pulse_enabled else "—",
+            self.powerups.hud_text,
+            self.powerups.feedback,
+            self.powerups.timer_low,
         )
         if DEBUG_MODE:
             self.debug_overlay.draw(self.canvas, self.player)

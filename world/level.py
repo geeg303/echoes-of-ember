@@ -8,6 +8,7 @@ from pathlib import Path
 from tools.validation import load_and_validate_level
 from systems.progression import CollectibleType
 from systems.enemy_config import EnemyType
+from systems.powerup_system import PowerUpType
 from world.tilemap import TileMap
 
 
@@ -26,6 +27,14 @@ class EnemySpawn:
     properties: dict[str, object]
 
 
+@dataclass(frozen=True, slots=True)
+class PowerUpSpawn:
+    object_id: str
+    kind: PowerUpType
+    position: tuple[float, float]
+    duration: float | None = None
+
+
 @dataclass(slots=True)
 class Level:
     name: str
@@ -33,6 +42,7 @@ class Level:
     tilemap: TileMap
     collectible_spawns: tuple[CollectibleSpawn, ...]
     enemy_spawns: tuple[EnemySpawn, ...]
+    powerup_spawns: tuple[PowerUpSpawn, ...]
     source_path: Path
 
     @classmethod
@@ -46,7 +56,7 @@ class Level:
                 position=(float(entry["x"]), float(entry["y"])),
             )
             for index, entry in enumerate(data.get("objects", []))
-            if entry["type"] != "enemy"
+            if entry["type"] not in {"enemy", "powerup"}
         )
         enemy_spawns = tuple(
             EnemySpawn(
@@ -58,11 +68,22 @@ class Level:
             for entry in data.get("objects", [])
             if entry["type"] == "enemy"
         )
+        powerup_spawns = tuple(
+            PowerUpSpawn(
+                object_id=str(entry["id"]),
+                kind=PowerUpType(entry["powerup_type"]),
+                position=(float(entry["x"]), float(entry["y"])),
+                duration=float(entry["properties"]["duration"]) if "duration" in entry.get("properties", {}) else None,
+            )
+            for entry in data.get("objects", [])
+            if entry["type"] == "powerup"
+        )
         return cls(
             name=str(data["name"]),
             player_spawn=(float(spawn[0]), float(spawn[1])),
             tilemap=TileMap.from_data(data),
             collectible_spawns=collectible_spawns,
             enemy_spawns=enemy_spawns,
+            powerup_spawns=powerup_spawns,
             source_path=path,
         )

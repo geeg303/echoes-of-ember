@@ -115,9 +115,12 @@ def test_armored_enemy_requires_four_separate_pulse_hits() -> None:
 
 def test_level_reset_replaces_all_active_projectiles() -> None:
     from core.game import Game
+    from systems.powerup_system import PowerUpType
 
     game = Game()
     try:
+        game.powerups.activate(PowerUpType.EMBER_PULSE)
+        game.player_combat.ember_pulse_enabled = game.powerups.grants_ranged_attack
         assert game.player_combat.try_attack(game.player, game.projectiles)
         assert game.projectiles.projectiles
         game.reset_level()

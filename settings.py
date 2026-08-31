@@ -46,6 +46,16 @@ EMBER_PULSE_LIFETIME = 0.85
 EMBER_PULSE_COOLDOWN = 0.35
 EMBER_PULSE_MAX_ACTIVE = 4
 EMBER_PULSE_KNOCKBACK = 135.0
+POWERUP_DURATIONS: dict[str, float | None] = {
+    "ember_pulse": 20.0,
+    "wind_boots": 18.0,
+    "aether_wing": 18.0,
+    "stone_guard": None,
+}
+WIND_BOOTS_SPEED_MULTIPLIER = 1.20
+WIND_BOOTS_ACCELERATION_MULTIPLIER = 1.15
+WIND_BOOTS_JUMP_MULTIPLIER = 1.05
+STONE_GUARD_INVULNERABILITY = 0.55
 
 
 @dataclass(frozen=True, slots=True)

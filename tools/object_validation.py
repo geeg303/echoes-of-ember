@@ -11,6 +11,7 @@ from systems.enemy_config import (
     EnemyType,
 )
 from systems.progression import KNOWN_COLLECTIBLE_TYPES
+from systems.powerup_system import PowerUpType
 
 
 def validate_objects(
@@ -28,7 +29,7 @@ def validate_objects(
             errors.append(f"{prefix} must be an object")
             continue
         object_type = entry.get("type")
-        object_id = entry.get("id", f"object_{index}" if object_type != "enemy" else None)
+        object_id = entry.get("id", f"object_{index}" if object_type not in {"enemy", "powerup"} else None)
         if not isinstance(object_id, str) or not object_id.strip():
             errors.append(f"{prefix}.id must be a non-empty string when provided")
         elif object_id in seen_ids:
@@ -38,6 +39,8 @@ def validate_objects(
         _validate_coordinates(entry, prefix, pixel_width, pixel_height, errors)
         if object_type == "enemy":
             _validate_enemy(entry, prefix, errors)
+        elif object_type == "powerup":
+            _validate_powerup(entry, prefix, errors)
         elif object_type not in KNOWN_COLLECTIBLE_TYPES:
             errors.append(f"{prefix} has unknown collectible type: {object_type!r}")
     return errors
@@ -103,3 +106,22 @@ def _validate_enemy(entry: dict[str, Any], prefix: str, errors: list[str]) -> No
                 f"{prefix}.properties.{key} has incorrect type or value"
             )
 
+
+def _validate_powerup(entry: dict[str, Any], prefix: str, errors: list[str]) -> None:
+    raw_kind = entry.get("powerup_type")
+    try:
+        PowerUpType(raw_kind)
+    except (ValueError, TypeError):
+        errors.append(
+            f"{prefix} is missing powerup_type" if raw_kind is None
+            else f"{prefix} has unknown power-up type: {raw_kind!r}"
+        )
+    properties = entry.get("properties", {})
+    if not isinstance(properties, dict):
+        errors.append(f"{prefix}.properties must be an object")
+        return
+    for key, value in properties.items():
+        if key != "duration":
+            errors.append(f"{prefix}.properties has unknown property: {key!r}")
+        elif not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
+            errors.append(f"{prefix}.properties.duration has incorrect type or value")

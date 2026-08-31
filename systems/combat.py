@@ -20,6 +20,7 @@ class DamageResult:
     applied: bool
     died: bool = False
     amount: int = 0
+    absorbed: bool = False
 
 
 @dataclass(slots=True)
@@ -45,4 +46,3 @@ class CombatEffect:
         layer = pygame.Surface((radius * 2 + 8, radius * 2 + 8), pygame.SRCALPHA)
         pygame.draw.circle(layer, (*self.color, alpha), layer.get_rect().center, radius, 3)
         surface.blit(layer, layer.get_rect(center=center))
-

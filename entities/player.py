@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 
 import pygame
 
@@ -31,6 +32,14 @@ class PlayerControls:
     jump_pressed: bool = False
     jump_held: bool = False
     jump_released: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerModifiers:
+    speed: float = 1.0
+    acceleration: float = 1.0
+    jump: float = 1.0
+    double_jump: bool = False
 
 
 def move_toward(value: float, target: float, amount: float) -> float:
@@ -71,16 +80,25 @@ class Player(Entity):
         self.lives = PLAYER_STARTING_LIVES
         self.invulnerability_timer = 0.0
         self.previous_rect = self.rect.copy()
+        self.modifiers = PlayerModifiers()
+        self.extra_jump_available = False
+        self.damage_absorber: Callable[[DamageSource], bool] | None = None
+        self.double_jump_effect_timer = 0.0
 
     def update(
         self,
         dt: float,
         controls: PlayerControls,
         collision: CollisionEngine,
+        modifiers: PlayerModifiers = PlayerModifiers(),
     ) -> None:
         dt = min(max(dt, 0.0), 0.05)
         self.previous_rect = self.rect.copy()
+        self.modifiers = modifiers
+        if self.grounded:
+            self.extra_jump_available = modifiers.double_jump
         self.invulnerability_timer = max(0.0, self.invulnerability_timer - dt)
+        self.double_jump_effect_timer = max(0.0, self.double_jump_effect_timer - dt)
         was_grounded = self.grounded
         if self.is_dead:
             controls = PlayerControls()
@@ -132,7 +150,8 @@ class Player(Entity):
             acceleration = (
                 self.physics.ground_acceleration if self.grounded else self.physics.air_acceleration
             )
-            target = axis * self.physics.max_run_speed
+            acceleration *= self.modifiers.acceleration
+            target = axis * self.physics.max_run_speed * self.modifiers.speed
         else:
             if self.grounded and self.on_slippery:
                 acceleration = self.physics.slippery_deceleration
@@ -144,9 +163,14 @@ class Player(Entity):
         self.velocity.x = move_toward(self.velocity.x, target, acceleration * dt)
 
     def _try_buffered_jump(self) -> None:
-        if self.jump_buffer_timer <= 0.0 or self.coyote_timer <= 0.0:
+        if self.jump_buffer_timer <= 0.0:
             return
-        self.velocity.y = -self.physics.jump_speed
+        if self.coyote_timer <= 0.0:
+            if not self.modifiers.double_jump or not self.extra_jump_available:
+                return
+            self.extra_jump_available = False
+            self.double_jump_effect_timer = 0.28
+        self.velocity.y = -self.physics.jump_speed * self.modifiers.jump
         self.grounded = False
         self.coyote_timer = 0.0
         self.jump_buffer_timer = 0.0
@@ -237,6 +261,8 @@ class Player(Entity):
             return DamageResult(False)
         if source is not DamageSource.HAZARD and self.invulnerability_timer > 0.0:
             return DamageResult(False)
+        if self.damage_absorber and self.damage_absorber(source):
+            return DamageResult(False, absorbed=True)
         self.health = max(0, self.health - amount)
         died = self.health == 0
         if died:
@@ -309,6 +335,9 @@ class Player(Entity):
         frame = self.animation.current_frame
         frame_rect = frame.get_rect(midbottom=draw_rect.midbottom)
         surface.blit(frame, frame_rect)
+        if self.double_jump_effect_timer > 0.0:
+            radius = round(18 + (0.28 - self.double_jump_effect_timer) * 80)
+            pygame.draw.circle(surface, (210, 174, 255), draw_rect.midbottom, radius, 3)
 
         if SHOW_COLLISION_BOXES:
             pygame.draw.rect(surface, (75, 255, 165), draw_rect, 2)
