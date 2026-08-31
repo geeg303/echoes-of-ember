@@ -1,0 +1,527 @@
+{
+  "sounds": [
+    {
+      "id": "player_jump",
+      "path": "sounds/player/jump.wav",
+      "category": "sfx",
+      "base_volume": 0.75,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.06
+    },
+    {
+      "id": "player_land",
+      "path": "sounds/player/land.wav",
+      "category": "sfx",
+      "base_volume": 0.65,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.1
+    },
+    {
+      "id": "player_damage",
+      "path": "sounds/player/damage.wav",
+      "category": "sfx",
+      "base_volume": 0.9,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "player_death",
+      "path": "sounds/player/death.wav",
+      "category": "sfx",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.5
+    },
+    {
+      "id": "powerup_ember",
+      "path": "sounds/powerups/ember.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "powerup_wind",
+      "path": "sounds/powerups/wind.wav",
+      "category": "sfx",
+      "base_volume": 0.8,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "powerup_aether",
+      "path": "sounds/powerups/aether.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.12
+    },
+    {
+      "id": "powerup_stone",
+      "path": "sounds/powerups/stone.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "stone_guard_break",
+      "path": "sounds/powerups/stone_break.wav",
+      "category": "sfx",
+      "base_volume": 0.95,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "ember_pulse_fire",
+      "path": "sounds/combat/pulse_fire.wav",
+      "category": "sfx",
+      "base_volume": 0.75,
+      "priority": 1,
+      "max_instances": 4,
+      "cooldown": 0.08
+    },
+    {
+      "id": "ember_pulse_hit",
+      "path": "sounds/combat/pulse_hit.wav",
+      "category": "sfx",
+      "base_volume": 0.7,
+      "priority": 1,
+      "max_instances": 4,
+      "cooldown": 0.06
+    },
+    {
+      "id": "enemy_hit",
+      "path": "sounds/combat/enemy_hit.wav",
+      "category": "sfx",
+      "base_volume": 0.7,
+      "priority": 1,
+      "max_instances": 4,
+      "cooldown": 0.06
+    },
+    {
+      "id": "enemy_defeat",
+      "path": "sounds/combat/enemy_defeat.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 3,
+      "cooldown": 0.12
+    },
+    {
+      "id": "armored_block",
+      "path": "sounds/combat/armored_block.wav",
+      "category": "sfx",
+      "base_volume": 0.9,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "turret_fire",
+      "path": "sounds/combat/turret_fire.wav",
+      "category": "sfx",
+      "base_volume": 0.7,
+      "priority": 1,
+      "max_instances": 3,
+      "cooldown": 0.12
+    },
+    {
+      "id": "ember_shard",
+      "path": "sounds/collectibles/ember_shard.wav",
+      "category": "sfx",
+      "base_volume": 0.55,
+      "priority": 1,
+      "max_instances": 4,
+      "cooldown": 0.025
+    },
+    {
+      "id": "rare_crystal",
+      "path": "sounds/collectibles/rare_crystal.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.12
+    },
+    {
+      "id": "secret_token",
+      "path": "sounds/collectibles/secret_token.wav",
+      "category": "sfx",
+      "base_volume": 0.9,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.2
+    },
+    {
+      "id": "checkpoint_activate",
+      "path": "sounds/world/checkpoint.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.2
+    },
+    {
+      "id": "breakable_destroy",
+      "path": "sounds/world/breakable.wav",
+      "category": "sfx",
+      "base_volume": 0.75,
+      "priority": 1,
+      "max_instances": 3,
+      "cooldown": 0.08
+    },
+    {
+      "id": "switch_activate",
+      "path": "sounds/world/switch.wav",
+      "category": "sfx",
+      "base_volume": 0.7,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.12
+    },
+    {
+      "id": "door_open",
+      "path": "sounds/world/door.wav",
+      "category": "sfx",
+      "base_volume": 0.7,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.2
+    },
+    {
+      "id": "platform_warning",
+      "path": "sounds/world/platform_warning.wav",
+      "category": "sfx",
+      "base_volume": 0.55,
+      "priority": 0,
+      "max_instances": 2,
+      "cooldown": 0.25
+    },
+    {
+      "id": "platform_drop",
+      "path": "sounds/world/platform_drop.wav",
+      "category": "sfx",
+      "base_volume": 0.65,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.2
+    },
+    {
+      "id": "secret_discovered",
+      "path": "sounds/secrets/discovered.wav",
+      "category": "sfx",
+      "base_volume": 0.8,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.3
+    },
+    {
+      "id": "challenge_complete",
+      "path": "sounds/secrets/challenge.wav",
+      "category": "sfx",
+      "base_volume": 0.9,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.3
+    },
+    {
+      "id": "secret_exit",
+      "path": "sounds/secrets/exit.wav",
+      "category": "sfx",
+      "base_volume": 0.95,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.5
+    },
+    {
+      "id": "ui_move",
+      "path": "sounds/ui/move.wav",
+      "category": "ui",
+      "base_volume": 0.6,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.05
+    },
+    {
+      "id": "ui_confirm",
+      "path": "sounds/ui/confirm.wav",
+      "category": "ui",
+      "base_volume": 0.75,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.08
+    },
+    {
+      "id": "ui_cancel",
+      "path": "sounds/ui/cancel.wav",
+      "category": "ui",
+      "base_volume": 0.65,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.08
+    },
+    {
+      "id": "ui_locked",
+      "path": "sounds/ui/locked.wav",
+      "category": "ui",
+      "base_volume": 0.7,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.15
+    },
+    {
+      "id": "ui_notification",
+      "path": "sounds/ui/notification.wav",
+      "category": "ui",
+      "base_volume": 0.65,
+      "priority": 1,
+      "max_instances": 2,
+      "cooldown": 0.12
+    },
+    {
+      "id": "route_unlock",
+      "path": "sounds/ui/route_unlock.wav",
+      "category": "ui",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.2
+    },
+    {
+      "id": "ember_veil_reveal",
+      "path": "sounds/ui/veil.wav",
+      "category": "ui",
+      "base_volume": 0.9,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.4
+    },
+    {
+      "id": "sanctum_unlock",
+      "path": "sounds/ui/sanctum.wav",
+      "category": "ui",
+      "base_volume": 0.9,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.4
+    },
+    {
+      "id": "world_complete",
+      "path": "sounds/ui/world_complete.wav",
+      "category": "ui",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.7
+    },
+    {
+      "id": "level_complete",
+      "path": "sounds/ui/level_complete.wav",
+      "category": "ui",
+      "base_volume": 0.9,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.5
+    },
+    {
+      "id": "warden_awaken",
+      "path": "sounds/boss/awaken.wav",
+      "category": "sfx",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.5
+    },
+    {
+      "id": "warden_ground_slam",
+      "path": "sounds/boss/ground_slam.wav",
+      "category": "sfx",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 2,
+      "cooldown": 0.25
+    },
+    {
+      "id": "warden_bolt",
+      "path": "sounds/boss/bolt.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 3,
+      "cooldown": 0.1
+    },
+    {
+      "id": "warden_ember_rain",
+      "path": "sounds/boss/ember_rain.wav",
+      "category": "sfx",
+      "base_volume": 0.9,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.4
+    },
+    {
+      "id": "warden_leap",
+      "path": "sounds/boss/leap.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.2
+    },
+    {
+      "id": "warden_charge",
+      "path": "sounds/boss/charge.wav",
+      "category": "sfx",
+      "base_volume": 0.9,
+      "priority": 2,
+      "max_instances": 2,
+      "cooldown": 0.25
+    },
+    {
+      "id": "warden_core_burst",
+      "path": "sounds/boss/core_burst.wav",
+      "category": "sfx",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 2,
+      "cooldown": 0.25
+    },
+    {
+      "id": "warden_phase_transition",
+      "path": "sounds/boss/phase.wav",
+      "category": "sfx",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.7
+    },
+    {
+      "id": "warden_hurt",
+      "path": "sounds/boss/hurt.wav",
+      "category": "sfx",
+      "base_volume": 0.85,
+      "priority": 2,
+      "max_instances": 3,
+      "cooldown": 0.08
+    },
+    {
+      "id": "warden_defeat",
+      "path": "sounds/boss/defeat.wav",
+      "category": "sfx",
+      "base_volume": 1,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 1.0
+    },
+    {
+      "id": "ambience_verdant",
+      "path": "ambience/verdant.wav",
+      "category": "ambience",
+      "base_volume": 0.45,
+      "priority": 0,
+      "max_instances": 1,
+      "cooldown": 0,
+      "loop": true
+    },
+    {
+      "id": "ambience_canopy",
+      "path": "ambience/canopy.wav",
+      "category": "ambience",
+      "base_volume": 0.5,
+      "priority": 0,
+      "max_instances": 1,
+      "cooldown": 0,
+      "loop": true
+    },
+    {
+      "id": "ambience_ravine",
+      "path": "ambience/ravine.wav",
+      "category": "ambience",
+      "base_volume": 0.5,
+      "priority": 0,
+      "max_instances": 1,
+      "cooldown": 0,
+      "loop": true
+    },
+    {
+      "id": "ambience_ruins",
+      "path": "ambience/ruins.wav",
+      "category": "ambience",
+      "base_volume": 0.42,
+      "priority": 0,
+      "max_instances": 1,
+      "cooldown": 0,
+      "loop": true
+    },
+    {
+      "id": "ambience_sanctum",
+      "path": "ambience/sanctum.wav",
+      "category": "ambience",
+      "base_volume": 0.5,
+      "priority": 0,
+      "max_instances": 1,
+      "cooldown": 0,
+      "loop": true
+    }
+  ],
+  "music": [
+    {
+      "id": "music_world_map",
+      "path": "music/world_map.wav",
+      "base_volume": 0.65,
+      "loop": true,
+      "fade_in": 1.0,
+      "fade_out": 1.0
+    },
+    {
+      "id": "music_verdant",
+      "path": "music/verdant.wav",
+      "base_volume": 0.65,
+      "loop": true,
+      "fade_in": 0.8,
+      "fade_out": 0.8
+    },
+    {
+      "id": "music_ravine",
+      "path": "music/ravine.wav",
+      "base_volume": 0.68,
+      "loop": true,
+      "fade_in": 0.8,
+      "fade_out": 0.8
+    },
+    {
+      "id": "music_ruins",
+      "path": "music/ruins.wav",
+      "base_volume": 0.62,
+      "loop": true,
+      "fade_in": 0.8,
+      "fade_out": 0.8
+    },
+    {
+      "id": "music_boss",
+      "path": "music/boss.wav",
+      "base_volume": 0.75,
+      "loop": true,
+      "fade_in": 0.5,
+      "fade_out": 1.2
+    },
+    {
+      "id": "music_world_complete",
+      "path": "music/world_complete.wav",
+      "base_volume": 0.75,
+      "loop": true,
+      "fade_in": 0.8,
+      "fade_out": 1.2
+    }
+  ]
+}
