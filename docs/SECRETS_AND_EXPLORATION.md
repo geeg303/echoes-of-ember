@@ -44,3 +44,8 @@ Every Verdant Reaches level retains exactly one optional Secret Token.
 - A visible reward establishes a traversal objective.
 
 Clues should be readable without explicit labels. Timed powers may make entry easier, but secrets and mandatory routes require safe, recoverable exits.
+
+
+## World Map integration
+
+A completed secret exit adds a monotonic runtime discovery flag independently of the latest `LevelResult`. The authored `secret_exit_discovered` connection reveals Ember Veil. Replaying Ruins through the normal exit may replace performance statistics but cannot hide that branch during the current session.

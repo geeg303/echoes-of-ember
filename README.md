@@ -283,3 +283,8 @@ Unknown level IDs fail cleanly. See `docs/world_1_design.md` for themes, pacing,
 ## Secrets and exploration
 
 World 1 contains twelve optional, data-driven discoveries: caches, rooms, challenge rooms, alternate routes, and one secret exit in Ruins of the First Flame. Discoveries award score once, produce queued screen-space notifications, and appear in frozen level/world results. The secret exit records alternate completion while preserving normal campaign order. See `docs/SECRETS_AND_EXPLORATION.md` for schemas, triggers, reset rules, and clue conventions.
+
+
+## World Map
+
+Normal startup now opens the procedural Verdant Reaches World Map. Travel uses authored node connections and waypoints; completing a level returns Nova to that node and unlocks routes without auto-launching the next stage. Latest run results remain separate from monotonic session discoveries. The Ruins secret exit permanently reveals the in-memory Ember Veil branch, while First Flame Sanctum opens the aggregate World Complete summary. See `docs/WORLD_MAP.md`.

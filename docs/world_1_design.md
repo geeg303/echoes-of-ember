@@ -33,3 +33,8 @@ Checkpoints follow meaningful milestones. Optional upper, breakable, and power-a
 | Ruins of the First Flame | 4 | Ancient cache, side room, ascent challenge, secret exit | Warm cracks, ruin symbol, ascending shards, violet arch | Ancient ascent reward |
 
 The Emberfall chamber tracks only its authored Jumper and Turret. The single World 1 secret exit sits on an upper ruin branch in 1-4; it advances through existing campaign order until the future world map gives alternate exits a destination.
+
+
+## Overworld route
+
+The fixed Verdant Reaches map winds from Starting Grove through the four level landmarks to First Flame Sanctum. Elevation and route bends echo canopy ascent, ravine descent, and the final ruins. A violet path from Ruins to Ember Veil stays hidden until the authored secret exit is discovered.

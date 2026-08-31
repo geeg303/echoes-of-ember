@@ -41,3 +41,8 @@ Register the level ID in explicit campaign order in `data/worlds/verdant_reaches
 ## Design template
 
 Use teach → test → twist for each mechanic. Put optional challenges above or beside a safe main route, reconnect branches, place checkpoints after learning milestones, and end with a calm gate reveal. Verify that power-up expiration, destroyed blocks, opened doors, and defeated enemies cannot softlock the mandatory path.
+
+
+## Registering a level on the World Map
+
+Add one `level` node with the stable registered `level_id`, map coordinates, and title. Connect it using unique connection IDs, optional route waypoints, and an authored unlock requirement. Do not infer order from filenames. Validate the complete registry with `python -m tools.validation --all-levels`; see `docs/WORLD_MAP.md` for the graph schema.
