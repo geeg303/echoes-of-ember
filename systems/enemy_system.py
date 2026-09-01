@@ -29,6 +29,11 @@ class EnemyUpdateResult:
     player_died: bool = False
     score_awarded: int = 0
     shake: float = 0.0
+    defeated: list[tuple[str, str]] = None
+
+    def __post_init__(self) -> None:
+        if self.defeated is None:
+            self.defeated = []
 
 
 class EnemyManager:
@@ -86,6 +91,7 @@ class EnemyManager:
                             )
                             if newly_dead:
                                 self.defeated_ids.add(enemy.enemy_id)
+                                outcome.defeated.append((enemy.enemy_id, "ember_pulse"))
                                 reward = enemy.claim_score()
                                 progress.award_score(reward)
                                 outcome.score_awarded += reward
@@ -146,6 +152,7 @@ class EnemyManager:
                 newly_dead = enemy.take_damage(1)
                 if newly_dead:
                     self.defeated_ids.add(enemy.enemy_id)
+                    outcome.defeated.append((enemy.enemy_id, "stomp"))
                     reward = enemy.claim_score()
                     progress.award_score(reward)
                     outcome.score_awarded += reward

@@ -341,6 +341,9 @@ def main() -> int:
         print(f"valid world: {registry.world_id} ({len(registry.level_ids)} levels)")
         dialogue_count, npc_count = validate_narrative_data(PROJECT_ROOT / "data")
         print(f"valid narrative: {dialogue_count} dialogues, {npc_count} NPCs")
+        from systems.achievement_system import load_achievement_definitions
+        achievements = load_achievement_definitions(PROJECT_ROOT / "data" / "achievements" / "achievements.json")
+        print(f"valid achievements: {len(achievements)} definitions")
     return 0
 
 if __name__ == "__main__":

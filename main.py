@@ -45,7 +45,7 @@ def main() -> int:
         return 2
     direct_campaign = args.slot is not None or args.new_game
     slot_id = args.slot or 1
-    game = Game(level_id=level_id, registry=registry, start_frontend=args.level is None and not direct_campaign, start_on_map=args.level is None and direct_campaign, slot_id=slot_id, new_game=args.new_game, persistence=direct_campaign)
+    game = Game(level_id=level_id, registry=registry, start_frontend=args.level is None and not direct_campaign, start_on_map=args.level is None and direct_campaign, slot_id=slot_id, new_game=args.new_game, persistence=direct_campaign, achievements_enabled=args.level is None)
     game.run(frame_limit=5 if args.smoke_test else None)
     return 0
 

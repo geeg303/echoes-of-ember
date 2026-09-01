@@ -77,3 +77,7 @@ A chosen slot enters this map; Continue chooses the newest usable slot. Pause or
 ## Narrative progression
 
 Semantic dialogue flags live beside campaign progression but do not unlock map routes. NPC variants may read completed levels, secrets, the Ember Veil exit, boss defeat, and world completion. These facts remain authoritative in `WorldProgress`; dialogue never duplicates or overrides them.
+
+## Achievement observation
+
+Map and world progression remain authoritative. Achievements may observe committed level, secret-exit, boss, and world outcomes but cannot reveal nodes or unlock routes.

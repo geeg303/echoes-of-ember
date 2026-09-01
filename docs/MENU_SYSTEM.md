@@ -23,3 +23,7 @@ Menus now consume logical actions from `InputManager`. D-pad and stick navigatio
 ## Dialogue overlay
 
 Dialogue is a gameplay overlay rather than a front-end menu. It freezes simulation, consumes only dialogue navigation/confirm/back actions, suppresses Pause, and closes cleanly before map or main-menu transitions.
+
+## Achievements
+
+The seven-row Main Menu uses compact spacing and includes the profile-wide Achievement browser. It requires no campaign slot and returns through the logical Back action. Pause remains uncluttered.

@@ -110,3 +110,7 @@ Normal startup inspects three slots through summaries. Continue chooses the newe
 ## Version 2 → 3 migration
 
 Version 3 adds validated `progression.dialogue_flags`. Loading a v2 slot inserts an empty list and preserves results, completed levels, secret exits, revealed nodes, defeated bosses, world completion, timestamps, current node, and play time. Pure conversation-history flags save immediately when first granted rather than waiting for level completion. Invalid, duplicate, or malformed flags reject the slot safely.
+
+## Achievement profile isolation
+
+Local achievements use a separate schema-1 `achievements.json` beside this save directory. Slot creation, overwrite, deletion, recovery, and campaign schema migration never read, reset, or embed achievement state. Campaign schema remains 3.

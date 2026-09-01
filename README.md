@@ -353,3 +353,8 @@ Phase 18 adds full single-player gamepad support without changing keyboard contr
 Phase 19 adds four original World 1 guides—Mira, Orin, Talen, and Vesper—through validated per-level NPC catalogs and branching dialogue graphs. Approach the nearest guide and press E (controller Y/north face). Enter/Space or controller A reveals then advances text; Up/Down selects responses; Escape or controller B closes optional dialogue. Prompts switch with the active device.
 
 Dialogue freezes gameplay simulation and the level timer while audio continues. Safe conditions react to completed levels, secrets, the Ember Veil exit, boss defeat, world completion, tokens, and semantic dialogue flags. The only authored effect sets an idempotent conversation flag. Save schema 3 persists those flags immediately and migrates v2 slots without losing existing progress. See [docs/NPC_SYSTEM.md](docs/NPC_SYSTEM.md), [docs/DIALOGUE_SYSTEM.md](docs/DIALOGUE_SYSTEM.md), and [docs/WORLD_1_NPCS.md](docs/WORLD_1_NPCS.md).
+
+
+## Achievements
+
+Phase 20 adds 19 profile-wide local achievements across progression, collectibles, secrets, story, combat, and challenge play. Open Achievements from the Main Menu; keyboard and controller navigation are supported. Unlocks use a separate atomic `achievements.json` profile and never affect campaign outcomes. Direct `--level` launches suppress achievements. See [docs/ACHIEVEMENT_SYSTEM.md](docs/ACHIEVEMENT_SYSTEM.md) and [docs/ACHIEVEMENT_CATALOG.md](docs/ACHIEVEMENT_CATALOG.md).

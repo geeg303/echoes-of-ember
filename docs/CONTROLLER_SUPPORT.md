@@ -37,3 +37,7 @@ Physical controller review is still recommended across representative SDL mappin
 ## Dialogue
 
 Dialogue is fully controller-operable. Prompts switch live with the active device, choice focus uses normalized menu actions, and held-button edges are suppressed across open/close transitions. Start/Pause is intentionally ignored until optional dialogue is closed with Back.
+
+## Achievement browser
+
+The Main Menu achievement list is controller-only usable: D-pad/stick scroll and filter, and east-face/B returns. Prompts continue to follow the active device.

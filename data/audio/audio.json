@@ -472,6 +472,15 @@
       "max_instances": 1,
       "cooldown": 0,
       "loop": true
+    },
+    {
+      "id": "achievement_unlocked",
+      "path": "sounds/ui/achievement.wav",
+      "category": "ui",
+      "base_volume": 0.8,
+      "priority": 3,
+      "max_instances": 1,
+      "cooldown": 0.25
     }
   ],
   "music": [

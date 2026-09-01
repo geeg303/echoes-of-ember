@@ -68,8 +68,8 @@ KEY_ACTIONS={
 BUTTON_ACTIONS={0:(Action.JUMP,Action.CONFIRM),1:(Action.BACK,),2:(Action.ATTACK,),3:(Action.INTERACT,),6:(Action.BACK,),7:(Action.PAUSE,)}
 MENU_ACTIONS=(Action.MENU_UP,Action.MENU_DOWN,Action.MENU_LEFT,Action.MENU_RIGHT)
 PROMPTS={
- InputDevice.KEYBOARD:{Action.CONFIRM:"ENTER",Action.BACK:"ESC",Action.INTERACT:"E",Action.ATTACK:"F",Action.JUMP:"SPACE",Action.PAUSE:"ESC",Action.DEBUG_RESET:"F7"},
- InputDevice.CONTROLLER:{Action.CONFIRM:"A",Action.BACK:"B",Action.INTERACT:"Y",Action.ATTACK:"X",Action.JUMP:"A",Action.PAUSE:"START"},
+ InputDevice.KEYBOARD:{Action.MENU_LEFT:"ARROWS",Action.MENU_RIGHT:"ARROWS",Action.CONFIRM:"ENTER",Action.BACK:"ESC",Action.INTERACT:"E",Action.ATTACK:"F",Action.JUMP:"SPACE",Action.PAUSE:"ESC",Action.DEBUG_RESET:"F7"},
+ InputDevice.CONTROLLER:{Action.MENU_LEFT:"D-PAD",Action.MENU_RIGHT:"D-PAD",Action.CONFIRM:"A",Action.BACK:"B",Action.INTERACT:"Y",Action.ATTACK:"X",Action.JUMP:"A",Action.PAUSE:"START"},
 }
 class InputManager:
  def __init__(self,backend:ControllerBackend|None=None,*,deadzone:float=.22,menu_threshold:float=.58,repeat_delay:float=.38,repeat_interval:float=.12)->None:

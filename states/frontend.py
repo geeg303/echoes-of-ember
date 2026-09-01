@@ -22,7 +22,7 @@ class FrontendController:
         if not valid:return None
         return max(valid,key=lambda x:x.updated_at or "").slot_id
     def _main(self)->None:
-        self.screen=FrontendScreen.MAIN;c=self.continue_slot;self.menu.set_items([MenuItem("CONTINUE","continue",c is not None,"" if c else "NO SAVE"),MenuItem("NEW GAME","new"),MenuItem("LOAD GAME / SAVE SLOTS","load"),MenuItem("SETTINGS","settings"),MenuItem("CREDITS","credits"),MenuItem("QUIT","quit")])
+        self.screen=FrontendScreen.MAIN;c=self.continue_slot;self.menu.set_items([MenuItem("CONTINUE","continue",c is not None,"" if c else "NO SAVE"),MenuItem("NEW GAME","new"),MenuItem("LOAD GAME / SAVE SLOTS","load"),MenuItem("ACHIEVEMENTS","achievements"),MenuItem("SETTINGS","settings"),MenuItem("CREDITS","credits"),MenuItem("QUIT","quit")])
     def open_slots(self,mode:str)->None:self.slot_mode=mode;self.refresh_slots();self.screen=FrontendScreen.SLOTS;self.menu.set_items([MenuItem(f"SLOT {x.slot_id}",f"slot:{x.slot_id}",x.state is not SlotState.UNSUPPORTED_VERSION,self._summary(x)) for x in self.summaries]+[MenuItem("BACK","back")])
     def _summary(self,x:SlotSummary)->str:
         if x.state is SlotState.EMPTY:return "EMPTY"
@@ -52,6 +52,7 @@ class FrontendController:
             if item_id=="continue":self.host.start_campaign(self.continue_slot or 1)
             elif item_id=="new":self.open_slots("new")
             elif item_id=="load":self.open_slots("load")
+            elif item_id=="achievements":self.host.open_achievements()
             elif item_id=="settings":self.host.open_settings("frontend")
             elif item_id=="credits":self.screen=FrontendScreen.CREDITS;self.menu.set_items([MenuItem("BACK","back")])
             elif item_id=="quit":self.host.running=False

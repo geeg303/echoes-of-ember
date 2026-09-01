@@ -1,17 +1,19 @@
 """Profile-wide achievement persistence and semantic event observation."""
 from __future__ import annotations
 from dataclasses import dataclass,field
-import json,logging,math,os
+import json,logging,math,os,re
+from datetime import datetime
 from pathlib import Path
 from core.save_manager import default_save_root
 from systems.save_data import utc_now
 from systems.achievement_system import AchievementDefinition,COUNTERS,SETS,condition_matches,load_achievement_definitions
-LOGGER=logging.getLogger(__name__);PROFILE_SCHEMA_VERSION=1;MAX_COUNTER=1_000_000_000
+LOGGER=logging.getLogger(__name__);PROFILE_SCHEMA_VERSION=1;MAX_COUNTER=1_000_000_000;FLAG_RE=re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 @dataclass(slots=True)
 class AchievementProfile:
  unlocked:dict[str,str]=field(default_factory=dict);counters:dict[str,int]=field(default_factory=dict);sets:dict[str,set[str]]=field(default_factory=dict);flags:set[str]=field(default_factory=set);dirty:bool=False
  def to_dict(self):return {"schema_version":1,"unlocked":{k:{"unlocked_at":v} for k,v in sorted(self.unlocked.items())},"progress":{"counters":dict(sorted(self.counters.items())),"sets":{k:sorted(v) for k,v in sorted(self.sets.items())},"flags":sorted(self.flags)}}
-class AchievementProfileError(ValueError):pass
+class AchievementProfileError(ValueError):
+ """Achievement profile data is invalid or unsupported."""
 class AchievementStore:
  def __init__(self,path:Path|None=None):self.path=path or default_save_root().parent/"achievements.json";self.path.parent.mkdir(parents=True,exist_ok=True);self.status="empty";self.writable=True
  def load(self,known_ids:set[str])->AchievementProfile:
@@ -25,11 +27,14 @@ class AchievementStore:
    parsed={}
    for aid,value in unlocked.items():
     if aid not in known_ids or not isinstance(value,dict) or not isinstance(value.get("unlocked_at"),str):raise AchievementProfileError("profile unlock malformed")
-    parsed[aid]=value["unlocked_at"]
+    stamp=value["unlocked_at"]
+    try:datetime.fromisoformat(stamp.replace("Z","+00:00"))
+    except ValueError as exc:raise AchievementProfileError("unlock timestamp malformed") from exc
+    parsed[aid]=stamp
    counters=progress.get("counters",{});sets=progress.get("sets",{});flags=progress.get("flags",[])
    if not isinstance(counters,dict) or any(k not in COUNTERS or not isinstance(v,int) or isinstance(v,bool) or not 0<=v<=MAX_COUNTER for k,v in counters.items()):raise AchievementProfileError("profile counters malformed")
    if not isinstance(sets,dict) or any(k not in SETS or not isinstance(v,list) or len(v)!=len(set(v)) or not all(isinstance(x,str) and x for x in v) for k,v in sets.items()):raise AchievementProfileError("profile sets malformed")
-   if not isinstance(flags,list) or len(flags)!=len(set(flags)) or not all(isinstance(x,str) for x in flags):raise AchievementProfileError("profile flags malformed")
+   if not isinstance(flags,list) or len(flags)!=len(set(flags)) or not all(isinstance(x,str) and FLAG_RE.fullmatch(x) for x in flags):raise AchievementProfileError("profile flags malformed")
    self.status="valid";return AchievementProfile(parsed,dict(counters),{k:set(v) for k,v in sets.items()},set(flags))
   except (OSError,json.JSONDecodeError,AchievementProfileError) as exc:
    LOGGER.warning("Achievement profile unavailable: %s",exc);self.status=self.status if self.status in {"unsupported","corrupt"} else "corrupt";self.writable=False;return AchievementProfile()

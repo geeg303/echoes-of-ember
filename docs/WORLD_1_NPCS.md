@@ -10,3 +10,7 @@ World 1 uses four recurring-tone guides, one in each platform stage and none in 
 First-meeting variants use `flag_missing`; their end nodes set `met_mira`, `met_orin`, `heard_sanctum_warning`, or `vesper_secret_hint`. Lower-priority repeat variants use the corresponding `flag`. Secret, secret-exit, boss, and world-complete variants have higher priority, so replaying a level reveals the most relevant authored reaction. Vesper’s Veil acknowledgement sets `vesper_veil_acknowledged` once but remains a safe repeatable conversation.
 
 The cast provides hints and lore only. NPCs do not grant quests, inventory, powers, scores, unlocks, or combat authority.
+
+## Story achievements
+
+Completed conversations contribute unique profile-wide NPC identities. Repeating one speaker cannot inflate `Four Voices`; meeting the four guides across different campaign slots may contribute.

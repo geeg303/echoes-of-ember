@@ -36,3 +36,7 @@ While dialogue is active, player physics/input, enemies, boss, projectiles, plat
 ## Adding dialogue
 
 Create one graph file, keep every target reachable, use only whitelisted conditions/effects, reference it from an NPC variant, provide an unconditional fallback, and run `pytest` plus the narrative data validation. Text is wrapped at render time; fonts are cached by the game rather than recreated per frame.
+
+## Achievement observation
+
+A meaningfully completed conversation emits one semantic NPC completion event after dialogue closes. Toast presentation is deferred while dialogue is visible. Dialogue never checks achievement state.

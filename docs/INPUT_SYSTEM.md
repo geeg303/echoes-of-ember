@@ -45,3 +45,7 @@ The most recent meaningful keyboard key or controller button/stick movement sele
 ## Dialogue context
 
 NPC conversations reuse `INTERACT`, `CONFIRM`, `BACK`, `MENU_UP`, and `MENU_DOWN`. Keyboard uses E, Enter/Space, Escape, and arrows/W/S; controller uses north-face/Y to interact, south-face/A to reveal/advance/select, east-face/B to close, and D-pad/stick for choices. Edge suppression prevents the opening interaction from advancing the first line.
+
+## Achievement context
+
+Achievement browsing consumes logical menu Up/Down, Left/Right filters, and Back. It contains no raw keyboard or joystick polling. Unlock toasts never intercept input.

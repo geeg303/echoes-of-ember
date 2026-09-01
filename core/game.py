@@ -7,6 +7,7 @@ import logging
 import pygame
 
 from core.asset_manager import AssetManager
+from core.achievement_manager import AchievementManager
 from core.audio_manager import AudioManager
 from core.input_manager import Action, InputManager
 from core.save_manager import SaveManager, SlotState
@@ -44,6 +45,8 @@ from states.world_map import WorldMapScreen
 from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
 from ui.boss_hud import BossHUD
+from ui.achievement_screen import AchievementScreen
+from ui.achievement_toast import AchievementToastQueue
 from ui.notifications import NotificationQueue
 from ui.dialogue_box import DialogueBox
 from world.background import ParallaxBackground
@@ -59,7 +62,7 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None, input_manager: InputManager | None = None) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None, input_manager: InputManager | None = None, achievement_manager: AchievementManager | None = None, achievements_enabled: bool | None = None) -> None:
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
         self.input = input_manager or InputManager()
@@ -71,6 +74,20 @@ class Game:
         self.clock = pygame.time.Clock()
         self.assets = AssetManager()
         self.audio = audio_manager or AudioManager(settings=self.app_settings.audio)
+        achievement_enabled = (start_frontend or persistence) if achievements_enabled is None else achievements_enabled
+        profile_path = None
+        if save_manager is not None:
+            profile_path = save_manager.save_root.parent / "achievements.json"
+        elif settings_manager is not None:
+            profile_path = settings_manager.path.parent / "achievements.json"
+        self.achievements = achievement_manager or AchievementManager.create(
+            PROJECT_ROOT / "data" / "achievements" / "achievements.json",
+            profile_path=profile_path, enabled=achievement_enabled,
+        )
+        self.achievement_screen = AchievementScreen(
+            self.achievements, self.assets.font(None, 42), self.assets.font(None, 25), self.assets.font(None, 19)
+        )
+        self.achievement_toasts = AchievementToastQueue(self.assets.font(None, 28), self.assets.font(None, 18))
         self.running = True
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
@@ -180,9 +197,11 @@ class Game:
         self.gameplay_phase = GameplayPhase.PLAYING
         self.elapsed_time = 0.0
         self.deaths = 0
+        self.damage_taken_this_attempt = False
         self.completion_timer = 0.0
         self.level_result: LevelResult | None = None
         self.level_complete_screen.reset()
+        self.achievement_toasts.clear()
         self._interact_pressed = False
         self._configure_level_effects()
         self._configure_level_audio()
@@ -216,6 +235,16 @@ class Game:
 
     def _dispatch_input(self) -> None:
         menu_order=(Action.MENU_UP,Action.MENU_DOWN,Action.MENU_LEFT,Action.MENU_RIGHT,Action.CONFIRM,Action.BACK,Action.PAUSE)
+        if self.app_mode == "achievements":
+            for action in (Action.MENU_UP, Action.MENU_DOWN, Action.MENU_LEFT, Action.MENU_RIGHT, Action.BACK):
+                if self.input.was_pressed(action):
+                    outcome = self.achievement_screen.handle(action)
+                    self.audio.play_sound("ui_cancel" if outcome == "back" else "ui_move")
+                    if outcome == "back":
+                        self.app_mode = "frontend"
+                        self.input.suppress_edges()
+                    break
+            return
         if self.app_mode == "dialogue":
             if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_RESET):
                 self.reset_level()
@@ -223,7 +252,10 @@ class Game:
                 return
             for action in (Action.MENU_UP, Action.MENU_DOWN, Action.CONFIRM, Action.BACK):
                 if self.input.was_pressed(action):
+                    active_npc = self.npcs.active_npc
                     outcome = self.dialogue.handle(action)
+                    if outcome == "close" and self.dialogue.completed_dialogue and active_npc is not None:
+                        self._emit_achievement("npc_conversation_completed", npc_id=active_npc.display_name.lower())
                     sound = {"move": "ui_move", "close": "ui_cancel"}.get(outcome, "ui_confirm")
                     if outcome != "none":
                         self.audio.play_sound(sound)
@@ -303,6 +335,9 @@ class Game:
         if self.app_mode == "settings":
             self.audio.update(dt)
             return
+        if self.app_mode == "achievements":
+            self.audio.update(dt)
+            return
         if self.app_mode == "frontend":
             self.frontend.update(dt)
             self.effects.update(dt)
@@ -319,6 +354,7 @@ class Game:
             previous_node = self.world_map_runtime.current_node_id
             self.world_map_screen.update(dt)
             self.effects.update(dt)
+            self.achievement_toasts.update(dt)
             self.audio.update(dt)
             if self.world_map_runtime.current_node_id != previous_node:
                 self.effects.spawn("route_unlocked", self.world_map_runtime.avatar_position)
@@ -326,6 +362,8 @@ class Game:
                 self._autosave()
             return
         if self.gameplay_phase in {GameplayPhase.LEVEL_COMPLETE, GameplayPhase.WORLD_COMPLETE}:
+            self.achievement_toasts.update(dt)
+            self.audio.update(dt)
             self._clear_frame_inputs()
             return
         if self.gameplay_phase is GameplayPhase.COMPLETION_SEQUENCE:
@@ -398,6 +436,7 @@ class Game:
         if self.player.hit_hazard and not self.player.is_dead:
             damage = self.player.apply_damage(1, DamageSource.HAZARD)
             if damage.applied:
+                self.damage_taken_this_attempt = True
                 self.hud.notify_health_changed()
                 self.effects.request_shake(8.0, 0.18)
                 self.effects.spawn("player_death" if damage.died else "player_damage", self.player.rect.center)
@@ -440,7 +479,10 @@ class Game:
         )
         for projectile in self.projectiles.projectiles:
             if projectile.projectile_id not in prior_projectiles and projectile.faction.value == "enemy" and projectile.owner_id != "ashen_warden": self.audio.play_sound("turret_fire", position=projectile.rect.center, listener_x=self.player.rect.centerx)
+        for enemy_id, method in enemy_result.defeated:
+            self._emit_achievement("enemy_defeated", enemy_id=enemy_id, method=method)
         if enemy_result.player_damaged:
+            self.damage_taken_this_attempt = True
             self.hud.notify_health_changed()
             self._rumble(.22,.52,140)
             self.audio.play_sound("player_death" if enemy_result.player_died else "player_damage")
@@ -461,6 +503,7 @@ class Game:
                 else:
                     self.camera.update(focus, pygame.Vector2(), dt)
             if boss_result.player_damaged:
+                self.damage_taken_this_attempt = True
                 self.hud.notify_health_changed()
                 self._rumble(.3,.62,180)
             if boss_result.score_awarded:
@@ -480,6 +523,9 @@ class Game:
                 self.player,
                 self.progress,
             ):
+                event_name = {"ember_shard":"ember_shard_collected", "rare_crystal":"rare_crystal_collected", "secret_token":"secret_token_collected"}.get(result.kind.value)
+                if event_name:
+                    self._emit_achievement(event_name, collectible_id=result.collectible_id)
                 collectible_audio = {"ember_shard":"ember_shard", "rare_crystal":"rare_crystal", "secret_token":"secret_token", "health_item":"player_land"}[result.kind.value]
                 self.audio.play_sound(collectible_audio, position=result.position, listener_x=self.player.rect.centerx)
                 self.hud.notify_pickup(result)
@@ -493,12 +539,17 @@ class Game:
         power_event = self.powerups.consume_event()
         if power_event in {"expired", "absorbed"}:
             if power_event == "absorbed":
+                self._emit_achievement("stone_guard_absorbed")
                 self.effects.spawn("stone_guard_break", self.player.rect.center)
                 self.effects.request_flash((170, 196, 218), 58, 0.14)
                 self.audio.play_sound("stone_guard_break")
                 self._rumble(.38,.68,180)
         critical_interact = self._interact_pressed and not world_interacted
+        previous_secrets = {key for key, area in self.secrets.areas.items() if area.state.value != "undiscovered"}
         secret_update = self.secrets.update(self.player.rect, critical_interact, self.enemies.defeated_ids)
+        discovered_now = {key for key, area in self.secrets.areas.items() if area.state.value != "undiscovered"} - previous_secrets
+        for secret_id in sorted(discovered_now):
+            self._emit_achievement("secret_discovered", secret_id=secret_id)
         if secret_update.score_awarded:
             self.progress.award_score(secret_update.score_awarded)
             self.hud.notify_score_changed()
@@ -508,6 +559,7 @@ class Game:
             self.effects.spawn("challenge_complete" if is_challenge else "secret_discovered", self.player.rect.center)
             self.audio.play_sound("challenge_complete" if is_challenge else "secret_discovered")
         if secret_update.secret_exit_id:
+            self._emit_achievement("secret_exit_discovered", exit_id=secret_update.secret_exit_id)
             self.audio.play_sound("secret_exit")
             self._begin_completion(secret_update.secret_exit_id, ExitType.SECRET)
         self.notifications.update(dt)
@@ -533,6 +585,8 @@ class Game:
             self.input.suppress_edges()
         self.hud.update(dt)
         self._update_effects(dt)
+        if self.app_mode != "dialogue":
+            self.achievement_toasts.update(dt)
         self._clear_frame_inputs()
 
     def _clear_frame_inputs(self) -> None:
@@ -552,6 +606,19 @@ class Game:
             self.world_progress.record(self.level_result)
         self._mark_save_dirty()
         self._autosave()
+        from systems.progression import CollectibleType
+        normal_level = exit_type is ExitType.NORMAL and boss_id is None
+        self._emit_achievement(
+            "level_completed", level_id=self.level.metadata.level_id,
+            no_damage=normal_level and not self.damage_taken_this_attempt,
+            shard_sweep=normal_level and self.progress.total(CollectibleType.EMBER_SHARD) > 0 and self.progress.count(CollectibleType.EMBER_SHARD) == self.progress.total(CollectibleType.EMBER_SHARD),
+            normal=normal_level,
+        )
+        if boss_id is not None:
+            self._emit_achievement("boss_defeated", boss_id=boss_id)
+        if self.world_progress.world_completed_once:
+            self._emit_achievement("world_completed", world_id=self.registry.world_id)
+        self.achievements.flush()
         self.gameplay_phase = GameplayPhase.COMPLETION_SEQUENCE
         self.input.suppress_edges()
         self.completion_timer = LEVEL_COMPLETION_SEQUENCE_DURATION
@@ -595,6 +662,9 @@ class Game:
         if self.app_mode == "settings":
             self.settings_controller.draw(self.canvas)
             scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
+        if self.app_mode == "achievements":
+            self.achievement_screen.draw(self.canvas, self.input)
+            scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
         if self.app_mode == "frontend":
             self.frontend.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
@@ -605,6 +675,7 @@ class Game:
             self.effects.draw_screen(self.canvas)
             if self.show_world_summary:
                 self.world_complete_screen.draw(self.canvas, self.world_progress, self.input)
+            self.achievement_toasts.draw(self.canvas)
             scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
             self.screen.blit(scaled, (0, 0))
             pygame.display.flip()
@@ -661,6 +732,8 @@ class Game:
             self.canvas.blit(fade, (0, 0))
         elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
             self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result, self.input)
+        if self.app_mode != "dialogue" and self.gameplay_phase is not GameplayPhase.COMPLETION_SEQUENCE:
+            self.achievement_toasts.draw(self.canvas)
         if self.app_mode == "dialogue":
             self.dialogue_box.draw(self.canvas, self.dialogue, self.input)
         if self.app_mode == "pause": self.pause_controller.draw(self.canvas)
@@ -757,6 +830,18 @@ class Game:
         self.effects.apply_shake(self.camera)
         self.audio.update(dt)
 
+    def _emit_achievement(self, event: str, **payload: object) -> None:
+        unlocked = self.achievements.emit(event, **payload)
+        for definition in unlocked:
+            self.achievement_toasts.push(definition)
+            self.audio.play_sound("achievement_unlocked")
+            self.effects.spawn("route_unlocked", (self.canvas.get_width()-220, 90))
+        self.achievements.notifications.clear()
+
+    def open_achievements(self) -> None:
+        self.app_mode = "achievements"
+        self.input.suppress_edges()
+
     def open_pause(self) -> None:
         if self.app_mode == "gameplay":
             self.app_mode = "pause"
@@ -809,6 +894,7 @@ class Game:
 
     def return_to_main_menu(self) -> None:
         self._close_dialogue()
+        self.achievements.flush()
         self._autosave(force=True)
         self.app_mode = "frontend"; self.input.suppress_edges(); self.effects.clear(); self.effects.start_emitter("frontend:title", "sanctum_available", (640,500)); self.audio.reset_context(); self.audio.play_music("music_world_map")
         self.frontend.refresh_slots(); self.frontend._main()
@@ -891,6 +977,7 @@ class Game:
         if self._shutdown:
             return
         self._shutdown = True
+        self.achievements.flush()
         if self.persistence_enabled and self.save_session is not None:
             self.save_session.dirty = True
             self._autosave(force=True)

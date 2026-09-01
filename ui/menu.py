@@ -55,7 +55,7 @@ class ConfirmationDialog:
         return True
 
 def draw_menu(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.font.Font,small:pygame.font.Font,title:str,menu:Menu,subtitle:str="",footer:str="")->None:
-    compact=len(menu.items)>7; panel=pygame.Rect(350,55 if compact else 105,580,610 if compact else 520);pygame.draw.rect(surface,(11,17,34,225),panel,border_radius=24);pygame.draw.rect(surface,(230,151,70),panel,3,border_radius=24)
+    compact=len(menu.items)>=7; panel=pygame.Rect(350,55 if compact else 105,580,610 if compact else 520);pygame.draw.rect(surface,(11,17,34,225),panel,border_radius=24);pygame.draw.rect(surface,(230,151,70),panel,3,border_radius=24)
     image=title_font.render(title,True,(255,218,143));surface.blit(image,image.get_rect(center=(640,102 if compact else 155)))
     if subtitle:
         sub=small.render(subtitle,True,(190,202,221));surface.blit(sub,sub.get_rect(center=(640,140 if compact else 196)))
