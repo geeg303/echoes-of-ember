@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import pygame
 
@@ -12,6 +13,7 @@ from core.audio_manager import AudioManager
 from core.input_manager import Action, InputManager
 from core.save_manager import SaveManager, SlotState
 from core.settings_manager import SettingsManager
+from core.debug_manager import DebugManager
 from systems.save_data import SaveSession
 from systems.boss_system import BossSystem
 from entities.level_goal import EmberGate
@@ -34,7 +36,7 @@ from systems.progression import LevelProgress
 from systems.secret_system import SecretSystem
 from systems.dialogue_system import DialogueSystem
 from systems.npc_system import NPCSystem
-from settings import DEBUG_MODE, DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, PROJECT_ROOT, SHOW_FPS
+from settings import DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, PROJECT_ROOT, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
 from states.frontend import FrontendController
 from states.settings_menu import SettingsController
@@ -42,7 +44,6 @@ from states.pause_menu import GameOverController, PauseController
 from ui.menu import MenuAction, menu_action_from_input
 from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
-from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
 from ui.boss_hud import BossHUD
 from ui.achievement_screen import AchievementScreen
@@ -62,7 +63,7 @@ LOGGER = logging.getLogger(__name__)
 class Game:
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
-    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None, input_manager: InputManager | None = None, achievement_manager: AchievementManager | None = None, achievements_enabled: bool | None = None) -> None:
+    def __init__(self, level_id: str = "verdant_01", registry: WorldRegistry | None = None, start_on_map: bool = False, start_frontend: bool = False, save_manager: SaveManager | None = None, slot_id: int = 1, new_game: bool = False, persistence: bool = False, audio_manager: AudioManager | None = None, settings_manager: SettingsManager | None = None, input_manager: InputManager | None = None, achievement_manager: AchievementManager | None = None, achievements_enabled: bool | None = None, debug_enabled: bool = False) -> None:
         pygame.init()
         pygame.display.set_caption(GAME_TITLE)
         self.input = input_manager or InputManager()
@@ -91,7 +92,9 @@ class Game:
         self.running = True
         self._shutdown = False
         self._fps_font = self.assets.font(None, 24)
-        self.debug_overlay = DebugOverlay(self.assets.font(None, 22))
+        self.debug = DebugManager(debug_enabled, self.assets.font(None, 21), self.assets.font(None, 17))
+        self._debug_update_ms = 0.0
+        self._debug_render_ms = 0.0
         self.hud = HUD(
             self.assets.font(None, 26),
             self.assets.font(None, 20),
@@ -216,11 +219,22 @@ class Game:
         frames = 0
         try:
             while self.running and (frame_limit is None or frames < frame_limit):
+                frame_started = time.perf_counter()
                 dt = min(self.clock.tick(DISPLAY.target_fps) / 1000.0, 0.05)
                 self.input.begin_frame(dt)
                 self._handle_events()
-                self.update(dt)
+                update_started = time.perf_counter()
+                self.update(self.debug.simulation_dt(dt))
+                self._debug_update_ms = (time.perf_counter() - update_started) * 1000.0
+                render_started = time.perf_counter()
                 self.draw()
+                self._debug_render_ms = (time.perf_counter() - render_started) * 1000.0
+                if self.debug.enabled:
+                    frame_ms = (time.perf_counter() - frame_started) * 1000.0
+                    context = f"{self.app_mode}:{getattr(getattr(self, 'gameplay_phase', None), 'value', '-')}"
+                    self.debug.profiler.record("update", self._debug_update_ms, context)
+                    self.debug.profiler.record("render", self._debug_render_ms, context)
+                    self.debug.profiler.record("frame", frame_ms, context)
                 frames += 1
         finally:
             self.shutdown()
@@ -229,6 +243,8 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif self.debug.handle_event(event, self):
+                continue
             else:
                 self.input.process_event(event)
         self._dispatch_input()
@@ -246,10 +262,6 @@ class Game:
                     break
             return
         if self.app_mode == "dialogue":
-            if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_RESET):
-                self.reset_level()
-                self.app_mode = "gameplay"
-                return
             for action in (Action.MENU_UP, Action.MENU_DOWN, Action.CONFIRM, Action.BACK):
                 if self.input.was_pressed(action):
                     active_npc = self.npcs.active_npc
@@ -282,12 +294,7 @@ class Game:
             if self.input.was_pressed(Action.ATTACK):self.reset_level()
             elif self.input.was_pressed(Action.CONFIRM) or self.input.was_pressed(Action.BACK):self.return_to_world_map()
             return
-        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_ATTACK):self.player.trigger_attack()
-        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_EFFECTS):
-            quality=self.effects.toggle_optional();self.notifications.push(f"OPTIONAL EFFECTS: {quality.value.upper()}")
-        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_RESET):self.reset_level();return
-        if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_MUTE):
-            muted=self.audio.toggle_mute();self.notifications.push(f"AUDIO: {'MUTED' if muted else 'ON'}")
+        if self.debug.palette_open:return
         if self.input.was_pressed(Action.ATTACK):self._attack_pressed=True
         if self.input.was_pressed(Action.INTERACT):self._interact_pressed=True
         if self.input.was_pressed(Action.CONFIRM) and self.boss_system and self.boss_system.active:self.boss_system.skip_intro()
@@ -328,6 +335,11 @@ class Game:
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
+        if self.debug.enabled and self.debug.simulation_paused and dt <= 0 and self.app_mode == "gameplay":
+            self.debug.update_free_camera(self, 1.0 / DISPLAY.target_fps)
+            self.audio.update(0.0)
+            self._clear_frame_inputs()
+            return
         if self.app_mode in {"pause", "game_over"}:
             self.audio.update(dt)
             self._clear_frame_inputs()
@@ -379,6 +391,9 @@ class Game:
             self._clear_frame_inputs()
             return
         self.elapsed_time += dt
+        if self.debug.enabled and self.debug.god_mode:
+            self.player.invulnerability_timer = max(self.player.invulnerability_timer, 0.1)
+        self.debug.update_free_camera(self, dt)
         controls = PlayerControls(
             move_axis=self.input.axis(Action.MOVE_X),
             jump_pressed=self._jump_pressed,
@@ -661,13 +676,16 @@ class Game:
     def draw(self) -> None:
         if self.app_mode == "settings":
             self.settings_controller.draw(self.canvas)
+            self._draw_debug_layer()
             scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
         if self.app_mode == "achievements":
             self.achievement_screen.draw(self.canvas, self.input)
+            self._draw_debug_layer()
             scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
         if self.app_mode == "frontend":
             self.frontend.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
+            self._draw_debug_layer()
             scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
             self.screen.blit(scaled, (0, 0)); pygame.display.flip(); return
         if self.app_mode == "map":
@@ -676,34 +694,36 @@ class Game:
             if self.show_world_summary:
                 self.world_complete_screen.draw(self.canvas, self.world_progress, self.input)
             self.achievement_toasts.draw(self.canvas)
+            self._draw_debug_layer()
             scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
             self.screen.blit(scaled, (0, 0))
             pygame.display.flip()
             return
         self.background.draw(self.canvas, self.camera.position)
-        tile_view = self.camera.view_rect.inflate(
+        view = self.debug.view_rect(self) if self.debug.enabled else self.camera.view_rect
+        tile_view = view.inflate(
             self.level.tilemap.tile_size * 2,
             self.level.tilemap.tile_size * 2,
         )
-        offset = self.camera.render_offset
+        offset = self.debug.render_offset(self) if self.debug.enabled else self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
-        self.world_objects.draw(self.canvas, self.camera.view_rect, offset)
+        self.world_objects.draw(self.canvas, view, offset)
         self.npcs.draw(
-            self.canvas, self.camera.view_rect, offset, self.player.rect,
+            self.canvas, view, offset, self.player.rect,
             self.input.get_prompt(Action.INTERACT), self._fps_font,
         )
         if self.boss_system is None:
             self.goal.draw(self.canvas, offset, self.input.get_prompt(Action.INTERACT))
         else:
             self.boss_system.draw(self.canvas, offset)
-        self.secrets.draw(self.canvas, self.camera.view_rect, offset)
-        self.collectibles.draw(self.canvas, self.camera.view_rect, offset)
-        self.powerup_pickups.draw(self.canvas, self.camera.view_rect, offset)
-        self.enemies.draw(self.canvas, self.camera.view_rect, offset)
+        self.secrets.draw(self.canvas, view, offset)
+        self.collectibles.draw(self.canvas, view, offset)
+        self.powerup_pickups.draw(self.canvas, view, offset)
+        self.enemies.draw(self.canvas, view, offset)
         if self.powerups.has(PowerUpType.STONE_GUARD):
             pygame.draw.circle(self.canvas, (185, 213, 235), self.player.rect.move(offset).center, 42, 3)
         self.player.draw(self.canvas, offset)
-        self.effects.draw_world(self.canvas, offset, self.camera.view_rect)
+        self.effects.draw_world(self.canvas, offset, view)
         self.hud.draw(
             self.canvas,
             self.player.health,
@@ -720,8 +740,7 @@ class Game:
         self.effects.draw_screen(self.canvas)
         if self.boss_system is not None:
             self.boss_hud.draw(self.canvas, self.boss_system.hud_state)
-        if DEBUG_MODE:
-            self.debug_overlay.draw(self.canvas, self.player, self.effects, self.input)
+        self._draw_debug_layer()
         if SHOW_FPS:
             label = self._fps_font.render(f"FPS {self.clock.get_fps():.0f}", True, (210, 220, 245))
             position = (self.canvas.get_width() - 16, self.canvas.get_height() - 12)
@@ -741,6 +760,19 @@ class Game:
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
         self.screen.blit(scaled, (0, 0))
         pygame.display.flip()
+
+    def _draw_debug_layer(self) -> None:
+        if not self.debug.enabled:
+            return
+        fps = self.clock.get_fps()
+        perf = {
+            "fps": fps,
+            "frame_ms": 1000.0 / fps if fps > 0 else 0.0,
+            "update_ms": self._debug_update_ms,
+            "render_ms": self._debug_render_ms,
+        }
+        self.debug.capture(self, perf)
+        self.debug.draw(self.canvas, self)
 
     def _configure_level_audio(self) -> None:
         self.audio.reset_context()
@@ -831,6 +863,9 @@ class Game:
         self.audio.update(dt)
 
     def _emit_achievement(self, event: str, **payload: object) -> None:
+        if self.debug.enabled:
+            self.debug.record_event("ACHIEVEMENT", event, **payload)
+            return
         unlocked = self.achievements.emit(event, **payload)
         for definition in unlocked:
             self.achievement_toasts.push(definition)
@@ -958,6 +993,8 @@ class Game:
             self.save_session.dirty = True
 
     def _autosave(self, force: bool = False) -> None:
+        if self.debug.enabled:
+            return
         if not self.persistence_enabled or self.save_manager is None or self.save_session is None:
             return
         if not force and not self.save_session.dirty:
@@ -981,7 +1018,8 @@ class Game:
         if self.persistence_enabled and self.save_session is not None:
             self.save_session.dirty = True
             self._autosave(force=True)
-        self.settings_manager.save(self.app_settings)
+        if not self.debug.enabled:
+            self.settings_manager.save(self.app_settings)
         self.running = False
         self.audio.shutdown()
         pygame.quit()

@@ -41,3 +41,6 @@ Dialogue is fully controller-operable. Prompts switch live with the active devic
 ## Achievement browser
 
 The Main Menu achievement list is controller-only usable: D-pad/stick scroll and filter, and east-face/B returns. Prompts continue to follow the active device.
+# Debug diagnostics
+
+The Phase 22 Input page reports the active device, connected controller name/count, logical movement axis, held/pressed actions, and configured deadzone. The debug palette and free camera are keyboard-only; normal controller gameplay is unchanged.

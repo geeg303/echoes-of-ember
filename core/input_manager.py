@@ -9,7 +9,6 @@ import pygame
 class Action(str,Enum):
  MOVE_LEFT="move_left";MOVE_RIGHT="move_right";MOVE_X="move_x";JUMP="jump";ATTACK="attack";INTERACT="interact";PAUSE="pause"
  MENU_UP="menu_up";MENU_DOWN="menu_down";MENU_LEFT="menu_left";MENU_RIGHT="menu_right";CONFIRM="confirm";BACK="back"
- DEBUG_EFFECTS="debug_effects";DEBUG_RESET="debug_reset";DEBUG_MUTE="debug_mute";DEBUG_ATTACK="debug_attack"
 class InputDevice(str,Enum):KEYBOARD="keyboard";CONTROLLER="controller"
 @dataclass(frozen=True,slots=True)
 class ControllerSnapshot:
@@ -63,12 +62,12 @@ KEY_ACTIONS={
  pygame.K_LEFT:(Action.MOVE_LEFT,Action.MENU_LEFT),pygame.K_a:(Action.MOVE_LEFT,Action.MENU_LEFT),pygame.K_RIGHT:(Action.MOVE_RIGHT,Action.MENU_RIGHT),pygame.K_d:(Action.MOVE_RIGHT,Action.MENU_RIGHT),
  pygame.K_UP:(Action.JUMP,Action.MENU_UP),pygame.K_w:(Action.MENU_UP,),pygame.K_DOWN:(Action.MENU_DOWN,),pygame.K_s:(Action.MENU_DOWN,),
  pygame.K_SPACE:(Action.JUMP,Action.CONFIRM),pygame.K_z:(Action.JUMP,),pygame.K_RETURN:(Action.CONFIRM,),pygame.K_e:(Action.INTERACT,),pygame.K_f:(Action.ATTACK,),
- pygame.K_ESCAPE:(Action.PAUSE,Action.BACK),pygame.K_F5:(Action.DEBUG_ATTACK,),pygame.K_F6:(Action.DEBUG_EFFECTS,),pygame.K_F7:(Action.DEBUG_RESET,),pygame.K_F8:(Action.DEBUG_MUTE,),
+ pygame.K_ESCAPE:(Action.PAUSE,Action.BACK),
 }
 BUTTON_ACTIONS={0:(Action.JUMP,Action.CONFIRM),1:(Action.BACK,),2:(Action.ATTACK,),3:(Action.INTERACT,),6:(Action.BACK,),7:(Action.PAUSE,)}
 MENU_ACTIONS=(Action.MENU_UP,Action.MENU_DOWN,Action.MENU_LEFT,Action.MENU_RIGHT)
 PROMPTS={
- InputDevice.KEYBOARD:{Action.MENU_LEFT:"ARROWS",Action.MENU_RIGHT:"ARROWS",Action.CONFIRM:"ENTER",Action.BACK:"ESC",Action.INTERACT:"E",Action.ATTACK:"F",Action.JUMP:"SPACE",Action.PAUSE:"ESC",Action.DEBUG_RESET:"F7"},
+ InputDevice.KEYBOARD:{Action.MENU_LEFT:"ARROWS",Action.MENU_RIGHT:"ARROWS",Action.CONFIRM:"ENTER",Action.BACK:"ESC",Action.INTERACT:"E",Action.ATTACK:"F",Action.JUMP:"SPACE",Action.PAUSE:"ESC"},
  InputDevice.CONTROLLER:{Action.MENU_LEFT:"D-PAD",Action.MENU_RIGHT:"D-PAD",Action.CONFIRM:"A",Action.BACK:"B",Action.INTERACT:"Y",Action.ATTACK:"X",Action.JUMP:"A",Action.PAUSE:"START"},
 }
 class InputManager:

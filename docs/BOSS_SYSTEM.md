@@ -73,3 +73,6 @@ Committed Ashen Warden defeat and subsequent authoritative world completion emit
 ## Editor support
 
 Boss levels round-trip without metadata loss. Arena, trigger, doors, spawn, and pulse source remain validated; boss AI graph authoring is intentionally excluded.
+# Debug diagnostics
+
+The Boss page exposes health, phase, state/timer, attack, vulnerability, arena lock, and defeat state. `boss damage` routes through `BossSystem.debug_damage()` to preserve phase and defeat invariants; `boss reset` uses the existing encounter reset contract. Debug boss results never persist.

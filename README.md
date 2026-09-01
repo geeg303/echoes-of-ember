@@ -324,6 +324,10 @@ python tools/effects_benchmark.py defeat
 
 See [docs/EFFECTS_SYSTEM.md](docs/EFFECTS_SYSTEM.md) for architecture, authoring rules, integration contracts, reset policy, quality behavior, test coverage, and benchmark results.
 
+## Developer Debug Tools
+
+Launch a nonpersistent developer session with `python main.py --debug`, optionally adding `--level verdant_03` or `--slot 1`. F1 toggles the compact overlay, F2 cycles diagnostic pages, F3/F4 show collisions and triggers, F8/F9 pause and single-step, F10 enables a free inspection camera, and backtick opens the validated command palette. Debug sessions suppress campaign and achievement writes. See [docs/DEBUG_TOOLS.md](docs/DEBUG_TOOLS.md) and [docs/DEBUG_COMMANDS.md](docs/DEBUG_COMMANDS.md).
+
 
 ## Audio, music, and ambience
 

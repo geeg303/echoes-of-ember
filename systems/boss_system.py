@@ -142,6 +142,15 @@ class BossSystem:
         self.completed_reported = False
         if powers is not None: powers.clear_encounter_abilities()
 
+    def debug_damage(self, amount: int) -> bool:
+        """Apply controlled developer damage while preserving phase/defeat invariants."""
+        if amount <= 0 or self.boss.defeat_claimed:
+            return False
+        self.boss.active = True
+        self.boss.invulnerability_timer = 0.0
+        self.boss.vulnerable = True
+        return self.boss.take_damage(amount)
+
     def _clear_hostile_projectiles(self) -> None:
         for projectile in self.projectiles.projectiles:
             if projectile.faction is Faction.ENEMY and projectile.owner_id == self.boss.boss_id:

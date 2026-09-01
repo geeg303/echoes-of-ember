@@ -35,3 +35,6 @@ Create or reuse validated dialogue files, add a catalog entry for the desired le
 ## Editor placement
 
 The level editor places/repositions references in the per-level NPC companion catalog. It does not author dialogue graphs. F5 dialogue state is temporary and never enters a campaign slot.
+# Debug diagnostics
+
+Trigger visualization shows NPC IDs and interaction radii. The inspector exposes copied primitive identity/bounds data, and the dialogue diagnostic reports the active conversation without revealing or mutating persistent story state.

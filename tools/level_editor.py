@@ -11,8 +11,8 @@ from editor.viewport import EditorViewport
 from settings import DISPLAY,PROJECT_ROOT
 from world.tile import TILE_DEFINITIONS,draw_tile
 class LevelEditor:
- def __init__(self,level_id="verdant_01"):
-  pygame.init();pygame.display.set_caption("Echoes of Ember — Level Editor");self.screen=pygame.display.set_mode(DISPLAY.window_size,pygame.RESIZABLE);self.clock=pygame.time.Clock();path=PROJECT_ROOT/"data"/"levels"/f"{level_id}.json";self.document=LevelDocument.load(path) if path.exists() else LevelDocument.new(level_id);self.history=CommandHistory();self.view=EditorViewport();self.running=True;self.grid=True;self.tile_id=1;self.tool="paint";self.object_index=0;self.message="READY";self.dragging=False;self.pan_anchor=None;self.font=pygame.font.Font(None,20);self.heading=pygame.font.Font(None,28);self.layers={x:True for x in ("terrain","objects","secrets","npcs","triggers")};self.pending_quit=False;self.clipboard=None;self.rect_start=None
+ def __init__(self,level_id="verdant_01",debug=False):
+  pygame.init();pygame.display.set_caption("Echoes of Ember — Level Editor");self.screen=pygame.display.set_mode(DISPLAY.window_size,pygame.RESIZABLE);self.clock=pygame.time.Clock();path=PROJECT_ROOT/"data"/"levels"/f"{level_id}.json";self.document=LevelDocument.load(path) if path.exists() else LevelDocument.new(level_id);self.history=CommandHistory();self.view=EditorViewport();self.running=True;self.grid=True;self.tile_id=1;self.tool="paint";self.object_index=0;self.message="READY";self.dragging=False;self.pan_anchor=None;self.font=pygame.font.Font(None,20);self.heading=pygame.font.Font(None,28);self.layers={x:True for x in ("terrain","objects","secrets","npcs","triggers")};self.pending_quit=False;self.clipboard=None;self.rect_start=None;self.debug_playtest=bool(debug)
  def run(self,frames=None):
   count=0
   while self.running and (frames is None or count<frames):
@@ -68,7 +68,7 @@ class LevelEditor:
   elif e.key==pygame.K_RIGHTBRACKET:self.tile_id=(self.tile_id+1)%8
   elif e.key==pygame.K_COMMA:self.object_index=(self.object_index-1)%len(OBJECT_TYPES)
   elif e.key==pygame.K_PERIOD:self.object_index=(self.object_index+1)%len(OBJECT_TYPES)
-  elif e.key==pygame.K_F5:self.playtest()
+  elif e.key==pygame.K_F5:self.playtest(debug=self.debug_playtest or shift)
   elif e.key==pygame.K_ESCAPE:self.document.selection=None
  def request_quit(self):
   if self.document.dirty:self.pending_quit=True;self.message="UNSAVED: [S]AVE [D]ISCARD [C]ANCEL"
@@ -119,7 +119,7 @@ class LevelEditor:
   self.screen.blit(self.heading.render("INSPECTOR",True,(255,195,103)),(1030,20));payload=json.dumps(selected,indent=1) if selected else "No selection"
   for i,line in enumerate(payload.splitlines()[:24]):self.screen.blit(self.font.render(line[:33],True,(201,211,224)),(1025,60+i*24))
   c=self.document.counts();status=f"{self.document.data['id']} | {self.view.zoom*100:.0f}% | {'DIRTY' if self.document.dirty else 'SAVED'} | "+" ".join(f"{k}:{v}" for k,v in c.items());self.screen.blit(self.font.render(status,True,(238,205,128)),(205,680));self.screen.blit(self.font.render(self.message[:100],True,(238,135,118)),(205,701))
- def playtest(self):
+ def playtest(self,debug=False):
   # Serialize to an isolated temporary level, then run the normal Game runtime briefly.
   dirty=self.document.dirty;source=self.document.source_path
   try:
@@ -129,9 +129,9 @@ class LevelEditor:
     from world.campaign import DEFAULT_WORLD_REGISTRY,WorldRegistry
     registry=WorldRegistry.load(DEFAULT_WORLD_REGISTRY);paths=dict(registry.level_paths);paths[self.document.data["id"]]=path;ids=registry.level_ids if self.document.data["id"] in registry.level_ids else registry.level_ids+(self.document.data["id"],);registry=replace(registry,level_ids=ids,level_paths=paths)
     from core.game import Game
-    game=Game(level_id=self.document.data["id"],registry=registry,achievements_enabled=False,persistence=False);game.run(frame_limit=120)
+    game=Game(level_id=self.document.data["id"],registry=registry,achievements_enabled=False,persistence=False,debug_enabled=debug);game.run(frame_limit=120)
     pygame.init();pygame.display.set_caption("Echoes of Ember — Level Editor");self.screen=pygame.display.set_mode(DISPLAY.window_size,pygame.RESIZABLE);self.font=pygame.font.Font(None,20);self.heading=pygame.font.Font(None,28);self.message="PLAYTEST RETURNED — campaign/profile isolated"
   except Exception as exc:self.message=f"PLAYTEST FAILED: {exc}"
   finally:self.document.dirty=dirty;self.document.source_path=source
 
-def run_editor(level_id="verdant_01",frames=None):LevelEditor(level_id).run(frames)
+def run_editor(level_id="verdant_01",frames=None,debug=False):LevelEditor(level_id,debug=debug).run(frames)

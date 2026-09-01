@@ -49,3 +49,6 @@ NPC conversations reuse `INTERACT`, `CONFIRM`, `BACK`, `MENU_UP`, and `MENU_DOWN
 ## Achievement context
 
 Achievement browsing consumes logical menu Up/Down, Left/Right filters, and Back. It contains no raw keyboard or joystick polling. Unlock toasts never intercept input.
+# Developer input capture
+
+Developer hotkeys are owned by `DebugManager` only when launched with `--debug`. Command-palette text and free-camera navigation are consumed before gameplay actions, preventing typed `F`, Space, or movement keys from leaking into Nova's controls. See [DEBUG_TOOLS.md](DEBUG_TOOLS.md).

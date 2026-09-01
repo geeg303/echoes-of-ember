@@ -118,3 +118,6 @@ Local achievements use a separate schema-1 `achievements.json` beside this save 
 ## Editor isolation
 
 Editor playtests construct nonpersistent temporary runtime state. They never load or write campaign slots, and editor files are not automatically registered into campaign progression.
+# Debug isolation
+
+`--debug --slot N` loads a slot for read-only inspection but suppresses autosave and achievement-profile writes. `--debug --new-game` is rejected to prevent accidental overwrite. Debug commands, completion attempts, dialogue flags, and secret reveals remain memory-only.

@@ -6,7 +6,6 @@ import math
 
 import pygame
 
-from settings import DEBUG_MODE
 from core.input_manager import Action,InputManager
 from systems.level_completion import format_time
 from world.world_map import ConnectionState, NodeState, NodeType, WorldMapRuntime
@@ -167,7 +166,3 @@ class WorldMapScreen:
             details = ([f"[{self.input.get_prompt(Action.CONFIRM)}] SELECT", "STICK / D-PAD  TRAVEL", f"[{self.input.get_prompt(Action.BACK)}] MAIN MENU"] if self.input else ["ENTER / SPACE  SELECT", "ARROWS / WASD  TRAVEL", "ESC  MAIN MENU"])
         image = self.small.render("     ".join(details), True, (219, 224, 218))
         surface.blit(image, (300, 611))
-        if DEBUG_MODE:
-            debug = self.small.render(f"{node.node_id}  links={[d for _, d in self.runtime.available_destinations()]}", True, (155, 185, 230))
-            surface.blit(debug, (760, 563))
-

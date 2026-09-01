@@ -44,3 +44,6 @@ A meaningfully completed conversation emits one semantic NPC completion event af
 ## Editor playtest
 
 Existing NPC dialogue can run in isolated editor playtests; semantic flags exist only in temporary WorldProgress and disappear on return.
+# Debug diagnostics
+
+The read-only Progression page and `dialogue status` report active dialogue state. `dialogue close` uses the normal close/end APIs. Debug sessions never persist dialogue flags.

@@ -72,3 +72,6 @@ Effects and audio independently observe the same authoritative gameplay outcomes
 ## Phase 17 quality and menu integration
 
 Settings exposes Full, Reduced, and Off through the authoritative `EffectsSystem`. The bounded title emitter is cleared on gameplay/map transitions, and gameplay effects are cleared on return to the front-end. Pause freezes particle simulation. Menu readability and critical boss telegraphs do not depend on optional particles.
+# Debug diagnostics
+
+The Effects page reports quality, particle/cap counts, emitters, and screen effects. Debug quality overrides and the bounded stress burst are transient and still respect the system's hard capacity.

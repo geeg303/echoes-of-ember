@@ -27,3 +27,6 @@ Add a unique definition with a unique sort order, choose an existing semantic ev
 ## Editor isolation
 
 Editor and F5 playtests explicitly disable achievement profile loading, events, counters, unlocks, and writes.
+# Debug isolation
+
+Achievement observation and profile writes are disabled for every `--debug` session. Achievement-worthy debug actions may appear in the bounded semantic trace but cannot unlock or modify the real profile.
