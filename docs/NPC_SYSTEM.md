@@ -31,3 +31,7 @@ NPCs bob subtly while idle. While talking they face Nova. They do not collide wi
 ## Adding an NPC
 
 Create or reuse validated dialogue files, add a catalog entry for the desired level, keep the NPC on safe ground within bounds, give every variant a known dialogue ID, and run the narrative validation/tests. No change to `Game`, `Player`, or collision code is required.
+
+## Editor placement
+
+The level editor places/repositions references in the per-level NPC companion catalog. It does not author dialogue graphs. F5 dialogue state is temporary and never enters a campaign slot.

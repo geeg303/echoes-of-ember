@@ -81,3 +81,7 @@ Semantic dialogue flags live beside campaign progression but do not unlock map r
 ## Achievement observation
 
 Map and world progression remain authoritative. Achievements may observe committed level, secret-exit, boss, and world outcomes but cannot reveal nodes or unlock routes.
+
+## Editor boundary
+
+Saving a new level never registers a map node or connection. Campaign/world-map integration remains an intentional separate authoring step.

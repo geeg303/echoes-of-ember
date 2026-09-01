@@ -23,3 +23,7 @@ The Main Menu Achievement screen supports category filtering, scrolling, hidden 
 ## Adding an achievement
 
 Add a unique definition with a unique sort order, choose an existing semantic event/counter/set, avoid gameplay rewards, validate the catalog, and add focused tests. Add a new semantic hook only at an authoritative outcome boundary—not inside rendering or achievement UI.
+
+## Editor isolation
+
+Editor and F5 playtests explicitly disable achievement profile loading, events, counters, unlocks, and writes.

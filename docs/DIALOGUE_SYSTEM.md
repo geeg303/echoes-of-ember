@@ -40,3 +40,7 @@ Create one graph file, keep every target reachable, use only whitelisted conditi
 ## Achievement observation
 
 A meaningfully completed conversation emits one semantic NPC completion event after dialogue closes. Toast presentation is deferred while dialogue is visible. Dialogue never checks achievement state.
+
+## Editor playtest
+
+Existing NPC dialogue can run in isolated editor playtests; semantic flags exist only in temporary WorldProgress and disappear on return.

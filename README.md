@@ -358,3 +358,8 @@ Dialogue freezes gameplay simulation and the level timer while audio continues. 
 ## Achievements
 
 Phase 20 adds 19 profile-wide local achievements across progression, collectibles, secrets, story, combat, and challenge play. Open Achievements from the Main Menu; keyboard and controller navigation are supported. Unlocks use a separate atomic `achievements.json` profile and never affect campaign outcomes. Direct `--level` launches suppress achievements. See [docs/ACHIEVEMENT_SYSTEM.md](docs/ACHIEVEMENT_SYSTEM.md) and [docs/ACHIEVEMENT_CATALOG.md](docs/ACHIEVEMENT_CATALOG.md).
+
+
+## Level editor
+
+Launch the developer-only authoritative-format editor with `python main.py --editor --level verdant_01`. It supports safe tile/object authoring, pan/zoom, validation, bounded undo/redo, atomic saves, companion NPC placement, lossless boss metadata, and isolated normal-runtime playtests. See [docs/LEVEL_EDITOR.md](docs/LEVEL_EDITOR.md) and [docs/LEVEL_FORMAT.md](docs/LEVEL_FORMAT.md).

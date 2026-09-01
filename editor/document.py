@@ -6,7 +6,8 @@ import json,os,re,shutil
 from pathlib import Path
 from tools.validation import validate_level_data,load_and_validate_level
 ID=re.compile(r"^[a-z][a-z0-9_]{1,63}$")
-class EditorDocumentError(ValueError):pass
+class EditorDocumentError(ValueError):
+ """An editor operation would create or save unsafe level data."""
 @dataclass(slots=True)
 class DocumentSnapshot:data:dict;npcs:list
 class LevelDocument:
@@ -83,6 +84,11 @@ class LevelDocument:
   except Exception:
    if backup.exists():shutil.copy2(backup,target)
    raise
+  if self.npcs:
+   for npc in self.npcs:npc["level_id"]=self.data["id"]
+   npc_dir=target.parents[1]/"npcs";npc_dir.mkdir(parents=True,exist_ok=True);npc_target=npc_dir/f"{self.data['id']}.json";npc_temp=npc_target.with_suffix(".json.tmp")
+   with npc_temp.open("w") as f:f.write(json.dumps(self.npcs,indent=2)+"\n");f.flush();os.fsync(f.fileno())
+   os.replace(npc_temp,npc_target)
   self.source_path=target;self.dirty=False;return target
  def counts(self):
   types=[x.get("type") for x in self.data.get("objects",[])];return {"shards":types.count("ember_shard"),"rare":types.count("rare_crystal"),"tokens":types.count("secret_token"),"enemies":types.count("enemy"),"platforms":sum(x in {"moving_platform","falling_platform","disappearing_platform"} for x in types),"checkpoints":types.count("checkpoint"),"secrets":len(self.data.get("secrets",[])),"npcs":len(self.npcs)}

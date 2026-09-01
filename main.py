@@ -17,6 +17,7 @@ def parse_args() -> argparse.Namespace:
         help="run a few frames and exit (useful for automated checks)",
     )
     parser.add_argument("--level", help="launch a registered World 1 level ID without save persistence")
+    parser.add_argument("--editor", action="store_true", help="launch the developer-only level editor")
     parser.add_argument("--slot", type=int, choices=(1, 2, 3), default=None, help="directly load campaign save slot")
     parser.add_argument("--new-game", action="store_true", help="explicitly reset the selected slot")
     return parser.parse_args()
@@ -32,6 +33,10 @@ def configure_logging() -> None:
 def main() -> int:
     configure_logging()
     args = parse_args()
+    if args.editor:
+        from tools.level_editor import run_editor
+        run_editor(args.level or "verdant_01", frames=5 if args.smoke_test else None)
+        return 0
     if args.level and args.new_game:
         logging.error("--new-game cannot be combined with direct --level launch")
         return 2

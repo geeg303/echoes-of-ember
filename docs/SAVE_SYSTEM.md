@@ -114,3 +114,7 @@ Version 3 adds validated `progression.dialogue_flags`. Loading a v2 slot inserts
 ## Achievement profile isolation
 
 Local achievements use a separate schema-1 `achievements.json` beside this save directory. Slot creation, overwrite, deletion, recovery, and campaign schema migration never read, reset, or embed achievement state. Campaign schema remains 3.
+
+## Editor isolation
+
+Editor playtests construct nonpersistent temporary runtime state. They never load or write campaign slots, and editor files are not automatically registered into campaign progression.

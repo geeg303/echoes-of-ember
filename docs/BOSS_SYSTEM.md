@@ -69,3 +69,7 @@ The Ashen Warden receives only logical movement/jump/attack/pause input. South f
 ## Achievement observation
 
 Committed Ashen Warden defeat and subsequent authoritative world completion emit separate semantic events. Their queued toasts wait until the defeat/completion presentation is clear. Boss behavior never reads achievement state.
+
+## Editor support
+
+Boss levels round-trip without metadata loss. Arena, trigger, doors, spawn, and pulse source remain validated; boss AI graph authoring is intentionally excluded.
