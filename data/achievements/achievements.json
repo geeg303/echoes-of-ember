@@ -1,0 +1,293 @@
+[
+  {
+    "id": "first_light",
+    "title": "First Light",
+    "description": "Complete Verdant Beginning.",
+    "category": "progression",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "level_completed",
+      "match": {
+        "level_id": "verdant_01"
+      }
+    },
+    "sort_order": 10,
+    "style": "ember"
+  },
+  {
+    "id": "into_the_canopy",
+    "title": "Into the Canopy",
+    "description": "Complete Whispering Canopy.",
+    "category": "progression",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "level_completed",
+      "match": {
+        "level_id": "verdant_02"
+      }
+    },
+    "sort_order": 20,
+    "style": "ember"
+  },
+  {
+    "id": "through_the_ravine",
+    "title": "Through the Ravine",
+    "description": "Complete Emberfall Ravine.",
+    "category": "progression",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "level_completed",
+      "match": {
+        "level_id": "verdant_03"
+      }
+    },
+    "sort_order": 30,
+    "style": "ember"
+  },
+  {
+    "id": "echoes_in_stone",
+    "title": "Echoes in Stone",
+    "description": "Complete Ruins of the First Flame.",
+    "category": "progression",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "level_completed",
+      "match": {
+        "level_id": "verdant_04"
+      }
+    },
+    "sort_order": 40,
+    "style": "ember"
+  },
+  {
+    "id": "warden_fallen",
+    "title": "Warden Fallen",
+    "description": "Defeat the Ashen Warden.",
+    "category": "progression",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "boss_defeated",
+      "match": {
+        "boss_id": "ashen_warden"
+      }
+    },
+    "sort_order": 50,
+    "style": "combat"
+  },
+  {
+    "id": "verdant_restored",
+    "title": "Verdant Restored",
+    "description": "Complete Verdant Reaches.",
+    "category": "progression",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "world_completed",
+      "match": {
+        "world_id": "verdant_reaches"
+      }
+    },
+    "sort_order": 60,
+    "style": "ember"
+  },
+  {
+    "id": "spark_in_the_dark",
+    "title": "Spark in the Dark",
+    "description": "Collect your first Ember Shard.",
+    "category": "collectibles",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "ember_shards_collected",
+      "value": 1
+    },
+    "sort_order": 100,
+    "style": "ember"
+  },
+  {
+    "id": "ember_gatherer",
+    "title": "Ember Gatherer",
+    "description": "Collect 100 Ember Shards across all playthroughs.",
+    "category": "collectibles",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "ember_shards_collected",
+      "value": 100
+    },
+    "sort_order": 110,
+    "style": "ember"
+  },
+  {
+    "id": "crystal_echo",
+    "title": "Crystal Echo",
+    "description": "Collect a Rare Crystal.",
+    "category": "collectibles",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "rare_crystals_collected",
+      "value": 1
+    },
+    "sort_order": 120,
+    "style": "crystal"
+  },
+  {
+    "id": "token_of_curiosity",
+    "title": "Token of Curiosity",
+    "description": "Collect a Secret Token.",
+    "category": "collectibles",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "secret_tokens_collected",
+      "value": 1
+    },
+    "sort_order": 130,
+    "style": "secret"
+  },
+  {
+    "id": "off_the_path",
+    "title": "Off the Path",
+    "description": "Discover your first secret area.",
+    "category": "secrets",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "secrets_discovered",
+      "value": 1
+    },
+    "sort_order": 200,
+    "style": "secret"
+  },
+  {
+    "id": "veil_piercer",
+    "title": "Veil Piercer",
+    "description": "Discover the hidden Ember Veil exit.",
+    "category": "secrets",
+    "visibility": "hidden",
+    "condition": {
+      "type": "event",
+      "event": "secret_exit_discovered",
+      "match": {
+        "exit_id": "v04_secret_exit"
+      }
+    },
+    "sort_order": 210,
+    "style": "secret"
+  },
+  {
+    "id": "verdant_cartographer",
+    "title": "Verdant Cartographer",
+    "description": "Discover all twelve secret areas in Verdant Reaches.",
+    "category": "secrets",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "secrets_discovered",
+      "value": 12
+    },
+    "sort_order": 220,
+    "style": "secret"
+  },
+  {
+    "id": "friendly_voice",
+    "title": "A Friendly Voice",
+    "description": "Complete your first meaningful NPC conversation.",
+    "category": "story",
+    "visibility": "visible",
+    "condition": {
+      "type": "counter_at_least",
+      "counter": "npc_conversations_completed",
+      "value": 1
+    },
+    "sort_order": 300,
+    "style": "story"
+  },
+  {
+    "id": "four_voices",
+    "title": "Four Voices",
+    "description": "Converse with Mira, Orin, Talen, and Vesper.",
+    "category": "story",
+    "visibility": "visible",
+    "condition": {
+      "type": "set_contains_all",
+      "set": "npc_ids_met",
+      "values": [
+        "mira",
+        "orin",
+        "talen",
+        "vesper"
+      ]
+    },
+    "sort_order": 310,
+    "style": "story"
+  },
+  {
+    "id": "ember_answers",
+    "title": "Ember Answers",
+    "description": "Defeat an enemy with Ember Pulse.",
+    "category": "combat",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "enemy_defeated",
+      "match": {
+        "method": "ember_pulse"
+      }
+    },
+    "sort_order": 400,
+    "style": "combat"
+  },
+  {
+    "id": "unbroken_shell",
+    "title": "Unbroken Shell",
+    "description": "Absorb a damaging hit with Stone Guard.",
+    "category": "combat",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "stone_guard_absorbed"
+    },
+    "sort_order": 410,
+    "style": "combat"
+  },
+  {
+    "id": "untouched",
+    "title": "Untouched",
+    "description": "Complete a normal World 1 level without taking health damage.",
+    "category": "challenge",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "level_completed",
+      "match": {
+        "no_damage": true,
+        "normal": true
+      }
+    },
+    "sort_order": 500,
+    "style": "challenge"
+  },
+  {
+    "id": "shard_sweep",
+    "title": "Shard Sweep",
+    "description": "Complete a level after collecting every Ember Shard.",
+    "category": "challenge",
+    "visibility": "visible",
+    "condition": {
+      "type": "event",
+      "event": "level_completed",
+      "match": {
+        "shard_sweep": true
+      }
+    },
+    "sort_order": 510,
+    "style": "challenge"
+  }
+]
