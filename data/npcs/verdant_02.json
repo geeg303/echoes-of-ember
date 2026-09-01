@@ -1,0 +1,56 @@
+[
+  {
+    "id": "orin_v02",
+    "display_name": "Orin",
+    "level_id": "verdant_02",
+    "position": [
+      340,
+      1088
+    ],
+    "interaction_radius": 82,
+    "style": "orin",
+    "facing": "right",
+    "dialogues": [
+      {
+        "dialogue_id": "orin_warden",
+        "priority": 100,
+        "conditions": [
+          {
+            "type": "boss_defeated",
+            "value": "ashen_warden"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "orin_secrets",
+        "priority": 50,
+        "conditions": [
+          {
+            "type": "secret_found",
+            "value": true
+          }
+        ]
+      },
+      {
+        "dialogue_id": "orin_intro",
+        "priority": 20,
+        "conditions": [
+          {
+            "type": "flag_missing",
+            "value": "met_orin"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "orin_repeat",
+        "priority": 10,
+        "conditions": [
+          {
+            "type": "flag",
+            "value": "met_orin"
+          }
+        ]
+      }
+    ]
+  }
+]

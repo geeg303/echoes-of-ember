@@ -19,3 +19,7 @@ Fonts and controllers are created once. Save summaries refresh only when enterin
 ## Controller integration
 
 Menus now consume logical actions from `InputManager`. D-pad and stick navigation use bounded repeat; south face confirms, east face cancels, and Start resumes Pause. Focus and dialogs are unchanged, destructive dialogs still default to Cancel, and active-device prompt text updates without reloading a screen. Held transition inputs are suppressed until release.
+
+## Dialogue overlay
+
+Dialogue is a gameplay overlay rather than a front-end menu. It freezes simulation, consumes only dialogue navigation/confirm/back actions, suppresses Pause, and closes cleanly before map or main-menu transitions.

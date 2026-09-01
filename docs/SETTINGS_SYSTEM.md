@@ -2,7 +2,7 @@
 
 ## Ownership and schema
 
-`SettingsManager` stores application preferences in a separate `settings.json` beside the platform save directory. It never modifies campaign slots, whose schema remains version 2. Application settings use schema version 2 (schema 1 migrates automatically):
+`SettingsManager` stores application preferences in a separate `settings.json` beside the platform save directory. It never modifies campaign slots, whose current schema is version 3. Application settings use schema version 2 (schema 1 migrates automatically):
 
 ```json
 {
@@ -24,4 +24,4 @@ Changes save when leaving Settings and again at clean shutdown. Reset to Default
 
 ## Input preferences and schema 2
 
-Application settings schema 2 adds `input.vibration_enabled`. Schema 1 loads through an explicit additive migration with vibration enabled, and the next save writes schema 2. The Settings menu is fully controller navigable, including discrete 5% slider adjustments, selectors, fullscreen recreation, reset confirmation, and Vibration On/Off. Campaign save schema remains 2.
+Application settings schema 2 adds `input.vibration_enabled`. Schema 1 loads through an explicit additive migration with vibration enabled, and the next save writes schema 2. The Settings menu is fully controller navigable, including discrete 5% slider adjustments, selectors, fullscreen recreation, reset confirmation, and Vibration On/Off. Campaign save schema is independently versioned and currently at 3.

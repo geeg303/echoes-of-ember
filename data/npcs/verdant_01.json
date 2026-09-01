@@ -1,0 +1,56 @@
+[
+  {
+    "id": "mira_v01",
+    "display_name": "Mira",
+    "level_id": "verdant_01",
+    "position": [
+      310,
+      896
+    ],
+    "interaction_radius": 82,
+    "style": "mira",
+    "facing": "right",
+    "dialogues": [
+      {
+        "dialogue_id": "mira_warden",
+        "priority": 100,
+        "conditions": [
+          {
+            "type": "boss_defeated",
+            "value": "ashen_warden"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "mira_secrets",
+        "priority": 50,
+        "conditions": [
+          {
+            "type": "secret_found",
+            "value": true
+          }
+        ]
+      },
+      {
+        "dialogue_id": "mira_intro",
+        "priority": 20,
+        "conditions": [
+          {
+            "type": "flag_missing",
+            "value": "met_mira"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "mira_repeat",
+        "priority": 10,
+        "conditions": [
+          {
+            "type": "flag",
+            "value": "met_mira"
+          }
+        ]
+      }
+    ]
+  }
+]

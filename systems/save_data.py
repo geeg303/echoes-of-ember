@@ -6,13 +6,15 @@ from dataclasses import dataclass
 import copy
 from datetime import datetime, timezone
 import math
+import re
 from typing import Any
 
 from systems.level_completion import CompletionRating, ExitType, LevelResult
 from world.campaign import WorldProgress, WorldRegistry
 
 
-CURRENT_SAVE_VERSION = 2
+CURRENT_SAVE_VERSION = 3
+_DIALOGUE_FLAG_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 
 
 class SaveValidationError(ValueError):
@@ -66,6 +68,7 @@ class SaveSession:
                     ],
                     "revealed_map_nodes": sorted(self.progress.revealed_map_nodes),
                     "defeated_bosses": sorted(self.progress.defeated_bosses),
+                    "dialogue_flags": sorted(self.progress.dialogue_flags),
                     "completed_worlds_once": (
                         [self.progress.registry.world_id] if self.progress.world_completed_once else []
                     ),
@@ -130,6 +133,9 @@ class SaveSession:
         progress.defeated_bosses = _unique_known_strings(
             progression.get("defeated_bosses"), set(registry.boss_ids), "defeated_bosses"
         )
+        progress.dialogue_flags = _unique_dialogue_flags(
+            progression.get("dialogue_flags"), "dialogue_flags"
+        )
         worlds = _unique_known_strings(
             progression.get("completed_worlds_once"), {registry.world_id}, "completed_worlds_once"
         )
@@ -153,6 +159,8 @@ def migrate_save(raw: object) -> dict[str, Any]:
     while version < CURRENT_SAVE_VERSION:
         if version == 1:
             data = _migrate_v1_to_v2(data)
+        elif version == 2:
+            data = _migrate_v2_to_v3(data)
         else:
             raise UnsupportedSaveVersion(f"no migration path from save version {version}")
         version = data["schema_version"]
@@ -167,6 +175,14 @@ def _migrate_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
     # V2 deliberately requires a real boss defeat, so the legacy flag is cleared.
     progression["completed_worlds_once"] = []
     data["schema_version"] = 2
+    return data
+
+
+def _migrate_v2_to_v3(data: dict[str, Any]) -> dict[str, Any]:
+    campaign = _mapping(data.get("campaign"), "campaign")
+    progression = _mapping(campaign.get("progression"), "campaign.progression")
+    progression["dialogue_flags"] = []
+    data["schema_version"] = 3
     return data
 
 
@@ -288,3 +304,13 @@ def _unique_known_strings(value: object, known: set[str], name: str) -> set[str]
         raise SaveValidationError(f"{name} contains unknown IDs: {sorted(unknown)}")
     return set(value)
 
+
+def _unique_dialogue_flags(value: object, name: str) -> set[str]:
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise SaveValidationError(f"{name} must be a string list")
+    if len(value) != len(set(value)):
+        raise SaveValidationError(f"{name} contains duplicates")
+    invalid = sorted(item for item in value if not _DIALOGUE_FLAG_RE.fullmatch(item))
+    if invalid:
+        raise SaveValidationError(f"{name} contains invalid flags: {invalid}")
+    return set(value)

@@ -1,0 +1,19 @@
+{
+  "id": "talen_repeat",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Talen",
+      "text": "Stone remembers every shortcut. If a wall glows, an Ember Pulse may persuade it.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Talen",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

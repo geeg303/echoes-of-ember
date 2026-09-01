@@ -1,0 +1,48 @@
+{
+  "id": "orin_intro",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Orin",
+      "text": "Canopy bridges bend; they do not betray. Keep your weight moving and watch for the wind between branches.",
+      "next": "choice"
+    },
+    {
+      "id": "choice",
+      "type": "choice",
+      "speaker": "Orin",
+      "text": "What would you like to ask?",
+      "responses": [
+        {
+          "label": "What lies ahead?",
+          "target": "lore"
+        },
+        {
+          "label": "I am ready.",
+          "target": "end"
+        }
+      ]
+    },
+    {
+      "id": "lore",
+      "type": "line",
+      "speaker": "Orin",
+      "text": "Old paths remember patient feet. Look above the obvious road, and listen when the embers hum.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Orin",
+      "text": "May your next step find solid ground.",
+      "effects": [
+        {
+          "type": "set_flag",
+          "value": "met_orin"
+        }
+      ]
+    }
+  ]
+}

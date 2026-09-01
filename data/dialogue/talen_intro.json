@@ -1,0 +1,48 @@
+{
+  "id": "talen_intro",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Talen",
+      "text": "These ruins once guarded the Ember Sanctum. Their doors still answer old switches\u2014and their sentries answer nothing.",
+      "next": "choice"
+    },
+    {
+      "id": "choice",
+      "type": "choice",
+      "speaker": "Talen",
+      "text": "What would you like to ask?",
+      "responses": [
+        {
+          "label": "What lies ahead?",
+          "target": "lore"
+        },
+        {
+          "label": "I am ready.",
+          "target": "end"
+        }
+      ]
+    },
+    {
+      "id": "lore",
+      "type": "line",
+      "speaker": "Talen",
+      "text": "Old paths remember patient feet. Look above the obvious road, and listen when the embers hum.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Talen",
+      "text": "May your next step find solid ground.",
+      "effects": [
+        {
+          "type": "set_flag",
+          "value": "heard_sanctum_warning"
+        }
+      ]
+    }
+  ]
+}

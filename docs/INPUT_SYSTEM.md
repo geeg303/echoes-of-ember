@@ -41,3 +41,7 @@ The most recent meaningful keyboard key or controller button/stick movement sele
 ## Testing and future rebinding
 
 `FakeControllerBackend` supports device connection, disconnection, axes, buttons, D-pad, identity, and rumble in headless CI without hardware mocks scattered through tests. The logical action boundary is ready for future rebinding; Phase 18 deliberately does not add a rebinding UI or persist physical instance IDs.
+
+## Dialogue context
+
+NPC conversations reuse `INTERACT`, `CONFIRM`, `BACK`, `MENU_UP`, and `MENU_DOWN`. Keyboard uses E, Enter/Space, Escape, and arrows/W/S; controller uses north-face/Y to interact, south-face/A to reveal/advance/select, east-face/B to close, and D-pad/stick for choices. Edge suppression prevents the opening interaction from advancing the first line.

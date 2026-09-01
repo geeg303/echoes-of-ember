@@ -1,0 +1,48 @@
+{
+  "id": "mira_intro",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Mira",
+      "text": "Nova! The Reach has been waiting for someone willing to follow its scattered light. Ember Shards mark the safest rhythm forward.",
+      "next": "choice"
+    },
+    {
+      "id": "choice",
+      "type": "choice",
+      "speaker": "Mira",
+      "text": "What would you like to ask?",
+      "responses": [
+        {
+          "label": "What lies ahead?",
+          "target": "lore"
+        },
+        {
+          "label": "I am ready.",
+          "target": "end"
+        }
+      ]
+    },
+    {
+      "id": "lore",
+      "type": "line",
+      "speaker": "Mira",
+      "text": "Old paths remember patient feet. Look above the obvious road, and listen when the embers hum.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Mira",
+      "text": "May your next step find solid ground.",
+      "effects": [
+        {
+          "type": "set_flag",
+          "value": "met_mira"
+        }
+      ]
+    }
+  ]
+}

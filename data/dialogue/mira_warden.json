@@ -1,0 +1,19 @@
+{
+  "id": "mira_warden",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Mira",
+      "text": "The Ashen Warden is silent. Even the smallest leaves felt that victory.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Mira",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

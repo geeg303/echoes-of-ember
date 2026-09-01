@@ -71,6 +71,7 @@ class WorldProgress:
     revealed_map_nodes: set[str] = field(default_factory=set)
     world_completed_once: bool = False
     defeated_bosses: set[str] = field(default_factory=set)
+    dialogue_flags: set[str] = field(default_factory=set)
     def record(self, result: LevelResult) -> None:
         if result.level_id not in self.registry.level_ids: raise WorldRegistryError(f"result is outside world: {result.level_id}")
         self.results[result.level_id] = result

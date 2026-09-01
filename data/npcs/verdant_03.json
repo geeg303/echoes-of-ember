@@ -1,0 +1,46 @@
+[
+  {
+    "id": "talen_v03",
+    "display_name": "Talen",
+    "level_id": "verdant_03",
+    "position": [
+      330,
+      1088
+    ],
+    "interaction_radius": 82,
+    "style": "talen",
+    "facing": "right",
+    "dialogues": [
+      {
+        "dialogue_id": "talen_warden",
+        "priority": 100,
+        "conditions": [
+          {
+            "type": "boss_defeated",
+            "value": "ashen_warden"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "talen_intro",
+        "priority": 20,
+        "conditions": [
+          {
+            "type": "flag_missing",
+            "value": "heard_sanctum_warning"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "talen_repeat",
+        "priority": 10,
+        "conditions": [
+          {
+            "type": "flag",
+            "value": "heard_sanctum_warning"
+          }
+        ]
+      }
+    ]
+  }
+]

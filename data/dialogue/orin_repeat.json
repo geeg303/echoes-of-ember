@@ -1,0 +1,19 @@
+{
+  "id": "orin_repeat",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Orin",
+      "text": "A careful explorer hears a platform before it falls.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Orin",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

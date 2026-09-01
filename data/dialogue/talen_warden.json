@@ -1,0 +1,19 @@
+{
+  "id": "talen_warden",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Talen",
+      "text": "The Warden fell, yet the Sanctum endured. You proved strength can protect without becoming a cage.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Talen",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

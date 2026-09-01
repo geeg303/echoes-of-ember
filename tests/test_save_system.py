@@ -368,7 +368,7 @@ def test_v1_migration_preserves_progress_but_revokes_legacy_world_completion(man
     runtime = WorldMapRuntime(manager.registry.map_definition, migrated.progress)
     assert runtime.node_state("first_flame_sanctum") is NodeState.AVAILABLE
     manager.save(migrated)
-    assert json.loads(path.read_text())["schema_version"] == 2
+    assert json.loads(path.read_text())["schema_version"] == 3
 
 
 def test_boss_defeat_and_true_world_completion_round_trip(manager: SaveManager) -> None:

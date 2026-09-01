@@ -31,7 +31,9 @@ from systems.level_completion import (
 )
 from systems.progression import LevelProgress
 from systems.secret_system import SecretSystem
-from settings import DEBUG_MODE, DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, SHOW_FPS
+from systems.dialogue_system import DialogueSystem
+from systems.npc_system import NPCSystem
+from settings import DEBUG_MODE, DISPLAY, EFFECT_PARTICLE_CAP, GAME_TITLE, LEVEL_COMPLETION_SEQUENCE_DURATION, PROJECT_ROOT, SHOW_FPS
 from states.level_complete import LevelCompleteScreen
 from states.frontend import FrontendController
 from states.settings_menu import SettingsController
@@ -43,6 +45,7 @@ from ui.debug_overlay import DebugOverlay
 from ui.hud import HUD
 from ui.boss_hud import BossHUD
 from ui.notifications import NotificationQueue
+from ui.dialogue_box import DialogueBox
 from world.background import ParallaxBackground
 from world.camera import Camera
 from world.collision import CollisionEngine
@@ -82,6 +85,9 @@ class Game:
             self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
         )
         self.notifications = NotificationQueue(self.assets.font(None, 30))
+        self.dialogue_box = DialogueBox(
+            self.assets.font(None, 30), self.assets.font(None, 26), self.assets.font(None, 21)
+        )
         self.effects = EffectsSystem(capacity=EFFECT_PARTICLE_CAP, quality=EffectQuality(self.app_settings.effects_quality))
         self._effect_trail_timer = 0.0
         self.world_complete_screen = WorldCompleteScreen(self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22))
@@ -165,6 +171,12 @@ class Game:
         )
         self.secrets = SecretSystem(self.level.secret_definitions)
         self.goal = EmberGate(self.level.goal.position, self.level.goal.requires_interact)
+        self.npcs, dialogue_definitions = NPCSystem.load(
+            PROJECT_ROOT / "data", self.level.metadata.level_id, self.world_progress, world_size
+        )
+        self.dialogue = DialogueSystem(
+            dialogue_definitions, self.world_progress, self._commit_dialogue_flag
+        )
         self.gameplay_phase = GameplayPhase.PLAYING
         self.elapsed_time = 0.0
         self.deaths = 0
@@ -204,6 +216,23 @@ class Game:
 
     def _dispatch_input(self) -> None:
         menu_order=(Action.MENU_UP,Action.MENU_DOWN,Action.MENU_LEFT,Action.MENU_RIGHT,Action.CONFIRM,Action.BACK,Action.PAUSE)
+        if self.app_mode == "dialogue":
+            if DEBUG_MODE and self.input.was_pressed(Action.DEBUG_RESET):
+                self.reset_level()
+                self.app_mode = "gameplay"
+                return
+            for action in (Action.MENU_UP, Action.MENU_DOWN, Action.CONFIRM, Action.BACK):
+                if self.input.was_pressed(action):
+                    outcome = self.dialogue.handle(action)
+                    sound = {"move": "ui_move", "close": "ui_cancel"}.get(outcome, "ui_confirm")
+                    if outcome != "none":
+                        self.audio.play_sound(sound)
+                    if not self.dialogue.active:
+                        self.npcs.end()
+                        self.app_mode = "gameplay"
+                        self.input.suppress_edges()
+                    break
+            return
         if self.app_mode in {"pause","game_over","settings","frontend"}:
             controller={"pause":self.pause_controller,"game_over":self.game_over_controller,"settings":self.settings_controller,"frontend":self.frontend}[self.app_mode]
             for action in menu_order:
@@ -279,6 +308,11 @@ class Game:
             self.effects.update(dt)
             self.audio.update(dt)
             return
+        if self.app_mode == "dialogue":
+            self.dialogue.update(dt)
+            self.audio.update(dt)
+            self._clear_frame_inputs()
+            return
         if self.save_session is not None:
             self.save_session.play_time_seconds += dt
         if self.app_mode == "map":
@@ -336,7 +370,10 @@ class Game:
         if self.player.double_jump_effect_timer > previous_double_jump_fx:
             self.effects.spawn("aether_double_jump", self.player.rect.center)
             self.audio.play_sound("powerup_aether")
-        if self.world_objects.resolve_after_player(self.player, self._interact_pressed, self.level.tilemap):
+        world_interacted = self.world_objects.resolve_after_player(
+            self.player, self._interact_pressed, self.level.tilemap
+        )
+        if world_interacted:
             new_checkpoints = self.world_objects.activated_checkpoint_ids - previous_checkpoints
             for item in self.world_objects.checkpoints:
                 if item.object_id in new_checkpoints:
@@ -352,6 +389,7 @@ class Game:
                 if any(door.object_id in switch.target_ids for switch in self.world_objects.switches if switch.object_id in new_switches):
                     self.effects.spawn("door_open", door.rect.center)
                     self.audio.play_sound("door_open", position=door.rect.center, listener_x=self.player.rect.centerx)
+        self.npcs.update(dt, self.player.rect)
         self.player_combat.ember_pulse_enabled = self.powerups.grants_ranged_attack
         self.player_combat.update(dt)
         if self._attack_pressed and self.player_combat.try_attack(self.player, self.projectiles):
@@ -459,7 +497,8 @@ class Game:
                 self.effects.request_flash((170, 196, 218), 58, 0.14)
                 self.audio.play_sound("stone_guard_break")
                 self._rumble(.38,.68,180)
-        secret_update = self.secrets.update(self.player.rect, self._interact_pressed, self.enemies.defeated_ids)
+        critical_interact = self._interact_pressed and not world_interacted
+        secret_update = self.secrets.update(self.player.rect, critical_interact, self.enemies.defeated_ids)
         if secret_update.score_awarded:
             self.progress.award_score(secret_update.score_awarded)
             self.hud.notify_score_changed()
@@ -473,9 +512,25 @@ class Game:
             self._begin_completion(secret_update.secret_exit_id, ExitType.SECRET)
         self.notifications.update(dt)
         self.goal.update(dt, self.player.rect)
-        if self.boss_system is None and not self.player.is_dead and self.goal.try_activate(self.player.rect, self._interact_pressed):
-            if self.level.metadata.requirements.evaluate(True, self.progress):
+        critical_consumed = world_interacted or bool(secret_update.messages) or bool(secret_update.secret_exit_id)
+        goal_activated = False
+        if self.boss_system is None and not self.player.is_dead and not critical_consumed:
+            goal_activated = self.goal.try_activate(self.player.rect, self._interact_pressed)
+            if goal_activated and self.level.metadata.requirements.evaluate(True, self.progress):
                 self._begin_completion("ember_gate", ExitType.NORMAL)
+        if (
+            self.gameplay_phase is GameplayPhase.PLAYING
+            and not self.player.is_dead
+            and self._interact_pressed
+            and not critical_consumed
+            and not goal_activated
+            and self.npcs.begin(self.player.rect, self.dialogue)
+        ):
+            self.app_mode = "dialogue"
+            self.audio.play_sound("ui_confirm")
+            if self.npcs.active_npc is not None:
+                self.effects.spawn("switch_activate", self.npcs.active_npc.rect.center)
+            self.input.suppress_edges()
         self.hud.update(dt)
         self._update_effects(dt)
         self._clear_frame_inputs()
@@ -562,6 +617,10 @@ class Game:
         offset = self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
         self.world_objects.draw(self.canvas, self.camera.view_rect, offset)
+        self.npcs.draw(
+            self.canvas, self.camera.view_rect, offset, self.player.rect,
+            self.input.get_prompt(Action.INTERACT), self._fps_font,
+        )
         if self.boss_system is None:
             self.goal.draw(self.canvas, offset, self.input.get_prompt(Action.INTERACT))
         else:
@@ -602,6 +661,8 @@ class Game:
             self.canvas.blit(fade, (0, 0))
         elif self.gameplay_phase is GameplayPhase.LEVEL_COMPLETE and self.level_result:
             self.level_complete_screen.draw(self.canvas, self.level.metadata.display_name, self.level_result, self.input)
+        if self.app_mode == "dialogue":
+            self.dialogue_box.draw(self.canvas, self.dialogue, self.input)
         if self.app_mode == "pause": self.pause_controller.draw(self.canvas)
         elif self.app_mode == "game_over": self.game_over_controller.draw(self.canvas)
         scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
@@ -747,6 +808,7 @@ class Game:
         self.app_mode = "map"; self.input.suppress_edges(); self.show_world_summary = False; self.effects.clear(); self._configure_map_effects(); self._configure_map_audio()
 
     def return_to_main_menu(self) -> None:
+        self._close_dialogue()
         self._autosave(force=True)
         self.app_mode = "frontend"; self.input.suppress_edges(); self.effects.clear(); self.effects.start_emitter("frontend:title", "sanctum_available", (640,500)); self.audio.reset_context(); self.audio.play_music("music_world_map")
         self.frontend.refresh_slots(); self.frontend._main()
@@ -769,6 +831,7 @@ class Game:
         self.reset_level()
 
     def return_to_world_map(self) -> None:
+        self._close_dialogue()
         level_id = self.level.metadata.level_id
         self.world_map_runtime.return_to_level_node(level_id)
         self.app_mode = "map"
@@ -790,6 +853,19 @@ class Game:
         self._autosave()
         if self.level_result is not None:
             self.world_map_screen.notify("PATH OPENED — CHOOSE YOUR NEXT DESTINATION")
+
+    def _close_dialogue(self) -> None:
+        dialogue = getattr(self, "dialogue", None)
+        if dialogue is not None and dialogue.active:
+            dialogue.close()
+        npcs = getattr(self, "npcs", None)
+        if npcs is not None:
+            npcs.end()
+
+    def _commit_dialogue_flag(self, flag: str) -> None:
+        """Persist semantic story flags immediately when authored dialogue grants one."""
+        self._mark_save_dirty()
+        self._autosave()
 
     def _mark_save_dirty(self) -> None:
         if self.persistence_enabled and self.save_session is not None:

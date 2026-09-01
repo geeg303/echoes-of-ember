@@ -73,3 +73,7 @@ The map owns one music context and one Verdant ambience owner. Navigation, confi
 ## Phase 17 front-end and failed-run flow
 
 A chosen slot enters this map; Continue chooses the newest usable slot. Pause or Game Over may return here without recording an unfinished level. Previously committed results and monotonic unlocks remain intact, while Retry starts a fresh authored level runtime.
+
+## Narrative progression
+
+Semantic dialogue flags live beside campaign progression but do not unlock map routes. NPC variants may read completed levels, secrets, the Ember Veil exit, boss defeat, and world completion. These facts remain authoritative in `WorldProgress`; dialogue never duplicates or overrides them.

@@ -16,13 +16,13 @@ Normal campaign startup uses slot 1. Choose another with `python main.py --slot 
 
 `python main.py --level verdant_03` remains a nonpersistent development launch. It cannot read or modify campaign slots. It cannot be combined with `--new-game`.
 
-## Version 2 schema
+## Version 3 schema
 
 A sanitized abbreviated save looks like this:
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "metadata": {
     "slot_id": 1,
     "created_at": "2026-08-31T12:00:00Z",
@@ -62,6 +62,7 @@ A sanitized abbreviated save looks like this:
       "discovered_secret_exits": [],
       "revealed_map_nodes": [],
       "defeated_bosses": [],
+      "dialogue_flags": ["met_mira"],
       "completed_worlds_once": []
     }
   }
@@ -100,8 +101,12 @@ Validation covers root structure, schema and slot IDs, UTC-compatible timestamps
 
 Schema 2 adds the monotonic `defeated_bosses` list and makes authored boss defeat the source of truth for world completion. The real v1→v2 migration preserves timestamps, play time, map node, level results, completed levels, secret exits, revealed nodes, tokens, and Ember Veil. It initializes `defeated_bosses` to empty.
 
-Phase 13 considered Verdant Reaches complete after all four platforming levels, before a boss existed. Migration deliberately clears that legacy `completed_worlds_once` flag rather than falsely claiming the Ashen Warden was defeated. Ruins remains completed, so First Flame Sanctum is available immediately; the player must defeat the boss once to establish true World 1 completion. The next successful save writes the migrated snapshot atomically as schema 2.
+Phase 13 considered Verdant Reaches complete after all four platforming levels, before a boss existed. Migration deliberately clears that legacy `completed_worlds_once` flag rather than falsely claiming the Ashen Warden was defeated. Ruins remains completed, so First Flame Sanctum is available immediately; the player must defeat the boss once to establish true World 1 completion. The migration chain then adds dialogue flags and the next successful save writes the snapshot atomically as schema 3.
 
 ## Phase 17 front-end integration
 
 Normal startup inspects three slots through summaries. Continue chooses the newest valid or recovered slot; corrupt slots can be explicitly reset/deleted and unsupported versions are protected. Pause/Game Over exits never serialize unfinished runtime state or create a failed result. Application preferences live in separate schema-1 `settings.json`; campaign schema remains 2.
+
+## Version 2 → 3 migration
+
+Version 3 adds validated `progression.dialogue_flags`. Loading a v2 slot inserts an empty list and preserves results, completed levels, secret exits, revealed nodes, defeated bosses, world completion, timestamps, current node, and play time. Pure conversation-history flags save immediately when first granted rather than waiting for level completion. Invalid, duplicate, or malformed flags reject the slot safely.

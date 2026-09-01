@@ -1,0 +1,19 @@
+{
+  "id": "mira_repeat",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Mira",
+      "text": "The bright trail teaches the route, but the quiet corners keep better stories.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Mira",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

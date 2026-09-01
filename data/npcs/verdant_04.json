@@ -1,0 +1,56 @@
+[
+  {
+    "id": "vesper_v04",
+    "display_name": "Vesper",
+    "level_id": "verdant_04",
+    "position": [
+      345,
+      1088
+    ],
+    "interaction_radius": 82,
+    "style": "vesper",
+    "facing": "right",
+    "dialogues": [
+      {
+        "dialogue_id": "vesper_warden",
+        "priority": 110,
+        "conditions": [
+          {
+            "type": "world_completed",
+            "value": true
+          }
+        ]
+      },
+      {
+        "dialogue_id": "vesper_veil",
+        "priority": 100,
+        "conditions": [
+          {
+            "type": "secret_exit_found",
+            "value": "v04_secret_exit"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "vesper_intro",
+        "priority": 20,
+        "conditions": [
+          {
+            "type": "flag_missing",
+            "value": "vesper_secret_hint"
+          }
+        ]
+      },
+      {
+        "dialogue_id": "vesper_repeat",
+        "priority": 10,
+        "conditions": [
+          {
+            "type": "flag",
+            "value": "vesper_secret_hint"
+          }
+        ]
+      }
+    ]
+  }
+]

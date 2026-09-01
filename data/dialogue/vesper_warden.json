@@ -1,0 +1,19 @@
+{
+  "id": "vesper_warden",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Vesper",
+      "text": "The Veil trembled when the Warden fell. Beyond it, older echoes have begun to answer.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Vesper",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

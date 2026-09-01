@@ -33,3 +33,7 @@ Safe centralized vibration is used sparingly for player damage, Stone Guard abso
 ## Compatibility limits
 
 Physical controller review is still recommended across representative SDL mappings. There is no control rebinding, per-controller calibration, custom glyph pack, multiplayer ownership, Steam Input integration, or platform-specific SDK. The deadzone is centralized but not exposed in the UI.
+
+## Dialogue
+
+Dialogue is fully controller-operable. Prompts switch live with the active device, choice focus uses normalized menu actions, and held-button edges are suppressed across open/close transitions. Start/Pause is intentionally ignored until optional dialogue is closed with Back.

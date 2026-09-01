@@ -1,0 +1,19 @@
+{
+  "id": "vesper_repeat",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Vesper",
+      "text": "Seek the side chamber, then climb where the ruin seems to end. The Veil favors those who refuse the obvious door.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Vesper",
+      "text": "May your next step find solid ground."
+    }
+  ]
+}

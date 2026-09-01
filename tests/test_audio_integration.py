@@ -80,7 +80,7 @@ def test_disabled_audio_preserves_gameplay_and_progression():
 
 def test_campaign_save_schema_has_no_audio_runtime_state():
     raw=SaveSession.fresh(1,WorldRegistry.load(DEFAULT_WORLD_REGISTRY)).to_dict(); text=str(raw).lower()
-    assert CURRENT_SAVE_VERSION==2 and raw["schema_version"]==2
+    assert CURRENT_SAVE_VERSION==3 and raw["schema_version"]==3
     assert all(word not in text for word in ("audio","music","ambience","channel","mute"))
 
 

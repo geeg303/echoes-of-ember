@@ -1,0 +1,48 @@
+{
+  "id": "vesper_intro",
+  "start": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "line",
+      "speaker": "Vesper",
+      "text": "The Ember Veil is not a wall. It is a choice the world makes when it believes no one is watching.",
+      "next": "choice"
+    },
+    {
+      "id": "choice",
+      "type": "choice",
+      "speaker": "Vesper",
+      "text": "What would you like to ask?",
+      "responses": [
+        {
+          "label": "What lies ahead?",
+          "target": "lore"
+        },
+        {
+          "label": "I am ready.",
+          "target": "end"
+        }
+      ]
+    },
+    {
+      "id": "lore",
+      "type": "line",
+      "speaker": "Vesper",
+      "text": "Old paths remember patient feet. Look above the obvious road, and listen when the embers hum.",
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "speaker": "Vesper",
+      "text": "May your next step find solid ground.",
+      "effects": [
+        {
+          "type": "set_flag",
+          "value": "vesper_secret_hint"
+        }
+      ]
+    }
+  ]
+}

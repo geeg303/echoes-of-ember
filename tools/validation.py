@@ -302,6 +302,26 @@ def _integer_pair(value: object) -> bool:
     )
 
 
+def validate_narrative_data(data_root: Path) -> tuple[int, int]:
+    """Validate every dialogue graph and NPC catalog against authored levels."""
+    from systems.dialogue_system import DialogueDataError, load_dialogue
+    from systems.npc_system import NPCDataError, load_npc_catalog
+
+    dialogue_paths = sorted((data_root / "dialogue").glob("*.json"))
+    definitions = [load_dialogue(path) for path in dialogue_paths]
+    dialogue_ids = {item.dialogue_id for item in definitions}
+    if len(dialogue_ids) != len(definitions):
+        raise DialogueDataError("dialogue IDs must be globally unique")
+    npc_count = 0
+    for path in sorted((data_root / "npcs").glob("*.json")):
+        level_path = data_root / "levels" / f"{path.stem}.json"
+        if not level_path.is_file():
+            raise NPCDataError(f"NPC catalog has no matching level: {path.stem}")
+        level = load_and_validate_level(level_path)
+        bounds = (level["width"] * level["tile_size"], level["height"] * level["tile_size"])
+        npc_count += len(load_npc_catalog(path, path.stem, dialogue_ids, bounds))
+    return len(definitions), npc_count
+
 def main() -> int:
     import argparse
     from settings import PROJECT_ROOT
@@ -319,6 +339,8 @@ def main() -> int:
         from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
         registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
         print(f"valid world: {registry.world_id} ({len(registry.level_ids)} levels)")
+        dialogue_count, npc_count = validate_narrative_data(PROJECT_ROOT / "data")
+        print(f"valid narrative: {dialogue_count} dialogues, {npc_count} NPCs")
     return 0
 
 if __name__ == "__main__":
