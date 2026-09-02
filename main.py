@@ -5,12 +5,15 @@ from __future__ import annotations
 import argparse
 import logging
 
+from core.build_config import developer_features_available
 from core.game import Game
+from core.version import version_text
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry, WorldRegistryError
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Launch Echoes of Ember")
+    parser.add_argument("--version", action="version", version=version_text())
     parser.add_argument(
         "--smoke-test",
         action="store_true",
@@ -34,6 +37,9 @@ def configure_logging() -> None:
 def main() -> int:
     configure_logging()
     args = parse_args()
+    if not developer_features_available() and (args.editor or args.debug or args.level):
+        logging.error("This player build does not include developer, editor, or direct-level modes")
+        return 2
     if args.editor and (args.slot is not None or args.new_game):
         logging.error("--editor cannot be combined with --slot or --new-game")
         return 2

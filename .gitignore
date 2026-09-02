@@ -9,9 +9,11 @@ htmlcov/
 venv/
 build/
 dist/
+release/
+packaging/build/
+packaging/dist/
 *.spec
 .DS_Store
 Thumbs.db
 *.log
 saves/
-

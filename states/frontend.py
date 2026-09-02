@@ -6,6 +6,7 @@ from typing import Protocol
 import math,pygame
 from core.save_manager import SaveManager,SlotState,SlotSummary
 from core.input_manager import Action
+from core.version import BUILD_DESIGNATION,__version__
 from ui.menu import ConfirmationDialog,Menu,MenuAction,MenuItem,draw_dialog,draw_menu
 class FrontendScreen(str,Enum):MAIN="main";SLOTS="slots";SLOT_ACTION="slot_action";SETTINGS="settings";CREDITS="credits"
 class FrontendHost(Protocol):
@@ -90,7 +91,7 @@ class FrontendController:
     def _screen_subtitle(self)->str:
         if self.screen is FrontendScreen.SLOTS:return "Choose a safe slot for Nova's journey" if self.slot_mode=="new" else "Choose a campaign to continue"
         if self.screen is FrontendScreen.SLOT_ACTION:return self._summary(self.summaries[self.selected_slot-1])
-        return "Nova's journey through Verdant Reaches"
+        return f"{BUILD_DESIGNATION} · v{__version__}" if self.screen is FrontendScreen.MAIN else "Nova's journey through Verdant Reaches"
     def _background(self,surface:pygame.Surface)->None:
         surface.fill((10,15,30));pygame.draw.circle(surface,(95,38,28),(640,500),240);pygame.draw.circle(surface,(231,98,48),(640,500),90)
         for i in range(24):

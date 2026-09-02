@@ -1,0 +1,18 @@
+Echoes of Ember uses the following third-party software:
+
+pygame-ce 2.5.8
+Copyright the pygame-ce contributors.
+Distributed under the GNU Lesser General Public License version 2.1.
+Project: https://pyga.me/
+
+Python and its standard library
+Copyright the Python Software Foundation and contributors.
+Project: https://www.python.org/
+
+PyInstaller is used to create distributions and is not a gameplay dependency.
+PyInstaller is GPL-2.0-or-later with its bootloader exception.
+Project: https://pyinstaller.org/
+
+All Echoes of Ember placeholder graphics, effects, dialogue, level data, and generated audio in this
+repository are project-created. No Nintendo or Mario assets are included. The repository currently
+does not declare a project license; no license grant should be inferred from this notices file.

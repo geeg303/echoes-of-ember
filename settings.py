@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from core.paths import ASSET_ROOT, RESOURCE_ROOT
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-ASSET_ROOT = PROJECT_ROOT / "assets"
+PROJECT_ROOT = RESOURCE_ROOT
 
 GAME_TITLE = "Echoes of Ember"
 PLAYER_NAME = "Nova"

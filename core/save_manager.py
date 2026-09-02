@@ -9,8 +9,8 @@ import logging
 import os
 from pathlib import Path
 import shutil
-import sys
 
+from core.paths import user_data_root
 from systems.save_data import SaveSession, SaveValidationError, UnsupportedSaveVersion, utc_now
 from world.campaign import WorldRegistry
 
@@ -161,11 +161,4 @@ class SaveManager:
 
 
 def default_save_root() -> Path:
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    elif sys.platform == "darwin":
-        base = Path.home() / "Library" / "Application Support"
-    else:
-        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    return base / "echoes_of_ember" / "saves"
-
+    return user_data_root() / "saves"
