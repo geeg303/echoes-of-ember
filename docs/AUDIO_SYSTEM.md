@@ -63,6 +63,10 @@ The suite covers mixer success/failure, disabled mode, catalogs, unknown and mis
 ## Phase 17 menu and settings integration
 
 Front-end, slot, settings, Pause, and Game Over controls request stable UI cues. Master/Music/SFX/Ambience/UI sliders and mute apply immediately through `AudioManager` and persist in application settings, not campaign saves. Menus and all transitions remain functional with no audio device or with mute enabled.
+
+## Phase 23 performance review
+
+Profiling confirmed audio update/request handling is a minor, bounded cost, so playback ownership, channel policy, and lazy asset loading were intentionally left unchanged. The soak test found no audio ownership growth. Audio files remain lifecycle-loaded rather than read during per-frame update or drawing.
 # Debug diagnostics
 
 The Audio page and `audio status` expose availability, mute state, music/ambience ownership, channel count, and recent event data without starting loops. `audio mute` is a transient session override.

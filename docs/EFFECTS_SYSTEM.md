@@ -61,6 +61,8 @@ All numbers are 600 frames at 1280×720 in the headless development environment.
 
 The recorded comparable pre-effects boss benchmark was 6.260 ms mean, 6.846 ms p95, and 17.057 ms max. Phase 15 adds about 2.758 ms mean while keeping p95 comfortably below the 16.67 ms 60 FPS frame budget. The isolated stress benchmark also remains below budget.
 
+Phase 23 adds an empty screen-effects fast path: when no screen-space particles or flashes exist, no full-resolution alpha overlay is cleared or composited. World effects, active screen effects, quality rules, priorities, and caps are unchanged. The current effects-stress comparison is recorded in `PERFORMANCE_OPTIMIZATION.md`.
+
 ## Intentional limitations
 
 Effects remain procedural placeholders and sound assets remain absent. Quality selection is currently a programmatic/debug facility rather than a finished settings menu. Map celebration events are lightweight because persistent animation choreography and the full audio pass belong to later phases.

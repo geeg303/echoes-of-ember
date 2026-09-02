@@ -367,3 +367,7 @@ Phase 20 adds 19 profile-wide local achievements across progression, collectible
 ## Level editor
 
 Launch the developer-only authoritative-format editor with `python main.py --editor --level verdant_01`. It supports safe tile/object authoring, pan/zoom, validation, bounded undo/redo, atomic saves, companion NPC placement, lossless boss metadata, and isolated normal-runtime playtests. See [docs/LEVEL_EDITOR.md](docs/LEVEL_EDITOR.md) and [docs/LEVEL_FORMAT.md](docs/LEVEL_FORMAT.md).
+
+## Performance and profiling
+
+Phase 23 provides repeatable quiet, busy, boss, effects, and editor benchmarks plus an 18,000-frame stability soak. Measured runtime scenarios retain p95 frame times below the 16.67 ms 60 FPS budget in the same-host headless environment. The engine now reuses static terrain chunks, the background gradient, and bounded HUD surfaces; skips native-size scaling and empty screen-effect composition; and avoids rebuilding the editor tile grid on every draw. See [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) and [docs/PERFORMANCE_OPTIMIZATION.md](docs/PERFORMANCE_OPTIMIZATION.md).

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 import pygame,pytest
 from core.game import Game
 from editor.document import LevelDocument
@@ -42,4 +43,14 @@ def test_same_size_present_skips_transform_scale(monkeypatch,tmp_path):
  called=[];original=pygame.transform.scale
  monkeypatch.setattr(pygame.transform,"scale",lambda *args,**kwargs:(called.append(True),original(*args,**kwargs))[1])
  try:game._present();assert not called
+ finally:game.shutdown()
+
+def test_runtime_update_and_draw_do_not_read_from_disk(monkeypatch):
+ game=Game(achievements_enabled=False,persistence=False)
+ try:
+  game.update(1/60);game.draw()
+  with monkeypatch.context() as hot_path:
+   hot_path.setattr(Path,"open",lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError("hot-path disk open")))
+   hot_path.setattr(Path,"read_text",lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError("hot-path disk read")))
+   for _ in range(3):game.update(1/60);game.draw()
  finally:game.shutdown()

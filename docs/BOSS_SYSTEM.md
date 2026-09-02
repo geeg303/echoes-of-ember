@@ -76,3 +76,7 @@ Boss levels round-trip without metadata loss. Arena, trigger, doors, spawn, and 
 # Debug diagnostics
 
 The Boss page exposes health, phase, state/timer, attack, vulnerability, arena lock, and defeat state. `boss damage` routes through `BossSystem.debug_damage()` to preserve phase and defeat invariants; `boss reset` uses the existing encounter reset contract. Debug boss results never persist.
+
+## Phase 23 performance review
+
+Ashen Warden activation, Phase 3, and defeat-burst scenarios are part of the repeatable performance suite. Boss update logic was not a measured hotspot and remains unchanged; optimization focuses on shared rendering paths. Post-optimization boss p95 is 7.883 ms, Phase 3 p95 is 8.456 ms, and the defeat-burst p95 is 7.711 ms in the documented headless environment.

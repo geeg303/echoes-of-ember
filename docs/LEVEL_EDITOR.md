@@ -43,6 +43,10 @@ Create a `LevelDocument.new`, choose safe dimensions, paint readable terrain, po
 ## Known limitations
 
 The inspector presents safe structured data and keyboard movement but is not a full form/table editor for every advanced field. New NPC dialogue content, map registration, boss behavior, background authoring, and advanced recovery snapshots remain outside Phase 21. A hands-on mouse/zoom/inspector usability review is recommended before large-scale Worlds 2–4 production.
+
+## Performance
+
+The document's dense tile grid is derived lazily and reused across draw calls. Tile edits update a copied grid; restore/undo invalidates it so authoritative serialized data remains the source of truth. The cache is document-local, has one entry, and never changes save format. The Phase 23 editor benchmark and editor round-trip tests cover this path.
 # Debug playtesting
 
 `Shift+F5` launches the same isolated temporary document with Phase 22 debug tools enabled; `F5` remains the normal isolated playtest. Neither mode writes campaign or achievement progress. Debug state is discarded when returning to the editor. See [DEBUG_TOOLS.md](DEBUG_TOOLS.md).

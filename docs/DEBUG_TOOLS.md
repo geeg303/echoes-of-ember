@@ -64,3 +64,7 @@ The event trace records bounded semantic diagnostics. `repro` creates a unique J
 - Debug changes never produce campaign completion or achievement persistence; use a normal session for genuine progression verification.
 
 See [DEBUG_COMMANDS.md](DEBUG_COMMANDS.md) for the complete command catalog.
+
+## Phase 23 performance checks
+
+The rolling profiler remains bounded at 120 samples per metric and 20 spike records. Use `python -m tools.debug_benchmark MODE --frames 600` for `off`, `summary`, `collision`, `triggers`, or `performance`. These modes intentionally exercise the real debug drawing path; see `PERFORMANCE_OPTIMIZATION.md` for current measurements and environment caveats.
