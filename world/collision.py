@@ -49,9 +49,36 @@ class CollisionEngine:
             self._move_vertical(position, velocity, rect, step_dt, result)
             if any(True for _tile in self.tilemap.tiles_in_rect(rect, {TileKind.HAZARD})):
                 result.hit_hazard = True
+        if not result.grounded and not result.bounced and velocity.y >= 0.0:
+            self._detect_support(position, velocity, rect, result)
         if result.bounced:
             result.grounded = False
         return result
+
+    def _detect_support(
+        self,
+        position: pygame.Vector2,
+        velocity: pygame.Vector2,
+        rect: pygame.Rect,
+        result: CollisionResult,
+    ) -> None:
+        """Preserve grounded state when sub-pixel motion rounds to exact contact."""
+        probe = rect.move(0, 1)
+        supported = [
+            tile for tile in self.tilemap.tiles_in_rect(
+                probe, {TileKind.SOLID, TileKind.BREAKABLE, TileKind.SLIPPERY, TileKind.ONE_WAY}
+            )
+            if probe.colliderect(tile.rect) and rect.bottom <= tile.rect.top
+        ]
+        if not supported:
+            return
+        top = min(tile.rect.top for tile in supported)
+        landed = [tile for tile in supported if tile.rect.top == top]
+        rect.bottom = top
+        position.y = float(rect.y)
+        velocity.y = 0.0
+        result.grounded = True
+        result.on_slippery = any(tile.definition.kind is TileKind.SLIPPERY for tile in landed)
 
     def _move_horizontal(
         self,
@@ -148,4 +175,3 @@ class CollisionEngine:
             else:
                 rect.top = boundary
             position.update(rect.x, rect.y)
-

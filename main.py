@@ -34,13 +34,21 @@ def configure_logging() -> None:
 def main() -> int:
     configure_logging()
     args = parse_args()
-    if args.editor:
-        from tools.level_editor import run_editor
-        run_editor(args.level or "verdant_01", frames=5 if args.smoke_test else None, debug=args.debug)
-        return 0
-    if args.level and args.new_game:
-        logging.error("--new-game cannot be combined with direct --level launch")
+    if args.editor and (args.slot is not None or args.new_game):
+        logging.error("--editor cannot be combined with --slot or --new-game")
         return 2
+    if args.level and (args.slot is not None or args.new_game):
+        logging.error("direct --level launch cannot be combined with --slot or --new-game")
+        return 2
+    if args.editor:
+        from editor.document import EditorDocumentError
+        from tools.level_editor import run_editor
+        try:
+            run_editor(args.level or "verdant_01", frames=5 if args.smoke_test else None, debug=args.debug)
+        except (EditorDocumentError, OSError, ValueError) as exc:
+            logging.error("Cannot launch editor: %s", exc)
+            return 2
+        return 0
     if args.debug and args.new_game:
         logging.error("--debug cannot be combined with --new-game; debug sessions never overwrite saves")
         return 2
