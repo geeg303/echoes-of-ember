@@ -47,3 +47,5 @@ Existing NPC dialogue can run in isolated editor playtests; semantic flags exist
 # Debug diagnostics
 
 The read-only Progression page and `dialogue status` report active dialogue state. `dialogue close` uses the normal close/end APIs. Debug sessions never persist dialogue flags.
+
+Phase 24 traverses all 15 authored graphs, verifies every node is reachable and can reach a terminal, validates NPC references, and covers condition priority, effects, persistence, keyboard/controller flow, and complete simulation freeze while dialogue is open.

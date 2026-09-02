@@ -30,3 +30,7 @@ Editor and F5 playtests explicitly disable achievement profile loading, events, 
 # Debug isolation
 
 Achievement observation and profile writes are disabled for every `--debug` session. Achievement-worthy debug actions may appear in the bounded semantic trace but cannot unlock or modify the real profile.
+
+## Phase 24 verification
+
+All 19 catalog definitions are validated as satisfiable and unlockable under controlled semantic state. Tests also cover timestamp idempotence, unique counters/sets, corrupt and future profiles, invalid timestamps and progress fields, bounded toast presentation, cross-slot behavior, and disabled-session isolation.

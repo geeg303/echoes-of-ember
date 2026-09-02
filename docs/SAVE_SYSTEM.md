@@ -121,3 +121,7 @@ Editor playtests construct nonpersistent temporary runtime state. They never loa
 # Debug isolation
 
 `--debug --slot N` loads a slot for read-only inspection but suppresses autosave and achievement-profile writes. `--debug --new-game` is rejected to prevent accidental overwrite. Debug commands, completion attempts, dialogue flags, and secret reveals remain memory-only.
+
+## Phase 24 verification
+
+Isolated tests cover empty/valid/corrupt/future slots, backup recovery, slot independence, invalid fields, atomic replacement failure, schema 1→2→3 migration, reload after every World 1 stage, secret-route monotonicity, boss-gated world completion, and debug/direct/editor persistence isolation. Verification tools redirect user data to a temporary root.

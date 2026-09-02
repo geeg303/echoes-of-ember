@@ -50,3 +50,5 @@ The document's dense tile grid is derived lazily and reused across draw calls. T
 # Debug playtesting
 
 `Shift+F5` launches the same isolated temporary document with Phase 22 debug tools enabled; `F5` remains the normal isolated playtest. Neither mode writes campaign or achievement progress. Debug state is discarded when returning to the editor. See [DEBUG_TOOLS.md](DEBUG_TOOLS.md).
+
+Phase 24 keeps editor output in the standard suite: document commands, undo/redo, validation, atomic round trips, cache invalidation, production-data preservation, and normal/debug playtest isolation all run in temporary locations. CLI tests also require malformed editor identifiers and conflicting save flags to fail cleanly.

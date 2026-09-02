@@ -80,3 +80,5 @@ The Boss page exposes health, phase, state/timer, attack, vulnerability, arena l
 ## Phase 23 performance review
 
 Ashen Warden activation, Phase 3, and defeat-burst scenarios are part of the repeatable performance suite. Boss update logic was not a measured hotspot and remains unchanged; optimization focuses on shared rendering paths. Post-optimization boss p95 is 7.883 ms, Phase 3 p95 is 8.456 ms, and the defeat-burst p95 is 7.711 ms in the documented headless environment.
+
+Phase 24 keeps the full boss state/phase/attack, vulnerability, one-time score, projectile cleanup, controller-only victory, Game Over retry, save restoration, achievement, effects, audio, debug-isolation, performance, and long-soak matrix in standard or release verification.

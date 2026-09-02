@@ -68,3 +68,5 @@ See [DEBUG_COMMANDS.md](DEBUG_COMMANDS.md) for the complete command catalog.
 ## Phase 23 performance checks
 
 The rolling profiler remains bounded at 120 samples per metric and 20 spike records. Use `python -m tools.debug_benchmark MODE --frames 600` for `off`, `summary`, `collision`, `triggers`, or `performance`. These modes intentionally exercise the real debug drawing path; see `PERFORMANCE_OPTIMIZATION.md` for current measurements and environment caveats.
+
+Phase 24 verification covers command parsing/context rules, bounded histories, pause/step/free-camera behavior, exports, gameplay reconstruction, boss mutations, persistence suppression, achievement isolation, and debug launch/shutdown. The verification runner never points debug smoke tests at real user data.

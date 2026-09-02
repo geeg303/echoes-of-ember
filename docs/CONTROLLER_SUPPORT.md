@@ -44,3 +44,5 @@ The Main Menu achievement list is controller-only usable: D-pad/stick scroll and
 # Debug diagnostics
 
 The Phase 22 Input page reports the active device, connected controller name/count, logical movement axis, held/pressed actions, and configured deadzone. The debug palette and free camera are keyboard-only; normal controller gameplay is unchanged.
+
+Automated controller checks use `FakeControllerBackend`, never require attached hardware, and exercise complete menu, dialogue, gameplay, three-phase boss, hotplug, prompt, vibration, and input-suppression paths. Vendor-specific mappings and physical ergonomics remain human-reviewed.

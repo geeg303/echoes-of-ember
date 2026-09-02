@@ -52,3 +52,5 @@ Achievement browsing consumes logical menu Up/Down, Left/Right filters, and Back
 # Developer input capture
 
 Developer hotkeys are owned by `DebugManager` only when launched with `--debug`. Command-palette text and free-camera navigation are consumed before gameplay actions, preventing typed `F`, Space, or movement keys from leaking into Nova's controls. See [DEBUG_TOOLS.md](DEBUG_TOOLS.md).
+
+Phase 24 retains keyboard/controller equivalence, deadzone normalization, D-pad navigation, repeat timing, disconnect/reconnect policy, focus-loss cleanup, transition suppression, prompt switching, and vibration no-op behavior in the standard automated suite. Physical-device feel remains a Phase 25 human check.

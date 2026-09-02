@@ -371,3 +371,7 @@ Launch the developer-only authoritative-format editor with `python main.py --edi
 ## Performance and profiling
 
 Phase 23 provides repeatable quiet, busy, boss, effects, and editor benchmarks plus an 18,000-frame stability soak. Measured runtime scenarios retain p95 frame times below the 16.67 ms 60 FPS budget in the same-host headless environment. The engine now reuses static terrain chunks, the background gradient, and bounded HUD surfaces; skips native-size scaling and empty screen-effect composition; and avoids rebuilding the editor tile grid on every draw. See [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) and [docs/PERFORMANCE_OPTIMIZATION.md](docs/PERFORMANCE_OPTIMIZATION.md).
+
+## Automated verification
+
+Run `python -m tools.verify_project --quick` during development, `--full` before stable commits, and `--release` for benchmarks plus the long soak. Every mode isolates writable user data and returns a meaningful process status; `--json report.json` produces an optional local machine-readable report. The standard suite covers 384 unit, integration, scenario, data-integrity, persistence, input, editor, debug, and performance-invariant cases. See [docs/TESTING.md](docs/TESTING.md), [docs/VERIFICATION_PIPELINE.md](docs/VERIFICATION_PIPELINE.md), and [docs/TEST_COVERAGE_REVIEW.md](docs/TEST_COVERAGE_REVIEW.md).
