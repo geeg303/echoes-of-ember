@@ -81,3 +81,15 @@ def test_artifact_name_is_safe_and_versioned() -> None:
     name = artifact_stem("player")
     assert __version__ in name and name.endswith("-player")
     assert "/" not in name and ".." not in name
+
+
+def test_package_self_test_requires_guard_and_persists_all_profiles(tmp_path: Path) -> None:
+    from core.package_self_test import run_package_self_test
+    env = os.environ.copy(); env["ECHOES_USER_DATA_ROOT"] = str(tmp_path); env["ECHOES_PACKAGE_SELF_TEST"] = "1"
+    result = subprocess.run([sys.executable, "main.py", "--package-self-test"], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "saves/slot_1.json").is_file()
+    assert (tmp_path / "settings.json").is_file()
+    assert (tmp_path / "achievements.json").is_file()
+    denied = subprocess.run([sys.executable, "main.py", "--package-self-test"], capture_output=True, text=True)
+    assert denied.returncode == 2

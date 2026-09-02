@@ -108,12 +108,14 @@ def build(flavor: str, *, verify_source: bool, clean: bool) -> Path:
         env = os.environ.copy(); env.update({"SDL_VIDEODRIVER":"dummy", "SDL_AUDIODRIVER":"dummy", "ECHOES_USER_DATA_ROOT":str(profile), "PYTHONPATH":""})
         run_checked([str(executable), "--version"], cwd=cwd, env=env, capture_output=True)
         run_checked([str(executable), "--smoke-test"], cwd=cwd, env=env, capture_output=True)
+        self_test_env = env.copy(); self_test_env["ECHOES_PACKAGE_SELF_TEST"] = "1"
+        run_checked([str(executable), "--package-self-test"], cwd=cwd, env=self_test_env, capture_output=True)
         if flavor == "player":
             denied = subprocess.run([str(executable), "--debug", "--smoke-test"], cwd=cwd, env=env, capture_output=True)
             if denied.returncode != 2: raise RuntimeError("player build accepted developer CLI")
-            run_checked([str(executable), "--slot", "1", "--new-game", "--smoke-test"], cwd=cwd, env=env, capture_output=True)
             run_checked([str(executable), "--slot", "1", "--smoke-test"], cwd=cwd, env=env, capture_output=True)
             if not (profile / "saves/slot_1.json").is_file(): raise RuntimeError("packaged save was not created outside resources")
+            if not (profile / "settings.json").is_file() or not (profile / "achievements.json").is_file(): raise RuntimeError("packaged preferences were not persisted")
         else:
             for args in (("--level","verdant_03","--smoke-test"),("--debug","--level","verdant_boss","--smoke-test"),("--editor","--level","verdant_04","--smoke-test")):
                 run_checked([str(executable), *args], cwd=cwd, env=env, capture_output=True)

@@ -14,6 +14,7 @@ from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry, WorldRegistryE
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Launch Echoes of Ember")
     parser.add_argument("--version", action="version", version=version_text())
+    parser.add_argument("--package-self-test", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "--smoke-test",
         action="store_true",
@@ -37,6 +38,14 @@ def configure_logging() -> None:
 def main() -> int:
     configure_logging()
     args = parse_args()
+    if args.package_self_test:
+        try:
+            from core.package_self_test import run_package_self_test
+            run_package_self_test()
+        except (OSError, RuntimeError, PermissionError, ValueError) as exc:
+            logging.error("Package self-test failed: %s", exc)
+            return 2
+        return 0
     if not developer_features_available() and (args.editor or args.debug or args.level):
         logging.error("This player build does not include developer, editor, or direct-level modes")
         return 2
