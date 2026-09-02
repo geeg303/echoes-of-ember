@@ -51,7 +51,9 @@ class EffectsSystem:
     def screen_effect_count(self)->int: return sum(p.space is EffectSpace.SCREEN for p in self.particles)+len(self.flashes)
     def set_quality(self,quality:EffectQuality)->None:
         self.quality=quality
-        if quality is EffectQuality.OFF: self.particles=[p for p in self.particles if p.priority is EffectPriority.CRITICAL]
+        if quality is EffectQuality.OFF:
+            self.particles=[p for p in self.particles if p.priority is EffectPriority.CRITICAL]
+            self._shake_requests.clear()
     def toggle_optional(self)->EffectQuality:
         self.set_quality(EffectQuality.OFF if self.quality is not EffectQuality.OFF else EffectQuality.FULL); return self.quality
     def spawn(self,effect_id:str,position:tuple[float,float]|pygame.Vector2,*,count_scale:float=1.0)->int:
@@ -88,7 +90,10 @@ class EffectsSystem:
         for owner_id in tuple(self.emitters):
             if owner_id.startswith(owner_prefix): self.emitters.pop(owner_id)
     def request_flash(self,color:tuple[int,int,int],opacity:int=72,duration:float=.16)->None: self.flashes.append(ScreenFlash(color,max(0,min(112,opacity)),max(.01,duration)))
-    def request_shake(self,intensity:float,duration:float)->None: self._shake_requests.append((max(0.0,min(18.0,intensity)),max(0.0,min(.6,duration))))
+    def request_shake(self,intensity:float,duration:float)->None:
+        if self.quality is EffectQuality.OFF: return
+        scale=.5 if self.quality is EffectQuality.REDUCED else 1.0
+        self._shake_requests.append((max(0.0,min(18.0,intensity*scale)),max(0.0,min(.6,duration))))
     def apply_shake(self,camera:object)->None:
         if not self._shake_requests: return
         intensity=max(x for x,_ in self._shake_requests); duration=max(y for _,y in self._shake_requests); shake=getattr(camera,"shake",None)

@@ -375,3 +375,7 @@ Phase 23 provides repeatable quiet, busy, boss, effects, and editor benchmarks p
 ## Automated verification
 
 Run `python -m tools.verify_project --quick` during development, `--full` before stable commits, and `--release` for benchmarks plus the long soak. Every mode isolates writable user data and returns a meaningful process status; `--json report.json` produces an optional local machine-readable report. The standard suite covers 384 unit, integration, scenario, data-integrity, persistence, input, editor, debug, and performance-invariant cases. See [docs/TESTING.md](docs/TESTING.md), [docs/VERIFICATION_PIPELINE.md](docs/VERIFICATION_PIPELINE.md), and [docs/TEST_COVERAGE_REVIEW.md](docs/TEST_COVERAGE_REVIEW.md).
+
+## Accessibility and playtest status
+
+Menus and gameplay support keyboard and controller input with dynamic prompts. Important menu, map, boss, shield, and warning states use text, shape, or icon cues in addition to color. Effects Quality provides Full, Reduced, and Off motion/effects levels; Reduced halves camera shake and Off suppresses it. See [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md), [docs/POLISH_CHECKLIST.md](docs/POLISH_CHECKLIST.md), and [docs/HUMAN_PLAYTEST.md](docs/HUMAN_PLAYTEST.md) for verified behavior and honest hardware-dependent review recommendations.

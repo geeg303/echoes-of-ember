@@ -41,7 +41,7 @@ Screen flash opacity is clamped to 112 and durations are brief. Shake callers su
 
 ## Debugging and quality
 
-With `DEBUG_MODE`, F6 toggles optional effects between Full and Off. `EffectQuality.REDUCED` is available to future settings UI. The debug overlay shows total particles, emitter count, ambient/gameplay counts, and screen effects. F7 performs a full authored reset and reconstructs only appropriate ambient emitters.
+With `DEBUG_MODE`, F6 toggles optional effects between Full and Off. Settings exposes Full, Reduced, and Off. Reduced uses fewer optional effects and halves camera-shake intensity; Off suppresses optional effects and camera shake. Persistent telegraphs and UI cues remain. The debug overlay shows total particles, emitter count, ambient/gameplay counts, and screen effects. F7 performs a full authored reset and reconstructs only appropriate ambient emitters.
 
 ## Automated validation
 
