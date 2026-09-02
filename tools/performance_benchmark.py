@@ -1,8 +1,10 @@
 """Repeatable Phase 23 headless runtime/editor performance scenarios."""
 from __future__ import annotations
-import argparse,json,os,statistics,time,tracemalloc
+import argparse,json,os,statistics,sys,time,tracemalloc
 from pathlib import Path
 os.environ.setdefault("SDL_VIDEODRIVER","dummy");os.environ.setdefault("SDL_AUDIODRIVER","dummy")
+if __package__ in {None, ""}:
+ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from settings import PROJECT_ROOT
 
 SCENARIOS=("quiet","busy","boss","boss_phase3","boss_defeat","effects","editor")

@@ -121,6 +121,7 @@ class EffectsSystem:
             if particle.space is EffectSpace.WORLD and padded.collidepoint(particle.position): particle.draw(overlay,camera_offset)
         surface.blit(overlay,(0,0))
     def draw_screen(self,surface:pygame.Surface)->None:
+        if not self.flashes and not any(p.space is EffectSpace.SCREEN for p in self.particles): return
         overlay=self._prepare_overlay(surface)
         for particle in self.particles:
             if particle.space is EffectSpace.SCREEN: particle.draw(overlay)

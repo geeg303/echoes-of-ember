@@ -26,6 +26,8 @@ class ParallaxBackground:
         self.tree_positions = [
             (x, randomizer.randrange(75, 145)) for x in range(-100, world_width + 300, 155)
         ]
+        self._gradient: pygame.Surface | None = None
+        self._gradient_size = (0, 0)
 
     def draw(self, surface: pygame.Surface, camera_position: pygame.Vector2) -> None:
         self._draw_gradient(surface)
@@ -35,17 +37,21 @@ class ParallaxBackground:
         self._draw_cave_silhouettes(surface, camera_position)
         self._draw_trees(surface, camera_position)
 
-    @staticmethod
-    def _draw_gradient(surface: pygame.Surface) -> None:
-        height = surface.get_height()
-        for y in range(0, height, 4):
-            blend = y / max(1, height)
-            color = (
-                round(25 + 25 * blend),
-                round(32 + 31 * blend),
-                round(72 + 31 * blend),
-            )
-            pygame.draw.rect(surface, color, (0, y, surface.get_width(), 4))
+    def _draw_gradient(self, surface: pygame.Surface) -> None:
+        size = surface.get_size()
+        if self._gradient is None or self._gradient_size != size:
+            self._gradient_size = size
+            self._gradient = pygame.Surface(size)
+            height = size[1]
+            for y in range(0, height, 4):
+                blend = y / max(1, height)
+                color = (
+                    round(25 + 25 * blend),
+                    round(32 + 31 * blend),
+                    round(72 + 31 * blend),
+                )
+                pygame.draw.rect(self._gradient, color, (0, y, size[0], 4))
+        surface.blit(self._gradient, (0, 0))
 
     def _draw_stars(self, surface: pygame.Surface, camera: pygame.Vector2) -> None:
         width = surface.get_width()
@@ -99,4 +105,3 @@ class ParallaxBackground:
             pygame.draw.rect(surface, (41, 57, 65), (x - 8, base_y - tree_height, 16, tree_height))
             pygame.draw.circle(surface, (48, 78, 74), (x, base_y - tree_height), 45)
             pygame.draw.circle(surface, (57, 94, 80), (x - 25, base_y - tree_height + 25), 34)
-

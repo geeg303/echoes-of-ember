@@ -677,17 +677,16 @@ class Game:
         if self.app_mode == "settings":
             self.settings_controller.draw(self.canvas)
             self._draw_debug_layer()
-            scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
+            self._present();return
         if self.app_mode == "achievements":
             self.achievement_screen.draw(self.canvas, self.input)
             self._draw_debug_layer()
-            scaled=pygame.transform.scale(self.canvas,self.screen.get_size());self.screen.blit(scaled,(0,0));pygame.display.flip();return
+            self._present();return
         if self.app_mode == "frontend":
             self.frontend.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
             self._draw_debug_layer()
-            scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
-            self.screen.blit(scaled, (0, 0)); pygame.display.flip(); return
+            self._present(); return
         if self.app_mode == "map":
             self.world_map_screen.draw(self.canvas)
             self.effects.draw_screen(self.canvas)
@@ -695,9 +694,7 @@ class Game:
                 self.world_complete_screen.draw(self.canvas, self.world_progress, self.input)
             self.achievement_toasts.draw(self.canvas)
             self._draw_debug_layer()
-            scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
-            self.screen.blit(scaled, (0, 0))
-            pygame.display.flip()
+            self._present()
             return
         self.background.draw(self.canvas, self.camera.position)
         view = self.debug.view_rect(self) if self.debug.enabled else self.camera.view_rect
@@ -757,8 +754,14 @@ class Game:
             self.dialogue_box.draw(self.canvas, self.dialogue, self.input)
         if self.app_mode == "pause": self.pause_controller.draw(self.canvas)
         elif self.app_mode == "game_over": self.game_over_controller.draw(self.canvas)
-        scaled = pygame.transform.scale(self.canvas, self.screen.get_size())
-        self.screen.blit(scaled, (0, 0))
+        self._present()
+
+    def _present(self) -> None:
+        """Scale only when the resizable window differs from the internal canvas."""
+        if self.screen.get_size() == self.canvas.get_size():
+            self.screen.blit(self.canvas, (0, 0))
+        else:
+            self.screen.blit(pygame.transform.scale(self.canvas, self.screen.get_size()), (0, 0))
         pygame.display.flip()
 
     def _draw_debug_layer(self) -> None:

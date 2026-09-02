@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections import OrderedDict
 
 import pygame
 
@@ -25,6 +26,25 @@ class HUD:
         self.shard_pulse = 0.0
         self.score_pulse = 0.0
         self.health_flash = 0.0
+        self._panel_cache: dict[tuple[tuple[int, int], int], pygame.Surface] = {}
+        self._text_cache: OrderedDict[tuple[int, str, tuple[int, int, int]], pygame.Surface] = OrderedDict()
+        self._text_cache_limit = 96
+
+    @property
+    def text_cache_size(self) -> int:
+        return len(self._text_cache)
+
+    def _render_cached(self, font: pygame.font.Font, text: str, color: tuple[int, int, int]) -> pygame.Surface:
+        key = (id(font), text, color)
+        image = self._text_cache.get(key)
+        if image is not None:
+            self._text_cache.move_to_end(key)
+            return image
+        image = font.render(text, True, color)
+        self._text_cache[key] = image
+        if len(self._text_cache) > self._text_cache_limit:
+            self._text_cache.popitem(last=False)
+        return image
 
     def update(self, dt: float) -> None:
         self.shard_pulse = max(0.0, self.shard_pulse - dt)
@@ -79,7 +99,7 @@ class HUD:
     ) -> None:
         panel = pygame.Rect(18, 16, 230, 76)
         self._panel(surface, panel)
-        label = self.small_font.render(PLAYER_NAME.upper(), True, (180, 195, 226))
+        label = self._render_cached(self.small_font, PLAYER_NAME.upper(), (180, 195, 226))
         surface.blit(label, (32, 24))
         flash = self.health_flash > 0.0 and int(self.health_flash * 24) % 2 == 0
         for index in range(max_health):
@@ -87,7 +107,7 @@ class HUD:
             filled = index < health
             color = (255, 238, 170) if flash else ((237, 89, 103) if filled else (74, 75, 103))
             self._heart(surface, center, color)
-        lives_label = self.font.render(f"× {lives}", True, (230, 235, 246))
+        lives_label = self._render_cached(self.font, f"× {lives}", (230, 235, 246))
         surface.blit(lives_label, (151, 50))
 
     def _draw_shards(self, surface: pygame.Surface, progress: LevelProgress) -> None:
@@ -100,10 +120,10 @@ class HUD:
         )
         count = progress.count(CollectibleType.EMBER_SHARD)
         total = progress.total(CollectibleType.EMBER_SHARD)
-        text = self.title_font.render(f"{count:02d} / {total:02d}", True, (255, 239, 195))
+        text = self._render_cached(self.title_font, f"{count:02d} / {total:02d}", (255, 239, 195))
         scale = 1.0 + 0.12 * math.sin(self.shard_pulse * math.pi / 0.28) if self.shard_pulse else 1.0
         self._blit_scaled(surface, text, (410, 58), scale)
-        label = self.small_font.render(PRIMARY_COLLECTIBLE_NAME.upper(), True, (180, 195, 226))
+        label = self._render_cached(self.small_font, PRIMARY_COLLECTIBLE_NAME.upper(), (180, 195, 226))
         surface.blit(label, (318, 25))
 
     def _draw_score_and_level(
@@ -114,9 +134,9 @@ class HUD:
     ) -> None:
         panel = pygame.Rect(surface.get_width() - 380, 16, 362, 76)
         self._panel(surface, panel)
-        level_label = self.small_font.render(level_name, True, (177, 198, 221))
+        level_label = self._render_cached(self.small_font, level_name, (177, 198, 221))
         surface.blit(level_label, level_label.get_rect(topright=(panel.right - 14, panel.y + 9)))
-        score_label = self.title_font.render(f"{score:08d}", True, (255, 230, 151))
+        score_label = self._render_cached(self.title_font, f"{score:08d}", (255, 230, 151))
         scale = 1.0 + 0.08 * math.sin(self.score_pulse * math.pi / 0.3) if self.score_pulse else 1.0
         self._blit_scaled(surface, score_label, (panel.right - 105, panel.y + 51), scale)
 
@@ -129,15 +149,21 @@ class HUD:
         if feedback > 0.0:
             pygame.draw.rect(surface, (255, 205, 112), panel.inflate(4, 4), 3, border_radius=14)
 
-    @staticmethod
     def _panel(
+        self,
         surface: pygame.Surface,
         rect: pygame.Rect,
         alpha: int = 195,
     ) -> None:
-        panel = pygame.Surface(rect.size, pygame.SRCALPHA)
-        pygame.draw.rect(panel, (12, 18, 41, alpha), panel.get_rect(), border_radius=12)
-        pygame.draw.rect(panel, (107, 127, 176, 215), panel.get_rect(), 2, border_radius=12)
+        key = (rect.size, alpha)
+        panel = self._panel_cache.get(key)
+        if panel is None:
+            panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+            pygame.draw.rect(panel, (12, 18, 41, alpha), panel.get_rect(), border_radius=12)
+            pygame.draw.rect(panel, (107, 127, 176, 215), panel.get_rect(), 2, border_radius=12)
+            if len(self._panel_cache) >= 16:
+                self._panel_cache.pop(next(iter(self._panel_cache)))
+            self._panel_cache[key] = panel
         surface.blit(panel, rect)
 
     @staticmethod

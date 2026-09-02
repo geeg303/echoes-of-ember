@@ -20,6 +20,9 @@ class TileInstance:
 
 
 class TileMap:
+    CHUNK_COLUMNS = 16
+    CHUNK_ROWS = 8
+
     def __init__(self, width: int, height: int, tile_size: int, grid: list[list[int]]) -> None:
         self.width = width
         self.height = height
@@ -27,6 +30,15 @@ class TileMap:
         self.grid = grid
         self.pixel_width = width * tile_size
         self.pixel_height = height * tile_size
+        self._chunk_cache: dict[tuple[int, int], pygame.Surface] = {}
+
+    @property
+    def cached_chunk_count(self) -> int:
+        return len(self._chunk_cache)
+
+    @property
+    def maximum_chunk_count(self) -> int:
+        return math.ceil(self.width / self.CHUNK_COLUMNS) * math.ceil(self.height / self.CHUNK_ROWS)
 
     @classmethod
     def from_data(cls, data: dict[str, object]) -> "TileMap":
@@ -83,13 +95,45 @@ class TileMap:
         offset: tuple[int, int] = (0, 0),
     ) -> None:
         view = viewport or pygame.Rect(0, 0, surface.get_width(), surface.get_height())
-        for tile in self.tiles_in_rect(view):
-            draw_tile(surface, tile.definition, tile.rect.move(offset), self.tile_size)
+        chunk_width = self.CHUNK_COLUMNS * self.tile_size
+        chunk_height = self.CHUNK_ROWS * self.tile_size
+        left = max(0, view.left // chunk_width)
+        right = min(math.ceil(self.width / self.CHUNK_COLUMNS) - 1, max(0, (view.right - 1) // chunk_width))
+        top = max(0, view.top // chunk_height)
+        bottom = min(math.ceil(self.height / self.CHUNK_ROWS) - 1, max(0, (view.bottom - 1) // chunk_height))
+        for chunk_y in range(top, bottom + 1):
+            for chunk_x in range(left, right + 1):
+                chunk = self._chunk_surface(chunk_x, chunk_y)
+                surface.blit(chunk, (chunk_x * chunk_width + offset[0], chunk_y * chunk_height + offset[1]))
+
+    def _chunk_surface(self, chunk_x: int, chunk_y: int) -> pygame.Surface:
+        key = (chunk_x, chunk_y)
+        cached = self._chunk_cache.get(key)
+        if cached is not None:
+            return cached
+        width = self.CHUNK_COLUMNS * self.tile_size
+        height = self.CHUNK_ROWS * self.tile_size
+        chunk = pygame.Surface((width, height), pygame.SRCALPHA)
+        first_x = chunk_x * self.CHUNK_COLUMNS
+        first_y = chunk_y * self.CHUNK_ROWS
+        for grid_y in range(first_y, min(self.height, first_y + self.CHUNK_ROWS)):
+            for grid_x in range(first_x, min(self.width, first_x + self.CHUNK_COLUMNS)):
+                tile = self.tile_at(grid_x, grid_y)
+                if tile is None:
+                    continue
+                local = pygame.Rect((grid_x - first_x) * self.tile_size, (grid_y - first_y) * self.tile_size, self.tile_size, self.tile_size)
+                draw_tile(chunk, tile.definition, local, self.tile_size)
+        self._chunk_cache[key] = chunk
+        return chunk
+
+    def invalidate_tile(self, grid_x: int, grid_y: int) -> None:
+        self._chunk_cache.pop((grid_x // self.CHUNK_COLUMNS, grid_y // self.CHUNK_ROWS), None)
 
     def destroy_breakables(self, rect: pygame.Rect) -> tuple[pygame.Vector2, ...]:
         destroyed: list[pygame.Vector2] = []
         for tile in tuple(self.tiles_in_rect(rect, {TileKind.BREAKABLE})):
             if rect.colliderect(tile.rect):
                 self.grid[tile.grid_y][tile.grid_x] = 0
+                self.invalidate_tile(tile.grid_x, tile.grid_y)
                 destroyed.append(pygame.Vector2(tile.rect.center))
         return tuple(destroyed)
