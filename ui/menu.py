@@ -5,6 +5,7 @@ from enum import Enum
 from collections.abc import Callable
 import pygame
 from core.input_manager import Action
+from ui.style import COLOR_BORDER,COLOR_FOCUS,COLOR_MUTED,COLOR_PANEL_DEEP,COLOR_TITLE,draw_panel
 
 class MenuAction(str,Enum):
     UP="menu_up"; DOWN="menu_down"; LEFT="menu_left"; RIGHT="menu_right"; CONFIRM="confirm"; BACK="back"; PAUSE="pause"
@@ -55,20 +56,20 @@ class ConfirmationDialog:
         return True
 
 def draw_menu(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.font.Font,small:pygame.font.Font,title:str,menu:Menu,subtitle:str="",footer:str="")->None:
-    compact=len(menu.items)>=7; panel=pygame.Rect(350,55 if compact else 105,580,610 if compact else 520);pygame.draw.rect(surface,(11,17,34,225),panel,border_radius=24);pygame.draw.rect(surface,(230,151,70),panel,3,border_radius=24)
-    image=title_font.render(title,True,(255,218,143));surface.blit(image,image.get_rect(center=(640,102 if compact else 155)))
+    dense=len(menu.items)>=9;compact=len(menu.items)>=7
+    panel,y,step,row_height=menu_layout(len(menu.items));draw_panel(surface,panel,fill=COLOR_PANEL_DEEP,border=COLOR_BORDER,radius=24)
+    image=title_font.render(title,True,COLOR_TITLE);surface.blit(image,image.get_rect(center=(640,76 if dense else 102 if compact else 155)))
     if subtitle:
-        sub=small.render(subtitle,True,(190,202,221));surface.blit(sub,sub.get_rect(center=(640,140 if compact else 196)))
-    y=170 if compact else 235; step=48 if compact else 62
+        sub=small.render(subtitle,True,(190,202,221));surface.blit(sub,sub.get_rect(center=(640,112 if dense else 140 if compact else 196)))
     for index,item in enumerate(menu.items):
         focused=index==menu.focus; color=(255,214,117) if focused else (215,222,235) if item.enabled else (104,111,126)
-        rect=pygame.Rect(400,y-8,480,54)
-        if focused:pygame.draw.rect(surface,(89,51,42),rect,border_radius=12);pygame.draw.rect(surface,(255,169,72),rect,3,border_radius=12)
-        marker="◆ " if focused else "  "; label=font.render(marker+item.label,True,color);surface.blit(label,(420,y))
-        if item.detail:surface.blit(small.render(item.detail,True,color),(680,y+5))
+        rect=pygame.Rect(panel.left+50,y-5,panel.width-100,row_height)
+        if focused:pygame.draw.rect(surface,(89,51,42),rect,border_radius=12);pygame.draw.rect(surface,COLOR_FOCUS,rect,3,border_radius=12)
+        marker="◆ " if focused else "  "; label=font.render(marker+item.label,True,color);surface.blit(label,(rect.left+20,y if dense else y))
+        if item.detail:surface.blit(small.render(item.detail,True,color),(panel.centerx+40,y+5))
         y+=step
     if footer:
-        hint=small.render(footer,True,(172,188,214));surface.blit(hint,hint.get_rect(center=(640,panel.bottom-18)))
+        hint=small.render(footer,True,COLOR_MUTED);surface.blit(hint,hint.get_rect(center=(640,panel.bottom-18)))
 
 def draw_dialog(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.font.Font,dialog:ConfirmationDialog)->None:
     shade=pygame.Surface(surface.get_size(),pygame.SRCALPHA);shade.fill((0,0,0,165));surface.blit(shade,(0,0));panel=pygame.Rect(330,220,620,280);pygame.draw.rect(surface,(20,24,43),panel,border_radius=20);pygame.draw.rect(surface,(236,146,74),panel,3,border_radius=20)
@@ -78,3 +79,9 @@ def draw_dialog(surface:pygame.Surface,title_font:pygame.font.Font,font:pygame.f
         cancel=i==1;focused=dialog.focus_cancel==cancel;rect=pygame.Rect(390+i*270,400,230,55);pygame.draw.rect(surface,(112,54,44) if not cancel else (57,66,86),rect,border_radius=10)
         if focused:pygame.draw.rect(surface,(255,190,82),rect,4,border_radius=10)
         text=font.render(label,True,(255,239,203));surface.blit(text,text.get_rect(center=rect.center))
+
+def menu_layout(item_count:int)->tuple[pygame.Rect,int,int,int]:
+    """Return panel, first-row y, row step, and row height for 1280×720 UI."""
+    if item_count>=9:return pygame.Rect(320,32,640,656),142,44,39
+    if item_count>=7:return pygame.Rect(350,55,580,610),170,48,54
+    return pygame.Rect(350,105,580,520),235,62,54

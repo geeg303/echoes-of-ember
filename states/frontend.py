@@ -29,7 +29,7 @@ class FrontendController:
         if x.state is SlotState.CORRUPT:return "CORRUPT — RESET AVAILABLE"
         if x.state is SlotState.UNSUPPORTED_VERSION:return "UNSUPPORTED NEWER SAVE"
         status="RECOVERED · " if x.state is SlotState.RECOVERED else ""
-        return f"{status}{x.levels_completed}/5 · {format_play_time(x.play_time_seconds)}"
+        return f"{status}{x.levels_completed}/5 LEVELS · {format_play_time(x.play_time_seconds)}"
     def handle(self,action:MenuAction)->None:
         if self.dialog:
             keep=self.dialog.handle(action)
@@ -78,10 +78,19 @@ class FrontendController:
             draw_menu(surface,self.title_font,self.font,self.small,"CREDITS",self.menu,"Echoes of Ember · Built with Python and Pygame",self._footer())
             lines=("Original game design and development","Procedural temporary art, effects, music and audio","No external commercial assets")
             for i,line in enumerate(lines):surface.blit(self.small.render(line,True,(210,215,228)),(430,245+i*42))
-        else:draw_menu(surface,self.title_font,self.font,self.small,"ECHOES OF EMBER" if self.screen is FrontendScreen.MAIN else self.screen.value.replace("_"," ").upper(),self.menu,"Nova's journey through Verdant Reaches",self._footer())
+        else:draw_menu(surface,self.title_font,self.font,self.small,self._screen_title(),self.menu,self._screen_subtitle(),self._footer())
         if self.dialog:draw_dialog(surface,self.title_font,self.font,self.dialog)
     def _footer(self)->str:
         i=self.host.input;return f"[{i.get_prompt(Action.CONFIRM)}] SELECT   [{i.get_prompt(Action.BACK)}] BACK"
+    def _screen_title(self)->str:
+        if self.screen is FrontendScreen.MAIN:return "ECHOES OF EMBER"
+        if self.screen is FrontendScreen.SLOTS:return "NEW GAME" if self.slot_mode=="new" else "LOAD GAME"
+        if self.screen is FrontendScreen.SLOT_ACTION:return f"SAVE SLOT {self.selected_slot}"
+        return self.screen.value.replace("_"," ").upper()
+    def _screen_subtitle(self)->str:
+        if self.screen is FrontendScreen.SLOTS:return "Choose a safe slot for Nova's journey" if self.slot_mode=="new" else "Choose a campaign to continue"
+        if self.screen is FrontendScreen.SLOT_ACTION:return self._summary(self.summaries[self.selected_slot-1])
+        return "Nova's journey through Verdant Reaches"
     def _background(self,surface:pygame.Surface)->None:
         surface.fill((10,15,30));pygame.draw.circle(surface,(95,38,28),(640,500),240);pygame.draw.circle(surface,(231,98,48),(640,500),90)
         for i in range(24):

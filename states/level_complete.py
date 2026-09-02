@@ -12,10 +12,9 @@ class LevelCompleteScreen:
         self.title_font = title_font
         self.font = font
         self.small_font = small_font
-        self.continued = False
 
     def reset(self) -> None:
-        self.continued = False
+        return None
 
     def draw(self, surface: pygame.Surface, display_name: str, result: LevelResult, input_manager: InputManager | None = None) -> None:
         shade = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
@@ -46,6 +45,6 @@ class LevelCompleteScreen:
         if result.exit_type.value == "secret_exit":
             banner = self.small_font.render("SECRET EXIT FOUND!", True, (219, 155, 255))
             surface.blit(banner, banner.get_rect(center=(640, 196)))
-        message = "Campaign progression coming later" if self.continued else (f"[{input_manager.get_prompt(Action.CONFIRM)}] CONTINUE   [{input_manager.get_prompt(Action.ATTACK)}] REPLAY   [{input_manager.get_prompt(Action.BACK)}] MAP" if input_manager else "ENTER / SPACE  CONTINUE TO MAP     R  REPLAY     M  WORLD MAP")
+        message = (f"[{input_manager.get_prompt(Action.CONFIRM)}] CONTINUE   [{input_manager.get_prompt(Action.ATTACK)}] REPLAY   [{input_manager.get_prompt(Action.BACK)}] MAP" if input_manager else "ENTER / SPACE  CONTINUE TO MAP     R  REPLAY     M  WORLD MAP")
         prompt = self.small_font.render(message, True, (197, 211, 238))
         surface.blit(prompt, prompt.get_rect(center=(640, 604)))

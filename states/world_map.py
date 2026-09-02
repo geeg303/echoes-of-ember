@@ -132,6 +132,34 @@ class WorldMapScreen:
             pygame.draw.circle(surface, (255, 241, 190), center, radius - 8, 3)
             if state is NodeState.MASTERED:
                 pygame.draw.circle(surface, (255, 245, 174), center, radius + 11, 3)
+            self._node_marker(surface, center, node.kind, state, radius)
+
+    @staticmethod
+    def _node_marker(surface: pygame.Surface, center: tuple[int, int], kind: NodeType, state: NodeState, radius: int) -> None:
+        """Give map states a shape cue so they never rely on color alone."""
+        x, y = center
+        ink = (34, 39, 49)
+        if state is NodeState.LOCKED:
+            pygame.draw.arc(surface, ink, (x - 7, y - 11, 14, 14), 0, math.pi, 3)
+            pygame.draw.rect(surface, ink, (x - 9, y - 3, 18, 14), border_radius=3)
+            pygame.draw.circle(surface, (210, 211, 194), (x, y + 2), 2)
+        elif state is NodeState.MASTERED:
+            points=[]
+            for index in range(10):
+                angle=-math.pi/2+index*math.pi/5;length=9 if index%2==0 else 4
+                points.append((round(x+math.cos(angle)*length),round(y+math.sin(angle)*length)))
+            pygame.draw.polygon(surface, ink, points)
+        elif state is NodeState.COMPLETED:
+            pygame.draw.lines(surface, ink, False, [(x-8,y),(x-2,y+7),(x+10,y-8)], 4)
+        elif kind is NodeType.SECRET:
+            pygame.draw.circle(surface, ink, center, 5, 2)
+            pygame.draw.circle(surface, ink, (x, y + 9), 2)
+        elif kind is NodeType.BOSS:
+            pygame.draw.polygon(surface, ink, [(x,y-10),(x+10,y),(x,y+10),(x-10,y)], 3)
+        elif kind is NodeType.WORLD_GOAL:
+            pygame.draw.polygon(surface, ink, [(x,y-11),(x+10,y+8),(x-10,y+8)], 3)
+        elif state is NodeState.AVAILABLE:
+            pygame.draw.circle(surface, ink, center, 5)
 
     def _avatar(self, surface: pygame.Surface) -> None:
         x, y = round(self.runtime.avatar_position.x), round(self.runtime.avatar_position.y)
