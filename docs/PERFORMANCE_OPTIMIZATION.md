@@ -91,3 +91,7 @@ The repeatable 18,000-frame boss soak (draw every 30 simulation frames) complete
 Procedural parallax layers, active effect drawing, debug overlays, and general Pygame software composition remain the largest expected render costs. They currently meet the 60 FPS headless target and should not receive speculative redesign. Phase 24 should expand deterministic non-visual regression coverage and preserve the benchmark/invariant suite. Phase 25 should include a real-display review on representative Windows, Linux, and macOS hardware, since dummy SDL cannot measure compositor, vsync, input latency, GPU/driver, or real audio behavior.
 
 Phase 24 preserved the benchmark envelope and added verification-runner integration. Cache bounds, breakable invalidation, native-size presentation, editor grid reuse, empty effects, no-frame-disk-I/O, 3,000-frame full-verification soak, and 18,000-frame release soak remain deterministic gates; machine-sensitive timing figures remain informational.
+
+## Phase 25 regression check
+
+The final same-host 600-frame pass recorded mean/p95 values of 7.077/7.897 ms quiet, 7.055/8.010 ms busy, 6.329/7.377 ms boss, 6.356/7.312 ms boss phase 3, 6.381/7.369 ms boss defeat, 5.608/6.433 ms effects stress, and 5.574/6.236 ms editor. Every p95 remains comfortably below 16.67 ms. Release verification, including the 18,000-frame soak, passed in 78.789 seconds.

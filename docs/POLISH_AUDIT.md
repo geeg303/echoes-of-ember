@@ -24,3 +24,7 @@ The audit began from commit `01ea9fe` with a clean synchronized worktree. Quick 
 ## Scope guard
 
 No movement, enemy, power-up, level-layout, save, achievement, editor, or debug redesign is justified. Phase 25 changes should remain presentation-only except for genuine defects with regression tests. Campaign/save schema remains 3, application settings remains 2, and achievement profile remains 1.
+
+## Resolution
+
+All P1 findings were fixed. Low-risk P2 work completed: shared style/safe-area helpers, dimmed modal gameplay states, clearer save-slot context, non-color World Map markers, boss vulnerability text, and tested Full/Reduced/Off shake behavior. Movement and camera-follow tuning remained unchanged because automated evidence showed no regression and subjective adjustment requires hands-on play. P3 audio, physical-controller, narrative pacing, fullscreen hardware, and editor ergonomics are explicitly carried into `HUMAN_PLAYTEST.md`.

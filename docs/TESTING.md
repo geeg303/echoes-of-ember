@@ -4,7 +4,7 @@
 
 Tests assert authoritative behavior and public outcomes rather than pixel-perfect rendering or incidental collection ordering. The suite combines focused units, subsystem integrations, user-visible scenarios, reload-driven campaign journeys, authored-data validation, and bounded stability checks. Timing-sensitive behavior advances explicit `dt`; tests never sleep to wait for gameplay timers.
 
-The Phase 24 baseline was 312 tests in 14.74 seconds. The expanded standard suite contains 384 tests and completed in 19.30 seconds on the documented development host. Durations vary by hardware.
+The Phase 24 baseline was 312 tests in 14.74 seconds. After Phase 25, the expanded standard suite contains 395 tests and completed in 19.07 seconds on the documented development host. Durations vary by hardware.
 
 ## Isolation and deterministic state
 
@@ -44,4 +44,3 @@ Markers are `integration`, `scenario`, and `slow`. Performance benchmark thresho
 6. Run quick verification during iteration and full verification before committing.
 
 Persistence tests should save, reconstruct through the real loader, and compare semantic progression. Controller tests feed `FakeControllerBackend` through `InputManager`; keyboard tests feed Pygame events. Editor tests operate on `LevelDocument`, save only under a temporary root, validate the output, and confirm playtest isolation. Debug and direct-level tests must prove campaign and achievement data are unchanged.
-

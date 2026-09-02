@@ -65,7 +65,7 @@ Phase 23 adds an empty screen-effects fast path: when no screen-space particles 
 
 ## Intentional limitations
 
-Effects remain procedural placeholders and sound assets remain absent. Quality selection is currently a programmatic/debug facility rather than a finished settings menu. Map celebration events are lightweight because persistent animation choreography and the full audio pass belong to later phases.
+Effects remain procedural placeholders. Quality selection is available in Settings and through a transient debug toggle. Map celebration events stay intentionally lightweight; persistent cinematic choreography is outside the vertical-slice scope.
 
 ## Audio coordination
 
