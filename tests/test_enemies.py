@@ -167,3 +167,21 @@ def test_turret_only_fires_inside_detection_radius() -> None:
         manager.update(1 / 60, pygame.Rect(0, 0, 1000, 500), player, collision, tilemap, progress)
     assert manager.projectiles.projectiles
     assert all(projectile.faction is Faction.ENEMY for projectile in manager.projectiles.projectiles)
+
+
+def test_turret_telegraphs_before_firing() -> None:
+    tilemap, collision = floor_world()
+    manager = EnemyManager(
+        (EnemySpawn("turret", EnemyType.TURRET, (300, 244), {"attack_cooldown": 1.0}),),
+        ProjectileManager(),
+    )
+    player = Player((500, 238))
+    progress = LevelProgress.from_types([])
+    for _ in range(22):
+        manager.update(1 / 60, pygame.Rect(0, 0, 1000, 500), player, collision, tilemap, progress)
+    turret = manager.enemies[0]
+    assert turret.telegraph_timer > 0.0
+    assert manager.projectiles.projectiles == []
+    for _ in range(20):
+        manager.update(1 / 60, pygame.Rect(0, 0, 1000, 500), player, collision, tilemap, progress)
+    assert manager.projectiles.projectiles

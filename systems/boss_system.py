@@ -57,7 +57,15 @@ class BossSystem:
     @property
     def hud_state(self) -> BossHUDState:
         visible = self.arena.active and not self.boss.defeated
-        return BossHUDState(visible, self.boss.display_name, self.boss.health, self.boss.max_health, self.boss.phase, self.boss.state is BossState.INTRO)
+        return BossHUDState(
+            visible,
+            self.boss.display_name,
+            self.boss.health,
+            self.boss.max_health,
+            self.boss.phase,
+            self.boss.state is BossState.INTRO,
+            self.boss.vulnerable,
+        )
 
     def update(self, dt: float, player: Player, powers: PowerUpSystem, progress: LevelProgress) -> BossUpdateResult:
         result = BossUpdateResult()

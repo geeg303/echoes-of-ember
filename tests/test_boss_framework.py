@@ -111,3 +111,4 @@ def test_boss_hud_state_is_screen_data_only(config) -> None:
     boss = Boss(config, (9000, 5000)); boss.begin()
     state = BossHUDState(True, boss.display_name, boss.health, boss.max_health, boss.phase)
     assert state.visible and state.health == 18 and not hasattr(state, "position")
+    assert not state.vulnerable

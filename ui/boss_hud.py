@@ -14,6 +14,7 @@ class BossHUDState:
     max_health: int = 1
     phase: int = 1
     intro: bool = False
+    vulnerable: bool = False
 
 
 class BossHUD:
@@ -40,6 +41,9 @@ class BossHUD:
         surface.blit(title, title.get_rect(midtop=(640, 97)))
         phase = self.small.render(f"PHASE {state.phase}", True, (228, 210, 185))
         surface.blit(phase, (bar.right - phase.get_width(), 101))
+        if state.vulnerable:
+            cue = self.small.render("◆ CORE OPEN", True, (255, 240, 137))
+            surface.blit(cue, (bar.left, 101))
         if state.intro:
             intro = self.font.render(state.name.upper(), True, (255, 218, 133))
             box = intro.get_rect(center=(640, 185)).inflate(46, 24)
