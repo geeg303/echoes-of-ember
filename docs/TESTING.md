@@ -4,7 +4,7 @@
 
 Tests assert authoritative behavior and public outcomes rather than pixel-perfect rendering or incidental collection ordering. The suite combines focused units, subsystem integrations, user-visible scenarios, reload-driven campaign journeys, authored-data validation, and bounded stability checks. Timing-sensitive behavior advances explicit `dt`; tests never sleep to wait for gameplay timers.
 
-The Phase 24 baseline was 312 tests in 14.74 seconds. After Phase 25, the expanded standard suite contains 395 tests and completed in 19.07 seconds on the documented development host. Durations vary by hardware.
+The Phase 24 baseline was 312 tests in 14.74 seconds. After Phase 26, the expanded standard suite contains 405 tests, including resource, build-flavor, manifest, safe-clean, version, and packaged-persistence foundations. Durations vary by hardware.
 
 ## Isolation and deterministic state
 

@@ -1,5 +1,7 @@
 # Echoes of Ember
 
+**Current status:** `0.1.0-alpha` — World 1 Vertical Slice / Pre-Alpha. The Verdant Reaches vertical slice is complete and tested; Worlds 2–4 are not yet included.
+
 An original, colorful 2D platform adventure starring Nova, an explorer searching for Ember Shards. The project is being built in tested, playable phases with Python and Pygame.
 
 ## Current status
@@ -374,7 +376,11 @@ Phase 23 provides repeatable quiet, busy, boss, effects, and editor benchmarks p
 
 ## Automated verification
 
-Run `python -m tools.verify_project --quick` during development, `--full` before stable commits, and `--release` for benchmarks plus the long soak. Every mode isolates writable user data and returns a meaningful process status; `--json report.json` produces an optional local machine-readable report. The standard suite covers 384 unit, integration, scenario, data-integrity, persistence, input, editor, debug, and performance-invariant cases. See [docs/TESTING.md](docs/TESTING.md), [docs/VERIFICATION_PIPELINE.md](docs/VERIFICATION_PIPELINE.md), and [docs/TEST_COVERAGE_REVIEW.md](docs/TEST_COVERAGE_REVIEW.md).
+Run `python -m tools.verify_project --quick` during development, `--full` before stable commits, and `--release` for benchmarks plus the long soak. Every mode isolates writable user data and returns a meaningful process status; `--json report.json` produces an optional local machine-readable report. The standard suite covers 405 unit, integration, scenario, data-integrity, persistence, packaging-foundation, input, editor, debug, and performance-invariant cases. See [docs/TESTING.md](docs/TESTING.md), [docs/VERIFICATION_PIPELINE.md](docs/VERIFICATION_PIPELINE.md), and [docs/TEST_COVERAGE_REVIEW.md](docs/TEST_COVERAGE_REVIEW.md).
+
+## Building distributions
+
+Install `requirements-build.txt`, then run `python -m tools.build_release --player --clean`. This creates a verified one-directory application, ZIP archive, resource manifest, build metadata, and SHA-256 checksum under the ignored `release/` directory. A separate `--developer` flavor retains debug, editor, and direct-level tools; the player flavor actively rejects them. PyInstaller builds must be produced on each target OS. See [docs/BUILDING.md](docs/BUILDING.md), [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md), [docs/VERSIONING.md](docs/VERSIONING.md), and [docs/RELEASE_NOTES_0.1.0-alpha.md](docs/RELEASE_NOTES_0.1.0-alpha.md).
 
 ## Accessibility and playtest status
 
