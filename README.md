@@ -2,6 +2,8 @@
 
 **Current status:** `0.1.0-alpha` — World 1 Vertical Slice / Pre-Alpha. The Verdant Reaches vertical slice is complete and tested; Worlds 2–4 are not yet included.
 
+The original technical roadmap (Phases 0–26) is complete. Future work follows the separate [Content Production Roadmap](docs/CONTENT_ROADMAP.md), beginning with the documentation-only [Game & Content Bible](docs/GAME_BIBLE.md). Proposed Worlds 2–4 are preproduction designs, not shipped content.
+
 An original, colorful 2D platform adventure starring Nova, an explorer searching for Ember Shards. The project is being built in tested, playable phases with Python and Pygame.
 
 ## Current status
