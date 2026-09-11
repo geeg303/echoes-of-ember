@@ -53,6 +53,7 @@ def build_snapshot(game: object, frame: int, performance: Mapping[str, Any]) -> 
     npcs = getattr(game, "npcs", None)
     boss_system = getattr(game, "boss_system", None)
     powers = getattr(game, "powerups", None)
+    currents = getattr(game, "ember_currents", None)
     effects = getattr(game, "effects", None)
     audio = getattr(game, "audio", None)
     input_manager = getattr(game, "input", None)
@@ -107,6 +108,10 @@ def build_snapshot(game: object, frame: int, performance: Mapping[str, Any]) -> 
             "current_checkpoint": checkpoint_ids[-1] if checkpoint_ids else "spawn", "platforms": len(getattr(objects, "platforms", ())),
             "secrets": f"{getattr(secrets, 'discovered_count', 0)}/{len(getattr(secrets, 'areas', {}))}", "npcs": len(getattr(npcs, "npcs", ())),
             "timer": round(float(getattr(game, "elapsed_time", 0.0)), 2), "phase": _enum(getattr(game, "gameplay_phase", None)),
+            "ember_currents": len(getattr(currents, "currents", ())),
+            "active_currents": sum(bool(item.enabled) for item in getattr(currents, "currents", {}).values()),
+            "overlapping_currents": getattr(currents, "overlapping_ids", lambda *_: ()) (p_rect, "player") if p_rect else (),
+            "current_influence": tuple(round(value, 2) for value in getattr(currents, "influence", lambda *_: (0, 0))(p_rect, "player")) if p_rect else (0, 0),
         }),
         entities=_freeze({"enemies": len(enemy_items), "enemies_by_type": tuple(sorted(enemy_counts.items())), "projectiles": len(projectile_items), "projectiles_by_faction": tuple(sorted(projectile_counts.items())), "collectibles_remaining": sum(bool(getattr(x, "active", False)) for x in getattr(getattr(game, "collectibles", None), "collectibles", ())), "powerups_remaining": sum(bool(getattr(x, "active", False)) for x in getattr(getattr(game, "powerup_pickups", None), "pickups", ())), "platforms": len(getattr(objects, "platforms", ())), "npcs": len(getattr(npcs, "npcs", ())), "particles": getattr(effects, "particle_count", 0)}),
         boss=_freeze({"active": bool(getattr(boss_system, "active", False)), "id": getattr(boss, "boss_id", None), "name": getattr(boss, "display_name", None), "health": getattr(boss, "health", None), "max_health": getattr(boss, "max_health", None), "phase": getattr(boss, "phase", None), "state": _enum(getattr(boss, "state", None)), "state_timer": round(float(getattr(boss, "state_timer", 0.0)), 2), "attack": getattr(boss, "current_attack", None), "previous_attack": getattr(boss, "previous_attack", None), "vulnerable": bool(getattr(boss, "vulnerable", False)), "arena_locked": bool(getattr(arena, "active", False)), "defeated": bool(getattr(boss_system, "defeated", False))}),

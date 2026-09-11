@@ -25,12 +25,12 @@ The 1280×720 layout uses palette/tools left, culled viewport center, JSON-infor
 - Delete: remove selected object
 - Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z: undo/redo
 - G: grid
-- 1–5: layer visibility
+- 1–6: layer visibility (the sixth layer is Ember Currents)
 - V: authoritative validation
 - Ctrl+S: validated atomic save
 - F5: isolated normal-runtime playtest and return
 
-The palette covers spawn, Ember Gate, all collectibles, five enemies, four power-ups, checkpoints, horizontal/vertical/falling/disappearing platforms, switches, doors, breakable tile ID 5, five secret types, and NPC placement. Complex boss metadata is preserved losslessly and arena/trigger data remains authoritative; Phase 21 deliberately does not offer a boss-AI editor.
+The palette covers those objects plus Ember Current rectangles. Current selection, movement, deletion, duplication/copy/paste, undo/redo, bounds and direction display, inspector, validation, and isolated playtest use the ordinary workflow. Exact advanced numeric tuning remains a JSON task in this prototype.
 
 ## Playtest isolation
 

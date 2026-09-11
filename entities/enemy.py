@@ -25,6 +25,7 @@ class EnemyUpdateContext:
     tilemap: TileMap
     spawn_projectile: Callable[[Projectile], None]
     new_projectile_id: Callable[[str], str]
+    current_influence: Callable[[pygame.Rect, str], pygame.Vector2] | None = None
 
 
 class Enemy(Entity):
@@ -146,4 +147,3 @@ class GroundEnemy(Enemy):
         probe = pygame.Rect(probe_x, self.rect.bottom + 2, 5, 12)
         kinds = BLOCKING_KINDS | {TileKind.ONE_WAY}
         return any(probe.colliderect(tile.rect) for tile in tilemap.tiles_in_rect(probe, kinds))
-

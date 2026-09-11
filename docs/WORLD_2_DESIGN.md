@@ -44,3 +44,7 @@ Arena is a prismatic observatory with stable safe zones and controllable current
 ## Production gates
 
 Milestone B prototypes one current field, projectile redirection, editor handles, validation, debug overlay, accessibility-off readability, and one enemy interaction. Only after feel/performance/softlock review should Milestone C author five levels.
+
+## Milestone B evidence
+
+The isolated prototype earned **READY WITH REVISIONS**: additive acceleration, arbitrary directions, Pulse bending, platform-rider composition, and flyer opt-in are technically sound. Effects-independent arrows are mandatory. Final strength bands, boundary feathering, production visuals/audio, authored switch links, and Current-driven platform bodies remain subject to human testing rather than canon. See [WORLD_2_PROTOTYPE_REVIEW.md](WORLD_2_PROTOTYPE_REVIEW.md).

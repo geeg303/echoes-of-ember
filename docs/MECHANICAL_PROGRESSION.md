@@ -54,3 +54,7 @@ Likely future save additions are active/current world, multi-world registries/re
 ## Editor/debug/test production rule
 
 Prototype authoring support before full level production. Extend object schemas and validators first; add editor palette/properties/visual overlays; add debug inspection and safe grant/state commands; write units plus mechanic scenarios; add one representative performance benchmark; then author campaign content. Each world integration adds clean/returning/secret/failure E2E paths and packaged-content validation.
+
+## Ember Current prototype contract
+
+Milestone B implements Currents as optional authored rectangular fields. Contributions add and clamp to 1,800 px/s²; player/projectile/flyer participation is explicit. Collision and authored platform movement remain authoritative. World 1 levels omit the field. This contract is ready for World 2 production with revisions after hands-on feel testing; spline flows, polarity, and automatic platform influence are not part of it.

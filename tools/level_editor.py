@@ -6,13 +6,13 @@ from pathlib import Path
 import pygame
 from editor.commands import CommandHistory
 from editor.document import LevelDocument,EditorDocumentError
-from editor.palette import OBJECT_TYPES,SECRET_TYPES,object_template,secret_template,npc_template
+from editor.palette import OBJECT_TYPES,SECRET_TYPES,object_template,secret_template,npc_template,current_template
 from editor.viewport import EditorViewport
 from settings import DISPLAY,PROJECT_ROOT
 from world.tile import TILE_DEFINITIONS,draw_tile
 class LevelEditor:
  def __init__(self,level_id="verdant_01",debug=False):
-  pygame.init();pygame.display.set_caption("Echoes of Ember — Level Editor");self.screen=pygame.display.set_mode(DISPLAY.window_size,pygame.RESIZABLE);self.clock=pygame.time.Clock();path=PROJECT_ROOT/"data"/"levels"/f"{level_id}.json";self.document=LevelDocument.load(path) if path.exists() else LevelDocument.new(level_id);self.history=CommandHistory();self.view=EditorViewport();self.running=True;self.grid=True;self.tile_id=1;self.tool="paint";self.object_index=0;self.message="READY";self.dragging=False;self.pan_anchor=None;self.font=pygame.font.Font(None,20);self.heading=pygame.font.Font(None,28);self.layers={x:True for x in ("terrain","objects","secrets","npcs","triggers")};self.pending_quit=False;self.clipboard=None;self.rect_start=None;self.debug_playtest=bool(debug)
+  pygame.init();pygame.display.set_caption("Echoes of Ember — Level Editor");self.screen=pygame.display.set_mode(DISPLAY.window_size,pygame.RESIZABLE);self.clock=pygame.time.Clock();path=PROJECT_ROOT/"data"/"levels"/f"{level_id}.json";self.document=LevelDocument.load(path) if path.exists() else LevelDocument.new(level_id);self.history=CommandHistory();self.view=EditorViewport();self.running=True;self.grid=True;self.tile_id=1;self.tool="paint";self.object_index=0;self.message="READY";self.dragging=False;self.pan_anchor=None;self.font=pygame.font.Font(None,20);self.heading=pygame.font.Font(None,28);self.layers={x:True for x in ("terrain","objects","secrets","npcs","triggers","currents")};self.pending_quit=False;self.clipboard=None;self.rect_start=None;self.debug_playtest=bool(debug)
  def run(self,frames=None):
   count=0
   while self.running and (frames is None or count<frames):
@@ -52,14 +52,15 @@ class LevelEditor:
   elif e.key==pygame.K_DELETE:self.history.execute(self.document,"delete",self.document.remove_selected)
   elif e.key==pygame.K_g:self.grid=not self.grid
   elif e.key==pygame.K_r:self.tool="rectangle";self.rect_start=None
-  elif pygame.K_1<=e.key<=pygame.K_5:
-   key=("terrain","objects","secrets","npcs","triggers")[e.key-pygame.K_1];self.layers[key]=not self.layers[key]
+  elif pygame.K_1<=e.key<=pygame.K_6:
+   key=("terrain","objects","secrets","npcs","triggers","currents")[e.key-pygame.K_1];self.layers.setdefault(key,True);self.layers[key]=not self.layers[key]
   elif e.key in (pygame.K_LEFT,pygame.K_RIGHT,pygame.K_UP,pygame.K_DOWN) and self.document.selected():
    dx=(-8 if e.key==pygame.K_LEFT else 8 if e.key==pygame.K_RIGHT else 0);dy=(-8 if e.key==pygame.K_UP else 8 if e.key==pygame.K_DOWN else 0)
    def move():
     item=self.document.selected()
     if "x" in item:item["x"]+=dx;item["y"]+=dy
     elif "position" in item:item["position"][0]+=dx;item["position"][1]+=dy
+    elif "bounds" in item:item["bounds"][0]+=dx;item["bounds"][1]+=dy
     self.document.dirty=True
    self.history.execute(self.document,"move object",move)
   elif e.key==pygame.K_v:self.message="VALID" if not self.document.validate() else " | ".join(self.document.validation_errors[:3])
@@ -88,11 +89,14 @@ class LevelEditor:
     def goal():self.document.data["goal"].update(x=x,y=y);self.document.dirty=True
     self.history.execute(self.document,"move goal",goal)
    elif kind=="npc":self.history.execute(self.document,"add NPC",lambda:self.document.add_object(npc_template(self.document.data["id"],x,y),"npcs"))
+   elif kind=="ember_current":self.history.execute(self.document,"add current",lambda:self.document.add_object(current_template(x,y),"ember_currents"))
    elif kind in SECRET_TYPES:self.history.execute(self.document,"add secret",lambda:self.document.add_object(secret_template(kind,x,y),"secrets"))
    else:self.history.execute(self.document,"add object",lambda:self.document.add_object(object_template(kind,x,y)))
    return
+  currents=[x for x in self.document.data.get("ember_currents",[]) if pygame.Rect(x["bounds"]).collidepoint(world)]
   candidates=[x for x in self.document.data.get("objects",[]) if abs(x.get("x",-999)-world[0])<36 and abs(x.get("y",-999)-world[1])<36]
-  if candidates:self.document.selection=("objects",candidates[0]["id"])
+  if currents:self.document.selection=("ember_currents",currents[0]["id"])
+  elif candidates:self.document.selection=("objects",candidates[0]["id"])
  def draw(self):
   self.screen.fill((12,17,29));viewport=pygame.Rect(190,20,820,650);pygame.draw.rect(self.screen,(22,31,43),viewport);self.screen.set_clip(viewport);ts=self.document.data["tile_size"]
   if self.layers["terrain"]:
@@ -108,9 +112,14 @@ class LevelEditor:
   if self.layers["secrets"]:
    for item in self.document.data.get("secrets",[]):
     x,y,w,h=item["properties"]["bounds"];a=self.view.world_to_screen((x,y));r=pygame.Rect(round(a[0]),round(a[1]),round(w*self.view.zoom),round(h*self.view.zoom));pygame.draw.rect(self.screen,(190,105,236),r,3)
+  if self.layers.get("currents",True):
+   for item in self.document.data.get("ember_currents",[]):
+    x,y,w,h=item["bounds"];a=self.view.world_to_screen((x,y));r=pygame.Rect(round(a[0]),round(a[1]),round(w*self.view.zoom),round(h*self.view.zoom));pygame.draw.rect(self.screen,(99,218,225),r,3);d=pygame.Vector2(item["direction"]);d.normalize_ip();start=pygame.Vector2(r.center);end=start+d*min(r.width,r.height)*.35;pygame.draw.line(self.screen,(235,255,248),start,end,4);pygame.draw.circle(self.screen,(235,255,248),end,5)
   selected=self.document.selected()
   if selected and "x" in selected:
    p=self.view.world_to_screen((selected["x"],selected["y"]));pygame.draw.circle(self.screen,(255,255,255),(round(p[0]),round(p[1])),14,3)
+  elif selected and "bounds" in selected:
+   x,y,w,h=selected["bounds"];p=self.view.world_to_screen((x,y));pygame.draw.rect(self.screen,(255,255,255),(round(p[0]),round(p[1]),round(w*self.view.zoom),round(h*self.view.zoom)),3)
   self.screen.set_clip(None);self._panels(selected);pygame.display.flip()
  def _panels(self,selected):
   pygame.draw.rect(self.screen,(19,25,42),(0,0,190,720));pygame.draw.rect(self.screen,(19,25,42),(1010,0,270,720));pygame.draw.rect(self.screen,(15,20,34),(190,670,820,50));self.screen.blit(self.heading.render("LEVEL EDITOR",True,(255,195,103)),(18,20))

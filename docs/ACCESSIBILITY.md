@@ -6,6 +6,8 @@ Echoes of Ember is fully playable with keyboard or a Pygame-supported controller
 
 Selected menu rows use a border and diamond marker as well as color. World Map nodes use distinct lock, check, star, secret, boss, goal, and current-position glyphs. The Ashen Warden HUD displays `CORE OPEN` with a diamond when damage is possible. Stone Guard shows a named HUD status and charge. Text is placed on high-contrast panels inside a 40×32 safe area at the 1280×720 internal resolution.
 
+Ember Currents use a persistent boundary plus repeated arrow shapes; arrow spacing communicates approximate strength. These cues remain at Full, Reduced, and Off effects and do not depend on hue, particles, or audio.
+
 ## Motion and effects
 
 The existing Effects Quality option also controls camera shake:

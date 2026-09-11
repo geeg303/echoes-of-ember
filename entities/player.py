@@ -91,6 +91,7 @@ class Player(Entity):
         controls: PlayerControls,
         collision: CollisionEngine,
         modifiers: PlayerModifiers = PlayerModifiers(),
+        external_acceleration: pygame.Vector2 | None = None,
     ) -> None:
         dt = min(max(dt, 0.0), 0.05)
         self.previous_rect = self.rect.copy()
@@ -104,6 +105,9 @@ class Player(Entity):
             controls = PlayerControls()
         self._update_timers(dt, controls)
         self._update_horizontal_velocity(dt, controls.move_axis)
+        if external_acceleration is not None:
+            self.velocity += external_acceleration * dt
+        self.velocity.x = max(-self.physics.maximum_fall_speed, min(self.physics.maximum_fall_speed, self.velocity.x))
         if not self.is_dead:
             self._try_buffered_jump()
 
@@ -119,6 +123,7 @@ class Player(Entity):
             self.velocity.y + self.physics.gravity * gravity_scale * dt,
             self.physics.maximum_fall_speed,
         )
+        self.velocity.y = max(-self.physics.maximum_fall_speed, self.velocity.y)
 
         fall_speed_before_collision = self.velocity.y
         result = collision.move(self.position, self.velocity, self.rect, dt)

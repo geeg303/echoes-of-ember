@@ -102,6 +102,8 @@ class DebugManager:
    for shot in game.projectiles.projectiles:rect(shot.rect,COLORS["projectile"],2)
    for door in game.world_objects.doors:rect(door.rect,(238,135,70),2)
   if self.triggers_visible:
+   for runtime in getattr(getattr(game,"ember_currents",None),"currents",{}).values():
+    d=runtime.definition;rect(d.bounds,(72,225,232) if runtime.enabled else (105,112,122),3);center=pygame.Vector2(d.bounds.center)+pygame.Vector2(offset);end=center+d.direction*54;pygame.draw.line(surface,(230,255,248),center,end,4);self._label(surface,f"{d.current_id} {d.strength:g} {','.join(sorted(d.affects))}",d.bounds.move(offset).topleft)
    for cp in game.world_objects.checkpoints:rect(cp.rect.inflate(24,12),COLORS["trigger"],2)
    for switch in game.world_objects.switches:rect(switch.rect.inflate(32,18),COLORS["trigger"],2)
    for area in game.secrets.areas.values():rect(area.rect,COLORS["trigger"],2);self._label(surface,area.definition.secret_id,area.rect.move(offset).topleft)
@@ -119,6 +121,9 @@ class DebugManager:
  def select_at(self,game,screen_pos):
   if not hasattr(game,"camera"):return
   offset=self.render_offset(game);world=(screen_pos[0]-offset[0],screen_pos[1]-offset[1]);candidates=[]
+  for runtime in getattr(getattr(game,"ember_currents",None),"currents",{}).values():
+   if runtime.definition.bounds.collidepoint(world):
+    d=runtime.definition;self.selected={"type":"ember current","id":d.current_id,"bounds":tuple(d.bounds),"direction":tuple(round(x,3) for x in d.direction),"strength":d.strength,"affects":tuple(sorted(d.affects)),"enabled":runtime.enabled,"style":d.style};return
   for rank,kind,items in ((0,"boss",[game.boss_system.boss] if game.boss_system else []),(1,"enemy",game.enemies.enemies),(2,"npc",game.npcs.npcs),(3,"projectile",game.projectiles.projectiles),(4,"platform",game.world_objects.platforms),(5,"door",game.world_objects.doors),(6,"switch",game.world_objects.switches),(7,"checkpoint",game.world_objects.checkpoints),(8,"player",[game.player])):
    for item in items:
     if item.rect.collidepoint(world):candidates.append((rank,item.rect.centerx,item.rect.centery,kind,item))
@@ -130,6 +135,7 @@ class DebugManager:
  def _register_commands(self):
   R=self.registry.register;game=frozenset({"gameplay"});global_=frozenset({"global"})
   R(DebugCommand("status","status","Show current debug session state.",global_,lambda g,a:f"debug=on tainted={self.tainted} paused={self.simulation_paused} scale={self.time_scale:g}"))
+  R(DebugCommand("current","current list|status <id>|enable <id>|disable <id>|reverse <id>","Inspect or transiently alter Ember Currents.",game,self._current,True))
   R(DebugCommand("god","god [on|off]","Toggle damage immunity.",game,self._god,True));R(DebugCommand("heal","heal","Restore Nova's health.",game,self._heal,True));R(DebugCommand("damage","damage [amount]","Apply normal debug damage.",game,self._damage,True));R(DebugCommand("lives","lives <0..99>","Set lives safely.",game,self._lives,True));R(DebugCommand("powerup","powerup <type>","Activate an authoritative power-up.",game,self._powerup,True));R(DebugCommand("clear_powerup","clear_powerup","Clear active power-up.",game,self._clear_powerup,True));R(DebugCommand("teleport","teleport <x> <y>|checkpoint|goal|boss","Move Nova to a validated world position.",game,self._teleport,True));R(DebugCommand("checkpoint","checkpoint list|<id>","List or activate a checkpoint.",game,self._checkpoint,True));R(DebugCommand("spawn_enemy","spawn_enemy <type> [x y]","Spawn a configured enemy.",game,self._spawn_enemy,True));R(DebugCommand("clear_enemies","clear_enemies","Remove enemies without rewards.",game,self._clear_enemies,True));R(DebugCommand("boss","boss status|damage <n>|reset","Inspect or safely alter the boss.",game,self._boss,True));R(DebugCommand("secret","secret list|reveal <id>","Inspect or transiently reveal a secret.",game,self._secret,True));R(DebugCommand("save","save status","Show non-mutating save diagnostics.",global_,self._save));R(DebugCommand("achievement","achievement status","Show profile diagnostics.",global_,self._achievement));R(DebugCommand("dialogue","dialogue status|close","Inspect or close dialogue.",global_,self._dialogue));R(DebugCommand("audio","audio status|mute","Inspect or transiently mute audio.",global_,self._audio));R(DebugCommand("effects","effects status|full|reduced|off|stress","Inspect/override effects transiently.",global_,self._effects,True));R(DebugCommand("pause","pause","Toggle debug simulation pause.",global_,self._pause));R(DebugCommand("step","step","Advance one update while paused.",game,self._step));R(DebugCommand("timescale","timescale <0.25|0.5|1|2>","Set transient simulation time scale.",game,self._timescale));R(DebugCommand("repro","repro","Export a safe diagnostic JSON snapshot.",global_,lambda g,a:f"Exported {self.export_repro(g)}"));R(DebugCommand("perf","perf export","Export bounded rolling metrics.",global_,self._perf));R(DebugCommand("screenshot","screenshot","Save the current internal frame.",global_,self._screenshot))
  def _god(self,g,a):
   if len(a)>1:raise DebugCommandError("Usage: god [on|off]")
@@ -137,6 +143,16 @@ class DebugManager:
   if a and a[0] not in {"on","off"}:raise DebugCommandError("Expected on or off")
   return f"God mode {'ON' if self.god_mode else 'OFF'}"
  def _heal(self,g,a):require_args(a,0,"heal");g.player.heal(g.player.max_health);return f"Health {g.player.health}/{g.player.max_health}"
+ def _current(self,g,a):
+  if a==("list",):return "Currents: "+", ".join(f"{key}:{'on' if value.enabled else 'off'}" for key,value in g.ember_currents.currents.items())
+  if len(a)==2 and a[0] in {"status","enable","disable","reverse"}:
+   runtime=g.ember_currents.currents.get(a[1])
+   if runtime is None:raise DebugCommandError(f"Unknown Current: {a[1]}")
+   if a[0]=="enable":g.ember_currents.set_enabled(a[1],True)
+   elif a[0]=="disable":g.ember_currents.set_enabled(a[1],False)
+   elif a[0]=="reverse":g.ember_currents.reverse(a[1])
+   d=runtime.definition;return f"{d.current_id} enabled={runtime.enabled} direction={tuple(round(x,3) for x in d.direction)} strength={d.strength:g}"
+  raise DebugCommandError("Usage: current list|status <id>|enable <id>|disable <id>|reverse <id>")
  def _damage(self,g,a):
   if len(a)>1:raise DebugCommandError("Usage: damage [amount]")
   amount=parse_int(a[0],1,99) if a else 1

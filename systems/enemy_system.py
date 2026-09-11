@@ -21,6 +21,7 @@ from systems.projectile_system import ProjectileManager
 from world.collision import CollisionEngine
 from world.level import EnemySpawn
 from world.tilemap import TileMap
+from world.ember_current import EmberCurrentSystem
 
 
 @dataclass(slots=True)
@@ -58,6 +59,7 @@ class EnemyManager:
         collision: CollisionEngine,
         tilemap: TileMap,
         progress: LevelProgress,
+        currents: EmberCurrentSystem | None = None,
     ) -> EnemyUpdateResult:
         outcome = EnemyUpdateResult()
         active_view = camera_view.inflate(900, 600)
@@ -68,6 +70,7 @@ class EnemyManager:
             tilemap,
             self.projectiles.spawn,
             self.projectiles.new_id,
+            currents.influence if currents is not None else None,
         )
         for enemy in self.enemies:
             if not enemy.active:
@@ -77,7 +80,7 @@ class EnemyManager:
             if enemy.alive and not player.is_dead and enemy.rect.colliderect(player.rect):
                 self._resolve_player_contact(enemy, player, progress, outcome)
 
-        self.projectiles.update(dt, tilemap)
+        self.projectiles.update(dt, tilemap, currents)
         for projectile in self.projectiles.projectiles:
             if projectile.active and projectile.faction is Faction.PLAYER:
                 for enemy in self.enemies:

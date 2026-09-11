@@ -45,7 +45,7 @@ The pages are Summary, Player, World, Entities, Boss, Input, Audio, Effects, Pro
 
 Collision mode outlines nearby terrain, hazards, player, enemies, projectiles, and doors. Trigger mode shows checkpoints, switches, secrets, NPC interaction radii, goals, platform paths, boss trigger/arena, and viewport boundary. Entity labels include enemy health and projectile faction/lifetime. Rendering is read-only and uses world coordinates plus the active render offset.
 
-Click selection uses a deterministic priority: boss, enemy, NPC, projectile, platform, door, switch, checkpoint, then player. The inspector holds copied primitive details only.
+Current regions show ID, bounds, direction, strength, affected categories, and enabled state with trigger visualization. The World page reports count, overlap IDs, and player influence. Clicking a Current exposes copied primitives. Commands `current list/status/enable/disable/reverse` are nonpersistent.
 
 ## Simulation tools
 

@@ -6,6 +6,8 @@ Tests assert authoritative behavior and public outcomes rather than pixel-perfec
 
 The Phase 24 baseline was 312 tests in 14.74 seconds. After Phase 26, the expanded standard suite contains 405 tests, including resource, build-flavor, manifest, safe-clean, version, and packaged-persistence foundations. Durations vary by hardware.
 
+Milestone B adds `tests/test_ember_currents.py` for optional-format compatibility, validation, directional/additive/clamped influence, player agency/collision/jump behavior, projectile safety, reset, editor round trip, effects-independent rendering, and debug isolation. Run six prototype scenarios with `python -m tools.current_benchmark all --frames 600`; World 1 envelopes remain in `tools.performance_benchmark`.
+
 ## Isolation and deterministic state
 
 `tests/conftest.py` establishes dummy SDL before game imports and provides isolated temporary save, settings, and achievement managers. `game_factory` disables persistence and achievements unless a scenario explicitly supplies isolated managers, and shuts down every constructed game. `seeded_rng` returns a local seeded generator without modifying global randomness. Subprocess smoke tests set a temporary user-data root through the verification runner.

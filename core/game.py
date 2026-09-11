@@ -54,6 +54,7 @@ from world.background import ParallaxBackground
 from world.camera import Camera
 from world.collision import CollisionEngine
 from world.level import Level
+from world.ember_current import EmberCurrentSystem
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldProgress, WorldRegistry
 from world.world_map import WorldMapRuntime
 
@@ -170,6 +171,7 @@ class Game:
         self.effects.clear()
         self.level = Level.load(self.level_path)
         self.collision = CollisionEngine(self.level.tilemap)
+        self.ember_currents = EmberCurrentSystem(self.level.ember_currents)
         self.player = Player(self.level.player_spawn)
         world_size = (self.level.tilemap.pixel_width, self.level.tilemap.pixel_height)
         self.camera = Camera(DISPLAY.internal_size, world_size)
@@ -413,7 +415,8 @@ class Game:
             after = getattr(platform, "state", None)
             if before != after and getattr(after, "value", "") == "warning": self.audio.play_sound("platform_warning", position=platform.rect.center, listener_x=self.player.rect.centerx)
             if before != after and getattr(after, "value", "") == "falling": self.audio.play_sound("platform_drop", position=platform.rect.center, listener_x=self.player.rect.centerx)
-        self.player.update(dt, controls, self.collision, self.powerups.movement_modifiers)
+        current_force = self.ember_currents.influence(self.player.rect, "player")
+        self.player.update(dt, controls, self.collision, self.powerups.movement_modifiers, current_force)
         if previous_grounded and not self.player.grounded and self.player.velocity.y < 0:
             self.effects.spawn("player_jump_dust", self.player.rect.midbottom)
             self.audio.play_sound("player_jump")
@@ -491,6 +494,7 @@ class Game:
             self.collision,
             self.level.tilemap,
             self.progress,
+            self.ember_currents,
         )
         for projectile in self.projectiles.projectiles:
             if projectile.projectile_id not in prior_projectiles and projectile.faction.value == "enemy" and projectile.owner_id != "ashen_warden": self.audio.play_sound("turret_fire", position=projectile.rect.center, listener_x=self.player.rect.centerx)
@@ -704,6 +708,7 @@ class Game:
         )
         offset = self.debug.render_offset(self) if self.debug.enabled else self.camera.render_offset
         self.level.tilemap.draw(self.canvas, tile_view, offset)
+        self.ember_currents.draw(self.canvas, view, offset)
         self.world_objects.draw(self.canvas, view, offset)
         self.npcs.draw(
             self.canvas, view, offset, self.player.rect,

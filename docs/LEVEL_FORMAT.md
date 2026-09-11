@@ -11,3 +11,7 @@ Secrets are separate records with ID, `secret_type` (`secret_cache`, `secret_roo
 NPC placements remain companion files at `data/npcs/<level_id>.json`; the editor preserves/atomically writes placement IDs, display/style/facing/radius, position, and references to existing dialogue IDs. Dialogue graphs are not level data.
 
 Boss stages optionally contain `boss_encounter`: boss ID/spawn, arena bounds, trigger bounds, locking door IDs, and pulse source. These fields are loaded, visualizable, validated, and preserved without exposing boss AI graphs.
+
+## Developer Ember Current extension
+
+The optional root list `ember_currents` defaults to empty. Each entry has a globally unique `id`, world-space `[x,y,width,height]` bounds, finite nonzero direction, positive bounded strength, explicit affected targets, optional boolean enabled state, and style. Directions normalize at load. See [EMBER_CURRENTS_PROTOTYPE.md](EMBER_CURRENTS_PROTOTYPE.md). Prototype IDs begin with `prototype_`/`dev_` and remain outside campaign registries.

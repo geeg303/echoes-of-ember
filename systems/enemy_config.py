@@ -27,6 +27,7 @@ class EnemyConfig:
     jump_force: float = 0.0
     horizontal_speed: float = 0.0
     cliff_avoidance: bool = False
+    current_affected: bool = False
 
 
 ENEMY_CONFIGS: dict[EnemyType, EnemyConfig] = {
@@ -45,7 +46,7 @@ ENEMY_CONFIGS: dict[EnemyType, EnemyConfig] = {
 
 ENEMY_PROPERTY_TYPES: dict[EnemyType, dict[str, type]] = {
     EnemyType.CRAWLER: {"speed": float, "cliff_avoidance": bool},
-    EnemyType.FLYER: {"speed": float, "detection_radius": float},
+    EnemyType.FLYER: {"speed": float, "detection_radius": float, "current_affected": bool},
     EnemyType.JUMPER: {
         "jump_force": float,
         "horizontal_speed": float,
@@ -78,4 +79,3 @@ def configured_enemy(kind: EnemyType, properties: dict[str, Any]) -> EnemyConfig
         else:
             converted[key] = value
     return replace(config, **converted)
-

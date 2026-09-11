@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import logging
+from dataclasses import replace
 
 from core.build_config import developer_features_available
 from core.game import Game
 from core.version import version_text
+from settings import PROJECT_ROOT
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry, WorldRegistryError
 
 
@@ -71,7 +73,12 @@ def main() -> int:
         registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
         level_id = args.level or registry.level_ids[0]
         if level_id not in registry.level_paths:
-            raise WorldRegistryError(f"unknown level id: {level_id}")
+            prototype_path = PROJECT_ROOT / "data" / "levels" / f"{level_id}.json"
+            if args.level and level_id.startswith(("prototype_", "dev_")) and prototype_path.is_file():
+                paths = dict(registry.level_paths); paths[level_id] = prototype_path
+                registry = replace(registry, level_ids=registry.level_ids + (level_id,), level_paths=paths)
+            else:
+                raise WorldRegistryError(f"unknown level id: {level_id}")
     except WorldRegistryError as exc:
         logging.error("Cannot launch: %s", exc)
         return 2

@@ -13,6 +13,7 @@ from systems.level_completion import CompletionRequirements, RatingThresholds
 from world.tilemap import TileMap
 from world.secret_area import SecretDefinition, SecretTrigger, SecretType
 from world.boss_arena import BossArenaDefinition
+from world.ember_current import EmberCurrentDefinition, parse_ember_currents
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +83,7 @@ class Level:
     world_object_spawns: tuple[WorldObjectSpawn, ...]
     secret_definitions: tuple[SecretDefinition, ...]
     boss_encounter: BossArenaDefinition | None
+    ember_currents: tuple[EmberCurrentDefinition, ...]
     source_path: Path
 
     @classmethod
@@ -176,6 +178,7 @@ class Level:
             world_object_spawns=world_object_spawns,
             secret_definitions=secret_definitions,
             boss_encounter=boss_encounter,
+            ember_currents=parse_ember_currents(data.get("ember_currents", [])),
             source_path=path,
         )
 

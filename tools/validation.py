@@ -10,6 +10,7 @@ from typing import Any
 from tools.object_validation import validate_objects
 from world.tile import TILE_DEFINITIONS
 from world.secret_area import SecretTrigger, SecretType
+from world.ember_current import CURRENT_STYLES, CURRENT_TARGETS
 
 
 class LevelValidationError(ValueError):
@@ -83,6 +84,7 @@ def validate_level_data(data: Any) -> list[str]:
     pixel_width = width * tile_size if isinstance(tile_size, int) else 0
     pixel_height = height * tile_size if isinstance(tile_size, int) else 0
     errors.extend(validate_objects(data.get("objects", []), pixel_width, pixel_height))
+    _validate_ember_currents(data.get("ember_currents", []), data.get("objects", []), pixel_width, pixel_height, errors)
     _validate_secrets(data.get("secrets", []), data.get("objects", []), pixel_width, pixel_height, errors)
     _validate_goal(data.get("goal"), pixel_width, pixel_height, errors)
     _validate_boss_encounter(data.get("boss_encounter"), data.get("objects", []), pixel_width, pixel_height, errors)
@@ -96,6 +98,51 @@ def validate_level_data(data: Any) -> list[str]:
             if data.get(field) != derived:
                 errors.append(f"{field} does not match derived object total {derived}")
     return errors
+
+
+def _validate_ember_currents(raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:
+    if not isinstance(raw, list):
+        errors.append("ember_currents must be a list")
+        return
+    seen = {entry.get("id") for entry in objects if isinstance(objects, list) and isinstance(entry, dict)}
+    allowed = {"id", "bounds", "direction", "strength", "affects", "enabled", "style"}
+    for index, entry in enumerate(raw):
+        prefix = f"ember_currents[{index}]"
+        if not isinstance(entry, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        for key in entry.keys() - allowed:
+            errors.append(f"{prefix} has unknown field: {key!r}")
+        current_id = entry.get("id")
+        if not isinstance(current_id, str) or not current_id.strip():
+            errors.append(f"{prefix}.id must be a non-empty string")
+        elif current_id in seen:
+            errors.append(f"{prefix} has duplicate id: {current_id!r}")
+        else:
+            seen.add(current_id)
+        bounds = entry.get("bounds")
+        valid_bounds = isinstance(bounds, list) and len(bounds) == 4 and all(_finite_number(value) for value in bounds)
+        if not valid_bounds or bounds[2] <= 0 or bounds[3] <= 0 or bounds[0] < 0 or bounds[1] < 0 or bounds[0] + bounds[2] > pixel_width or bounds[1] + bounds[3] > pixel_height:
+            errors.append(f"{prefix}.bounds is invalid or outside level bounds")
+        direction = entry.get("direction")
+        if not _numeric_pair(direction) or not all(math.isfinite(float(value)) for value in direction) or float(direction[0]) ** 2 + float(direction[1]) ** 2 <= 0:
+            errors.append(f"{prefix}.direction must be a finite non-zero numeric pair")
+        strength = entry.get("strength")
+        if not _finite_number(strength) or not 0 < float(strength) <= 5000:
+            errors.append(f"{prefix}.strength must be finite and between 0 and 5000")
+        affects = entry.get("affects")
+        if not isinstance(affects, list) or not affects or not all(isinstance(value, str) for value in affects) or len(set(affects)) != len(affects):
+            errors.append(f"{prefix}.affects must be a non-empty unique string list")
+        elif set(affects) - CURRENT_TARGETS:
+            errors.append(f"{prefix}.affects contains unknown target categories")
+        if "enabled" in entry and not isinstance(entry["enabled"], bool):
+            errors.append(f"{prefix}.enabled must be boolean")
+        if entry.get("style", "glassreach") not in CURRENT_STYLES:
+            errors.append(f"{prefix}.style is invalid")
+
+
+def _finite_number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
 
 
 def _validate_secrets(secrets: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:

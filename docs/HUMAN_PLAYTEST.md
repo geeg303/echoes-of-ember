@@ -18,4 +18,6 @@ No claim is made that Codex physically held a controller, listened through speak
 8. Read Mira, Orin, Talen, and Vesper dialogue in normal play and inspect all secrets without debug assistance.
 9. Use the editor with a mouse for pan, zoom, paint, erase, undo/redo, validate, save, and playtest.
 
+For the Glassreach prototype, directly launch `prototype_glassreach_currents` and record answers for counter-push feel, immediate direction/strength recognition, Pulse bending clarity, lift control, Wind Boots/Aether Wing identity, moving-platform fairness, flyer readability, and whether the combined room feels meaningfully distinct from World 1. No automated run is a substitute for these responses.
+
 Record hardware, OS, display scale, controller model, audio device, observed issue, reproduction steps, and severity for each finding.

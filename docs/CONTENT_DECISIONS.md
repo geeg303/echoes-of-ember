@@ -94,3 +94,10 @@ Status vocabulary: CANON, PROPOSED, OPEN QUESTION, DEFERRED.
 ## Deferred ideas
 
 Exact collectible/enemy counts, final dialogue, final art/audio, new achievements, shops/currencies, inventory, skill tree, alternate endings, online features, and platform release policy are DEFERRED to their appropriate milestones or rejected by scope rules.
+
+## Ember Current prototype result
+
+- **Decision:** retain additive, clamped Current acceleration with explicit target categories and effects-independent arrows.
+- **Rationale:** automated runtime, collision, projectile, editor, debug, isolation, and performance evidence supports a reusable system without rebalancing World 1.
+- **Status:** READY WITH REVISIONS. Human feel/readability testing is required before exact strength bands or final presentation become canon.
+- **Deferred:** spline paths, authored switch links, Current-driven platform bodies, production ambience, and Luminous Sentinel integration.

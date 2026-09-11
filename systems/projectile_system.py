@@ -8,6 +8,7 @@ import pygame
 
 from entities.projectile import Faction, Projectile
 from world.tilemap import TileMap
+from world.ember_current import EmberCurrentSystem
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,8 +31,9 @@ class ProjectileManager:
         self._next_id += 1
         return value
 
-    def update(self, dt: float, tilemap: TileMap) -> None:
+    def update(self, dt: float, tilemap: TileMap, currents: EmberCurrentSystem | None = None) -> None:
         for projectile in self.projectiles:
+            if currents is not None and projectile.active and projectile.faction is Faction.PLAYER: projectile.velocity += currents.influence(projectile.rect,"player_projectiles")*dt
             was_active = projectile.active
             projectile.update(dt, tilemap)
             if projectile.break_positions:

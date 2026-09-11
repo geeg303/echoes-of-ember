@@ -33,9 +33,11 @@ class FlyingEnemy(Enemy):
         if delta.length_squared() > 1:
             desired = delta.normalize() * min(self.config.speed, delta.length() * 3.0)
             self.velocity += (desired - self.velocity) * min(1.0, dt * 4.0)
+            if self.config.current_affected and context.current_influence is not None:
+                self.velocity += context.current_influence(self.rect, "flyers") * dt
+                if self.velocity.length() > 360:self.velocity.scale_to_length(360)
             self.position += self.velocity * dt
             self.sync_rect()
             if abs(self.velocity.x) > 2:
                 self.facing = 1 if self.velocity.x > 0 else -1
         self.animation.play("move")
-
