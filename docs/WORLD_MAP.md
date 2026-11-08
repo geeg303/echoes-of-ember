@@ -1,6 +1,6 @@
 # World Map architecture and authoring
 
-The World Map is an authored graph in `data/worlds/verdant_reaches.json`. It contains immutable nodes, connections, waypoints, and unlock requirements. `WorldMapRuntime` owns only navigation state; `WorldProgress` owns progression.
+Each world has its own World Map, an authored graph in `data/worlds/<world_id>.json` (World 1: `verdant_reaches.json`). `data/campaign.json` orders the worlds; see [ADDING_A_WORLD.md](ADDING_A_WORLD.md). It contains immutable nodes, connections, waypoints, and unlock requirements. `WorldMapRuntime` owns only navigation state; `WorldProgress` owns progression.
 
 ## Nodes
 
@@ -69,6 +69,10 @@ These flags never regress during the current process. A lower-scoring replay may
 Normal startup opens the map. `python main.py --level verdant_03` bypasses it for development. Abandoning a run creates no result and changes no progression flags.
 
 To author another map: create stable node IDs, place nodes inside 1280×720, add registered level references, connect them with unique connection IDs, add optional waypoints and unlock requirements, provide one valid start and world-goal node, then run `python -m tools.validation --all-levels`.
+
+## World gates and multiple worlds
+
+A `world_gate` node (with `target_world`) moves Nova to another world's map when confirmed. It opens when its connection unlocks **and** the destination world is unlocked (the previous world's boss is defeated). Each world remembers Nova's last node, so travelling back returns her where she left. Gate nodes use a cyan circle with a double-chevron marker; locked gates show the lock marker. World 1 currently has no gate because World 2 is not authored yet.
 
 ## Persistence
 

@@ -244,6 +244,17 @@ class CampaignRegistry:
                 if boss_id in seen_bosses:
                     raise WorldRegistryError(f"boss {boss_id} appears in {seen_bosses[boss_id]} and {world.world_id}")
                 seen_bosses[boss_id] = world.world_id
+        world_ids = {world.world_id for world in worlds}
+        for world in worlds:
+            for node in world.map_definition.nodes.values():
+                if node.target_world is None:
+                    continue
+                if node.target_world == world.world_id:
+                    raise WorldRegistryError(f"world gate {node.node_id} in {world.world_id} leads to itself")
+                if node.target_world not in world_ids:
+                    raise WorldRegistryError(
+                        f"world gate {node.node_id} in {world.world_id} targets unknown world {node.target_world}"
+                    )
         return cls(worlds)
 
     @property

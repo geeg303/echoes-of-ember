@@ -217,7 +217,7 @@ The optional `duration` override must be finite and positive. Supported types ar
 ## Current limitations
 
 - Audio uses generated temporary WAV placeholders; final composition, mastering, and subjective mix tuning remain future work.
-- Only World 1 is authored; the campaign, save format, and boss runtime currently support a single world. Multi-world support is the next engineering step.
+- Only World 1 is authored. The engine supports multiple worlds (campaign list, per-world saves, world gates, boss registry, themes); see [docs/ADDING_A_WORLD.md](docs/ADDING_A_WORLD.md).
 - The Ember Veil map node is a revealed marker, not a playable stage.
 - Art is procedural placeholder geometry; there are no sprite sheets or tilesets yet.
 - No human playtest has been recorded yet (see [docs/HUMAN_PLAYTEST.md](docs/HUMAN_PLAYTEST.md)).

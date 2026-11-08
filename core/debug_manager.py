@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from collections import deque
+from systems.save_data import CURRENT_SAVE_VERSION
 import json, time
 from pathlib import Path
 from typing import Any
@@ -660,7 +661,8 @@ class DebugManager:
         return (
             "No active slot; debug is nonpersistent"
             if session is None
-            else f"slot={session.slot_id} schema=3 dirty={session.dirty} completed={g.world_progress.levels_completed} writes=disabled"
+            else f"slot={session.slot_id} schema={CURRENT_SAVE_VERSION} world={g.registry.world_id} dirty={session.dirty} "
+            f"completed={g.world_progress.levels_completed} writes=disabled"
         )
 
     def _achievement(self, g, a):

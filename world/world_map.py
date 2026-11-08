@@ -21,6 +21,7 @@ class NodeType(str, Enum):
     WORLD_GOAL = "world_goal"
     OPTIONAL = "optional"
     SECRET = "secret"
+    WORLD_GATE = "world_gate"
 
 
 class RequirementType(str, Enum):
@@ -73,6 +74,7 @@ class MapNode:
     title: str
     level_id: str | None = None
     boss_id: str | None = None
+    target_world: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,11 +146,25 @@ class WorldMapDefinition:
                     errors.append(f"{prefix} normal level cannot reference boss_id")
             elif level_id is not None or boss_id is not None:
                 errors.append(f"{prefix} landmark node cannot reference level or boss")
+            target_world = raw.get("target_world")
+            if kind is NodeType.WORLD_GATE:
+                if not isinstance(target_world, str) or not target_world:
+                    errors.append(f"{prefix} world_gate node requires target_world")
+            elif target_world is not None:
+                errors.append(f"{prefix} only world_gate nodes may set target_world")
             title = raw.get("title", node_id)
             if not isinstance(title, str) or not title:
                 errors.append(f"{prefix}.title must be non-empty")
                 title = node_id
-            nodes[node_id] = MapNode(node_id, kind, (float(position[0]), float(position[1])), title, level_id, boss_id)
+            nodes[node_id] = MapNode(
+                node_id,
+                kind,
+                (float(position[0]), float(position[1])),
+                title,
+                level_id,
+                boss_id,
+                target_world if kind is NodeType.WORLD_GATE else None,
+            )
         start = data.get("start_node")
         if start not in nodes or (start in nodes and nodes[start].kind is not NodeType.START):
             errors.append("map.start_node must reference a start node")

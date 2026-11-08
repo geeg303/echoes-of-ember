@@ -50,7 +50,6 @@ from states.settings_menu import SettingsController
 from states.pause_menu import GameOverController, PauseController
 from ui.menu import menu_action_from_input
 from states.world_complete import WorldCompleteScreen
-from states.world_map import WorldMapScreen
 from ui.hud import HUD
 from ui.boss_hud import BossHUD
 from ui.achievement_screen import AchievementScreen
@@ -63,8 +62,7 @@ from world.camera import Camera
 from world.collision import CollisionEngine
 from world.level import Level
 from world.ember_current import EmberCurrentSystem
-from world.campaign import DEFAULT_WORLD_REGISTRY, WorldProgress, WorldRegistry
-from world.world_map import WorldMapRuntime
+from world.campaign import DEFAULT_CAMPAIGN, CampaignProgress, CampaignRegistry, WorldRegistry
 from core.game_feedback import GameFeedbackMixin
 from core.game_flow import GameFlowMixin
 
@@ -77,7 +75,7 @@ class Game(GameFlowMixin, GameFeedbackMixin):
     def __init__(
         self,
         level_id: str = "verdant_01",
-        registry: WorldRegistry | None = None,
+        registry: CampaignRegistry | WorldRegistry | None = None,
         start_on_map: bool = False,
         start_frontend: bool = False,
         save_manager: SaveManager | None = None,
@@ -143,11 +141,16 @@ class Game(GameFlowMixin, GameFeedbackMixin):
         self.world_complete_screen = WorldCompleteScreen(
             self.assets.font(None, 44), self.assets.font(None, 29), self.assets.font(None, 22)
         )
-        self.registry = registry or WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
-        if level_id not in self.registry.level_paths:
+        if registry is not None:
+            self.campaign = CampaignRegistry.coerce(registry)
+        elif save_manager is not None:
+            self.campaign = save_manager.campaign
+        else:
+            self.campaign = CampaignRegistry.load(DEFAULT_CAMPAIGN)
+        if level_id not in self.campaign.level_paths:
             raise ValueError(f"unknown registered level: {level_id}")
         self.persistence_enabled = persistence
-        self.save_manager = save_manager or (SaveManager(self.registry) if persistence or start_frontend else None)
+        self.save_manager = save_manager or (SaveManager(self.campaign) if persistence or start_frontend else None)
         self.save_session: SaveSession | None = None
         self.save_warning = ""
         if persistence and not start_frontend and self.save_manager is not None:
@@ -164,26 +167,20 @@ class Game(GameFlowMixin, GameFeedbackMixin):
                 else:
                     self.save_warning = "SAVE UNAVAILABLE — USE --NEW-GAME TO RESET"
                     self.persistence_enabled = False
-                    self.save_session = SaveSession.fresh(slot_id, self.registry)
-        self.world_progress = self.save_session.progress if self.save_session else WorldProgress(self.registry)
-        self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
-        if self.save_session:
-            saved_node = self.registry.map_definition.nodes[self.save_session.current_map_node]
-            self.world_map_runtime.current_node_id = saved_node.node_id
-            self.world_map_runtime.avatar_position.update(saved_node.position)
-        self.world_map_screen = WorldMapScreen(
-            self.world_map_runtime,
-            self.assets.font(None, 38),
-            self.assets.font(None, 25),
-            self.assets.font(None, 19),
-            self.input,
-        )
+                    self.save_session = SaveSession.fresh(slot_id, self.campaign)
+        if self.save_session is not None:
+            self.campaign_progress = self.save_session.campaign_progress
+        else:
+            # Nonpersistent launches (direct --level, tools) start in the world that owns the level.
+            self.campaign_progress = CampaignProgress.fresh(self.campaign)
+            self.campaign_progress.active_world_id = self.campaign.world_for_level(level_id).world_id
+        self._activate_world(self.campaign_progress.active_world_id)
         if self.save_warning:
             self.world_map_screen.notify(self.save_warning)
         self.show_world_summary = False
         self.frontend = FrontendController(
             self,
-            self.save_manager or SaveManager(self.registry),
+            self.save_manager or SaveManager(self.campaign),
             self.assets.font(None, 48),
             self.assets.font(None, 29),
             self.assets.font(None, 20),
@@ -207,7 +204,7 @@ class Game(GameFlowMixin, GameFeedbackMixin):
             self, self.assets.font(None, 48), self.assets.font(None, 29), self.assets.font(None, 20), self.audio
         )
         self.app_mode = "frontend" if start_frontend else "map" if start_on_map else "gameplay"
-        self.level_path = self.registry.level_paths[level_id]
+        self.level_path = self.campaign.level_paths[level_id]
         if start_frontend:
             self.effects.clear()
             self.effects.start_emitter("frontend:title", "sanctum_available", (640, 500))
@@ -248,9 +245,9 @@ class Game(GameFlowMixin, GameFeedbackMixin):
         self.secrets = SecretSystem(self.level.secret_definitions)
         self.goal = EmberGate(self.level.goal.position, self.level.goal.requires_interact)
         self.npcs, dialogue_definitions = NPCSystem.load(
-            PROJECT_ROOT / "data", self.level.metadata.level_id, self.world_progress, world_size
+            PROJECT_ROOT / "data", self.level.metadata.level_id, self.campaign_progress, world_size
         )
-        self.dialogue = DialogueSystem(dialogue_definitions, self.world_progress, self._commit_dialogue_flag)
+        self.dialogue = DialogueSystem(dialogue_definitions, self.campaign_progress, self._commit_dialogue_flag)
         self.gameplay_phase = GameplayPhase.PLAYING
         self.elapsed_time = 0.0
         self.deaths = 0
@@ -396,13 +393,7 @@ class Game(GameFlowMixin, GameFeedbackMixin):
                 self.audio.play_sound("ui_move" if moved else "ui_locked")
                 return
         if self.input.was_pressed(Action.CONFIRM):
-            action, level_id = self.world_map_screen.activate_current()
-            self.audio.play_sound("ui_confirm" if action in {"level", "world_summary"} else "ui_locked")
-            if action == "level" and level_id:
-                self.load_level(level_id)
-            elif action == "world_summary":
-                self.show_world_summary = True
-                self.input.suppress_edges()
+            self._activate_map_node()
         elif self.input.was_pressed(Action.BACK):
             self.audio.play_sound("ui_cancel")
             self.return_to_main_menu()
@@ -423,15 +414,22 @@ class Game(GameFlowMixin, GameFeedbackMixin):
             moved = self.world_map_runtime.choose_direction(pygame.Vector2(directions[key]))
             self.audio.play_sound("ui_move" if moved else "ui_locked")
         elif key in (pygame.K_RETURN, pygame.K_SPACE):
-            action, level_id = self.world_map_screen.activate_current()
-            self.audio.play_sound("ui_confirm" if action in {"level", "world_summary"} else "ui_locked")
-            if action == "level" and level_id:
-                self.load_level(level_id)
-            elif action == "world_summary":
-                self.show_world_summary = True
+            self._activate_map_node()
         elif key == pygame.K_ESCAPE:
             self.audio.play_sound("ui_cancel")
             self.return_to_main_menu()
+
+    def _activate_map_node(self) -> None:
+        """Confirm on the current map node: enter a level, open the world summary, or cross a world gate."""
+        action, target = self.world_map_screen.activate_current()
+        self.audio.play_sound("ui_confirm" if action in {"level", "world_summary", "world_travel"} else "ui_locked")
+        if action == "level" and target:
+            self.load_level(target)
+        elif action == "world_summary":
+            self.show_world_summary = True
+            self.input.suppress_edges()
+        elif action == "world_travel" and target:
+            self.travel_to_world(target)
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen

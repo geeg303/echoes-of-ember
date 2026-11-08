@@ -7,6 +7,7 @@ import logging
 from core.save_manager import SaveManager, SlotState
 from systems.level_completion import ExitType
 from states.world_map import WorldMapScreen
+from world.campaign import WorldRegistryError
 from world.world_map import WorldMapRuntime
 
 LOGGER = logging.getLogger("core.game")
@@ -57,21 +58,14 @@ class GameFlowMixin:
             self.toggle_fullscreen()
         self.app_settings.fullscreen = self.fullscreen
 
-    def start_campaign(self, slot_id: int, new_game: bool = False) -> None:
-        if self.save_manager is None:
-            self.save_manager = SaveManager(self.registry)
-        if new_game:
-            self.save_session = self.save_manager.new_game(slot_id, overwrite=True)
-        else:
-            outcome = self.save_manager.load(slot_id)
-            if outcome.session is None:
-                return
-            self.save_session = outcome.session
-            self.save_warning = "SAVE RECOVERED FROM BACKUP" if outcome.state is SlotState.RECOVERED else ""
-        self.persistence_enabled = True
-        self.world_progress = self.save_session.progress
+    def _activate_world(self, world_id: str) -> None:
+        """Point the map, registry, and progress at ``world_id`` and restore its last map node."""
+        self.campaign_progress.active_world_id = world_id
+        self.registry = self.campaign.world(world_id)
+        self.world_progress = self.campaign_progress.active
         self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
-        node = self.registry.map_definition.nodes[self.save_session.current_map_node]
+        saved = self.save_session.map_nodes.get(world_id) if self.save_session is not None else None
+        node = self.registry.map_definition.nodes[saved or self.registry.map_definition.start_node]
         self.world_map_runtime.current_node_id = node.node_id
         self.world_map_runtime.avatar_position.update(node.position)
         self.world_map_screen = WorldMapScreen(
@@ -81,6 +75,50 @@ class GameFlowMixin:
             self.assets.font(None, 19),
             self.input,
         )
+
+    def travel_to_world(self, world_id: str) -> bool:
+        """Cross a world gate. Returns False (with feedback) when the destination is still locked."""
+        if world_id == self.registry.world_id:
+            return False
+        try:
+            unlocked = self.campaign_progress.world_unlocked(world_id)
+        except WorldRegistryError:
+            return False
+        if not unlocked:
+            self.world_map_screen.notify("THE WAY ONWARD IS STILL SEALED")
+            self.audio.play_sound("ui_locked")
+            return False
+        if self.save_session is not None:
+            self.save_session.current_map_node = self.world_map_runtime.current_node_id
+        self.campaign_progress.set_active_world(world_id)
+        self._activate_world(world_id)
+        self.app_mode = "map"
+        self.show_world_summary = False
+        self.input.suppress_edges()
+        self.effects.clear()
+        self._configure_map_effects()
+        self._configure_map_audio()
+        self.effects.spawn("route_unlocked", self.world_map_runtime.avatar_position)
+        self.audio.play_sound("route_unlock")
+        self.world_map_screen.notify(f"WELCOME TO {self.registry.display_name.upper()}")
+        self._mark_save_dirty()
+        self._autosave()
+        return True
+
+    def start_campaign(self, slot_id: int, new_game: bool = False) -> None:
+        if self.save_manager is None:
+            self.save_manager = SaveManager(self.campaign)
+        if new_game:
+            self.save_session = self.save_manager.new_game(slot_id, overwrite=True)
+        else:
+            outcome = self.save_manager.load(slot_id)
+            if outcome.session is None:
+                return
+            self.save_session = outcome.session
+            self.save_warning = "SAVE RECOVERED FROM BACKUP" if outcome.state is SlotState.RECOVERED else ""
+        self.persistence_enabled = True
+        self.campaign_progress = self.save_session.campaign_progress
+        self._activate_world(self.campaign_progress.active_world_id)
         if self.save_warning:
             self.world_map_screen.notify(self.save_warning)
         self.app_mode = "map"

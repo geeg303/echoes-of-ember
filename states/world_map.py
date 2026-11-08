@@ -54,6 +54,8 @@ class WorldMapScreen:
             return "placeholder", None
         if node.kind is NodeType.WORLD_GOAL:
             return "world_summary", None
+        if node.kind is NodeType.WORLD_GATE:
+            return "world_travel", node.target_world
         self.notify("CHOOSE A GLOWING DESTINATION")
         return "none", None
 
@@ -141,6 +143,8 @@ class WorldMapScreen:
                 color, radius = ((255, 205, 92), 31) if state is NodeState.COMPLETED else ((255, 116, 64), 29)
             elif node.kind is NodeType.WORLD_GOAL:
                 color, radius = (255, 165, 72), 31
+            elif node.kind is NodeType.WORLD_GATE:
+                color, radius = ((96, 214, 232), 28) if state is not NodeState.LOCKED else ((75, 78, 79), 24)
             elif state is NodeState.LOCKED:
                 color, radius = (75, 78, 79), 20
             elif state in {NodeState.COMPLETED, NodeState.MASTERED}:
@@ -181,6 +185,12 @@ class WorldMapScreen:
             pygame.draw.polygon(surface, ink, [(x, y - 10), (x + 10, y), (x, y + 10), (x - 10, y)], 3)
         elif kind is NodeType.WORLD_GOAL:
             pygame.draw.polygon(surface, ink, [(x, y - 11), (x + 10, y + 8), (x - 10, y + 8)], 3)
+        elif kind is NodeType.WORLD_GATE:
+            # Double chevron: "onward to another world".
+            for shift in (-5, 4):
+                pygame.draw.lines(
+                    surface, ink, False, [(x + shift - 4, y - 8), (x + shift + 4, y), (x + shift - 4, y + 8)], 3
+                )
         elif state is NodeState.AVAILABLE:
             pygame.draw.circle(surface, ink, center, 5)
 
@@ -225,6 +235,10 @@ class WorldMapScreen:
             ]
         elif node.kind is NodeType.SECRET:
             details = ["A HIDDEN PATH HAS BEEN REVEALED"]
+        elif node.kind is NodeType.WORLD_GATE:
+            details = [
+                "A ROUTE TO ANOTHER LAND" if state is not NodeState.LOCKED else "SEALED UNTIL THIS LAND IS RESTORED"
+            ]
         else:
             details = (
                 [

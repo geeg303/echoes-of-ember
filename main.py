@@ -10,7 +10,7 @@ from core.build_config import developer_features_available
 from core.game import Game
 from core.version import version_text
 from settings import PROJECT_ROOT
-from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry, WorldRegistryError
+from world.campaign import DEFAULT_CAMPAIGN, CampaignRegistry, WorldRegistryError
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,14 +72,16 @@ def main() -> int:
         logging.error("--debug cannot be combined with --new-game; debug sessions never overwrite saves")
         return 2
     try:
-        registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
-        level_id = args.level or registry.level_ids[0]
+        registry = CampaignRegistry.load(DEFAULT_CAMPAIGN)
+        level_id = args.level or registry.worlds[0].level_ids[0]
         if level_id not in registry.level_paths:
             prototype_path = PROJECT_ROOT / "data" / "levels" / f"{level_id}.json"
             if args.level and level_id.startswith(("prototype_", "dev_")) and prototype_path.is_file():
-                paths = dict(registry.level_paths)
+                # Developer prototypes are attached to World 1 for a nonpersistent direct launch only.
+                first = registry.worlds[0]
+                paths = dict(first.level_paths)
                 paths[level_id] = prototype_path
-                registry = replace(registry, level_ids=registry.level_ids + (level_id,), level_paths=paths)
+                registry = replace(first, level_ids=first.level_ids + (level_id,), level_paths=paths)
             else:
                 raise WorldRegistryError(f"unknown level id: {level_id}")
     except WorldRegistryError as exc:

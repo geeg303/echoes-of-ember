@@ -506,10 +506,12 @@ def main() -> int:
         load_and_validate_level(path)
         print(f"valid: {path}")
     if args.all_levels:
-        from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
+        from world.campaign import DEFAULT_CAMPAIGN, CampaignRegistry
 
-        registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
-        print(f"valid world: {registry.world_id} ({len(registry.level_ids)} levels)")
+        campaign = CampaignRegistry.load(DEFAULT_CAMPAIGN)
+        for registry in campaign.worlds:
+            print(f"valid world: {registry.world_id} ({len(registry.level_ids)} levels)")
+        print(f"valid campaign: {len(campaign.worlds)} world(s)")
         dialogue_count, npc_count = validate_narrative_data(PROJECT_ROOT / "data")
         print(f"valid narrative: {dialogue_count} dialogues, {npc_count} NPCs")
         from systems.achievement_system import load_achievement_definitions

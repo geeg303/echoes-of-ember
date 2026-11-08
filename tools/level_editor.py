@@ -337,9 +337,13 @@ class LevelEditor:
                 from tools.validation import load_and_validate_level
 
                 load_and_validate_level(path)
-                from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
+                from world.campaign import DEFAULT_CAMPAIGN, CampaignRegistry, WorldRegistryError
 
-                registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
+                campaign = CampaignRegistry.load(DEFAULT_CAMPAIGN)
+                try:
+                    registry = campaign.world_for_level(self.document.data["id"])
+                except WorldRegistryError:
+                    registry = campaign.worlds[0]
                 paths = dict(registry.level_paths)
                 paths[self.document.data["id"]] = path
                 ids = (

@@ -7,14 +7,14 @@ from core.audio_manager import AudioSettings
 from core.paths import DATA_ROOT, user_data_root
 from core.save_manager import SaveManager, SlotState
 from core.settings_manager import ApplicationSettings, SettingsManager
-from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
+from world.campaign import DEFAULT_CAMPAIGN, CampaignRegistry
 
 
 def run_package_self_test() -> None:
     if os.environ.get("ECHOES_PACKAGE_SELF_TEST") != "1":
         raise PermissionError("package self-test is available only to the release verifier")
     root = user_data_root()
-    registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
+    registry = CampaignRegistry.load(DEFAULT_CAMPAIGN)
     saves = SaveManager(registry, root / "saves")
     saves.new_game(1, overwrite=True)
     if saves.load(1).state is not SlotState.VALID:
