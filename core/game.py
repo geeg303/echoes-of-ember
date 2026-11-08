@@ -48,7 +48,7 @@ from states.level_complete import LevelCompleteScreen
 from states.frontend import FrontendController
 from states.settings_menu import SettingsController
 from states.pause_menu import GameOverController, PauseController
-from ui.menu import MenuAction, menu_action_from_input
+from ui.menu import menu_action_from_input
 from states.world_complete import WorldCompleteScreen
 from states.world_map import WorldMapScreen
 from ui.hud import HUD
@@ -64,11 +64,13 @@ from world.level import Level
 from world.ember_current import EmberCurrentSystem
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldProgress, WorldRegistry
 from world.world_map import WorldMapRuntime
+from core.game_feedback import GameFeedbackMixin
+from core.game_flow import GameFlowMixin
 
 LOGGER = logging.getLogger(__name__)
 
 
-class Game:
+class Game(GameFlowMixin, GameFeedbackMixin):
     """Own Pygame initialization, the main loop, display scaling, and shutdown."""
 
     def __init__(
@@ -437,31 +439,40 @@ class Game:
         LOGGER.info("Fullscreen: %s", self.fullscreen)
 
     def update(self, dt: float) -> None:
+        """Advance one frame. Non-gameplay modes short-circuit; gameplay runs fixed ordered steps."""
+        if self._update_non_gameplay_mode(dt):
+            return
+        if self._update_completion_phases(dt):
+            return
+        self._update_gameplay(dt)
+
+    def _update_non_gameplay_mode(self, dt: float) -> bool:
+        """Handle debug pause, menus, dialogue, and the World Map. Returns True when the frame is consumed."""
         if self.debug.enabled and self.debug.simulation_paused and dt <= 0 and self.app_mode == "gameplay":
             self.debug.update_free_camera(self, 1.0 / DISPLAY.target_fps)
             self.audio.update(0.0)
             self._clear_frame_inputs()
-            return
+            return True
         if self.app_mode in {"pause", "game_over"}:
             self.audio.update(dt)
             self._clear_frame_inputs()
-            return
+            return True
         if self.app_mode == "settings":
             self.audio.update(dt)
-            return
+            return True
         if self.app_mode == "achievements":
             self.audio.update(dt)
-            return
+            return True
         if self.app_mode == "frontend":
             self.frontend.update(dt)
             self.effects.update(dt)
             self.audio.update(dt)
-            return
+            return True
         if self.app_mode == "dialogue":
             self.dialogue.update(dt)
             self.audio.update(dt)
             self._clear_frame_inputs()
-            return
+            return True
         if self.save_session is not None:
             self.save_session.play_time_seconds += dt
         if self.app_mode == "map":
@@ -474,12 +485,16 @@ class Game:
                 self.effects.spawn("route_unlocked", self.world_map_runtime.avatar_position)
                 self._mark_save_dirty()
                 self._autosave()
-            return
+            return True
+        return False
+
+    def _update_completion_phases(self, dt: float) -> bool:
+        """Freeze gameplay during level/world completion screens and the completion sequence."""
         if self.gameplay_phase in {GameplayPhase.LEVEL_COMPLETE, GameplayPhase.WORLD_COMPLETE}:
             self.achievement_toasts.update(dt)
             self.audio.update(dt)
             self._clear_frame_inputs()
-            return
+            return True
         if self.gameplay_phase is GameplayPhase.COMPLETION_SEQUENCE:
             self.completion_timer = max(0.0, self.completion_timer - dt)
             self.goal.update(dt, self.player.rect)
@@ -491,11 +506,35 @@ class Game:
             if self.completion_timer <= 0.0:
                 self.gameplay_phase = GameplayPhase.LEVEL_COMPLETE
             self._clear_frame_inputs()
-            return
+            return True
+        return False
+
+    def _update_gameplay(self, dt: float) -> None:
+        """Run one gameplay frame. Step order is significant and matches the original monolithic update."""
         self.elapsed_time += dt
         if self.debug.enabled and self.debug.god_mode:
             self.player.invulnerability_timer = max(self.player.invulnerability_timer, 0.1)
         self.debug.update_free_camera(self, dt)
+        world_interacted = self._update_world_and_player(dt)
+        if self._update_player_damage_and_lives():
+            return
+        self.camera.update(self.player.rect, self.player.velocity, dt)
+        self._update_enemies(dt)
+        self._update_boss(dt)
+        self._update_pickups(dt)
+        self._handle_powerup_events()
+        secret_update = self._update_secrets(world_interacted)
+        self.notifications.update(dt)
+        self.goal.update(dt, self.player.rect)
+        self._update_goal_and_npcs(world_interacted, secret_update)
+        self.hud.update(dt)
+        self._update_effects(dt)
+        if self.app_mode != "dialogue":
+            self.achievement_toasts.update(dt)
+        self._clear_frame_inputs()
+
+    def _update_world_and_player(self, dt: float) -> bool:
+        """Power-ups, platforms, Nova movement, interactables, NPC proximity, and Ember Pulse firing."""
         controls = PlayerControls(
             move_axis=self.input.axis(Action.MOVE_X),
             jump_pressed=self._jump_pressed,
@@ -504,7 +543,6 @@ class Game:
         )
         previous_grounded = self.player.grounded
         previous_double_jump_fx = self.player.double_jump_effect_timer
-        previous_health = self.player.health
         previous_checkpoints = set(self.world_objects.activated_checkpoint_ids)
         previous_switches = {item.object_id for item in self.world_objects.switches if item.active}
         previous_platform_states = {
@@ -569,6 +607,10 @@ class Game:
                 "ember_pulse_fire", position=self.player.rect.center, listener_x=self.player.rect.centerx
             )
             self.effects.spawn("ember_pulse_launch", self.player.rect.center)
+        return world_interacted
+
+    def _update_player_damage_and_lives(self) -> bool:
+        """Apply hazard damage and life loss. Returns True when Game Over begins (frame ends early)."""
         if self.player.hit_hazard and not self.player.is_dead:
             damage = self.player.apply_damage(1, DamageSource.HAZARD)
             if damage.applied:
@@ -597,7 +639,7 @@ class Game:
                 self.app_mode = "game_over"
                 self.input.suppress_edges()
                 self._clear_frame_inputs()
-                return
+                return True
             if self.boss_system is not None:
                 self.boss_system.reset_encounter(self.powerups)
                 self.camera.set_bounds(None)
@@ -605,7 +647,9 @@ class Game:
             self.player.respawn(self.world_objects.respawn_position)
             self.camera.snap_to(self.player.rect)
             self._reset_transient_effects()
-        self.camera.update(self.player.rect, self.player.velocity, dt)
+        return False
+
+    def _update_enemies(self, dt: float) -> None:
         prior_projectiles = {item.projectile_id for item in self.projectiles.projectiles}
         enemy_result = self.enemies.update(
             dt,
@@ -639,28 +683,33 @@ class Game:
         if enemy_result.shake:
             self.effects.request_shake(enemy_result.shake, 0.12)
         self._drain_combat_effects(self.enemies.effects)
-        if self.boss_system is not None:
-            boss_result = self.boss_system.update(dt, self.player, self.powerups, self.progress)
-            self.camera.set_bounds(self.boss_system.arena.camera_bounds)
-            if self.boss_system.active:
-                focus = self.player.rect.union(self.boss_system.boss.rect)
-                if boss_result.triggered:
-                    self.camera.snap_to(focus)
-                else:
-                    self.camera.update(focus, pygame.Vector2(), dt)
-            if boss_result.player_damaged:
-                self.damage_taken_this_attempt = True
-                self.hud.notify_health_changed()
-                self._rumble(0.3, 0.62, 180)
-            if boss_result.score_awarded:
-                self.hud.notify_score_changed()
-            if boss_result.shake:
-                self.effects.request_shake(boss_result.shake, 0.25)
-            self._emit_boss_effects(boss_result)
-            self._drain_combat_effects(self.boss_system.effects, boss=True)
-            self._emit_boss_audio(boss_result)
-            if boss_result.defeat_sequence_complete:
-                self._begin_completion("ashen_warden", ExitType.NORMAL, boss_id="ashen_warden")
+
+    def _update_boss(self, dt: float) -> None:
+        if self.boss_system is None:
+            return
+        boss_result = self.boss_system.update(dt, self.player, self.powerups, self.progress)
+        self.camera.set_bounds(self.boss_system.arena.camera_bounds)
+        if self.boss_system.active:
+            focus = self.player.rect.union(self.boss_system.boss.rect)
+            if boss_result.triggered:
+                self.camera.snap_to(focus)
+            else:
+                self.camera.update(focus, pygame.Vector2(), dt)
+        if boss_result.player_damaged:
+            self.damage_taken_this_attempt = True
+            self.hud.notify_health_changed()
+            self._rumble(0.3, 0.62, 180)
+        if boss_result.score_awarded:
+            self.hud.notify_score_changed()
+        if boss_result.shake:
+            self.effects.request_shake(boss_result.shake, 0.25)
+        self._emit_boss_effects(boss_result)
+        self._drain_combat_effects(self.boss_system.effects, boss=True)
+        self._emit_boss_audio(boss_result)
+        if boss_result.defeat_sequence_complete:
+            self._begin_completion("ashen_warden", ExitType.NORMAL, boss_id="ashen_warden")
+
+    def _update_pickups(self, dt: float) -> None:
         self.collectibles.update(dt, self.camera.view_rect)
         self.powerup_pickups.update(dt, self.camera.view_rect)
         if not self.player.is_dead:
@@ -706,6 +755,8 @@ class Game:
                     PowerUpType.STONE_GUARD: "stone_guard_activate",
                 }[kind]
                 self.effects.spawn(pickup_fx, self.player.rect.center)
+
+    def _handle_powerup_events(self) -> None:
         power_event = self.powerups.consume_event()
         if power_event in {"expired", "absorbed"}:
             if power_event == "absorbed":
@@ -714,6 +765,8 @@ class Game:
                 self.effects.request_flash((170, 196, 218), 58, 0.14)
                 self.audio.play_sound("stone_guard_break")
                 self._rumble(0.38, 0.68, 180)
+
+    def _update_secrets(self, world_interacted: bool):
         critical_interact = self._interact_pressed and not world_interacted
         previous_secrets = {key for key, area in self.secrets.areas.items() if area.state.value != "undiscovered"}
         secret_update = self.secrets.update(self.player.rect, critical_interact, self.enemies.defeated_ids)
@@ -734,8 +787,9 @@ class Game:
             self._emit_achievement("secret_exit_discovered", exit_id=secret_update.secret_exit_id)
             self.audio.play_sound("secret_exit")
             self._begin_completion(secret_update.secret_exit_id, ExitType.SECRET)
-        self.notifications.update(dt)
-        self.goal.update(dt, self.player.rect)
+        return secret_update
+
+    def _update_goal_and_npcs(self, world_interacted: bool, secret_update) -> None:
         critical_consumed = world_interacted or bool(secret_update.messages) or bool(secret_update.secret_exit_id)
         goal_activated = False
         if self.boss_system is None and not self.player.is_dead and not critical_consumed:
@@ -755,11 +809,6 @@ class Game:
             if self.npcs.active_npc is not None:
                 self.effects.spawn("switch_activate", self.npcs.active_npc.rect.center)
             self.input.suppress_edges()
-        self.hud.update(dt)
-        self._update_effects(dt)
-        if self.app_mode != "dialogue":
-            self.achievement_toasts.update(dt)
-        self._clear_frame_inputs()
 
     def _clear_frame_inputs(self) -> None:
         self._jump_pressed = False
@@ -963,343 +1012,6 @@ class Game:
         }
         self.debug.capture(self, perf)
         self.debug.draw(self.canvas, self)
-
-    def _configure_level_audio(self) -> None:
-        self.audio.reset_context()
-        level_id = self.level.metadata.level_id
-        if level_id == "verdant_03":
-            track, ambience = "music_ravine", "ambience_ravine"
-        elif level_id == "verdant_04":
-            track, ambience = "music_ruins", "ambience_ruins"
-        elif self.level.boss_encounter:
-            track, ambience = "music_ruins", "ambience_sanctum"
-        elif level_id == "verdant_02":
-            track, ambience = "music_verdant", "ambience_canopy"
-        else:
-            track, ambience = "music_verdant", "ambience_verdant"
-        self.audio.play_music(track)
-        self.audio.start_ambience("level", ambience)
-
-    def _configure_map_audio(self) -> None:
-        self.audio.reset_context()
-        self.audio.play_music("music_world_map")
-        self.audio.start_ambience("map", "ambience_verdant")
-
-    def _emit_boss_audio(self, result: object) -> None:
-        mapping = {
-            "awaken": "warden_awaken",
-            "phase": "warden_phase_transition",
-            "ground_slam": "warden_ground_slam",
-            "slam": "warden_ground_slam",
-            "bolt": "warden_bolt",
-            "projectile": "warden_bolt",
-            "ember_rain": "warden_ember_rain",
-            "leap": "warden_leap",
-            "charge": "warden_charge",
-            "core_burst": "warden_core_burst",
-            "hurt": "warden_hurt",
-            "defeat": "warden_defeat",
-        }
-        if result.triggered:
-            self.audio.play_music("music_boss")
-        for hook in result.audio_events:
-            audio_id = mapping.get(hook)
-            if audio_id:
-                self.audio.play_sound(
-                    audio_id, position=self.boss_system.boss.rect.center, listener_x=self.player.rect.centerx
-                )
-            if hook in {"ground_slam", "slam"}:
-                self._rumble(0.45, 0.7, 190)
-            elif hook == "phase":
-                self._rumble(0.42, 0.76, 240)
-            elif hook == "defeat":
-                self._rumble(0.7, 1.0, 320)
-
-    def _rumble(self, low: float, high: float, duration_ms: int) -> bool:
-        return bool(self.app_settings.vibration_enabled and self.input.rumble(low, high, duration_ms))
-
-    def _configure_level_effects(self) -> None:
-        theme = self.level.metadata.theme.lower()
-        effect_id = (
-            "sanctum_motes"
-            if self.level.boss_encounter
-            else (
-                "ravine_embers"
-                if "ravine" in theme or "lava" in theme
-                else "ruins_dust"
-                if "ruin" in theme
-                else "drifting_leaves"
-            )
-        )
-        bounds = pygame.Rect(0, 0, self.level.tilemap.pixel_width, self.level.tilemap.pixel_height)
-        self.effects.start_emitter(f"ambient:{self.level.metadata.level_id}", effect_id, (0, 0), region=bounds)
-        if effect_id == "drifting_leaves":
-            self.effects.start_emitter(
-                f"ambient:{self.level.metadata.level_id}:pollen", "pollen_motes", (0, 0), region=bounds
-            )
-
-    def _configure_map_effects(self) -> None:
-        self.effects.start_emitter("map:sanctum", "sanctum_available", (1080, 500))
-
-    def _reset_transient_effects(self) -> None:
-        quality = self.effects.quality
-        self.effects.clear()
-        self.effects.quality = quality
-        self._configure_level_effects()
-        for checkpoint in self.world_objects.checkpoints:
-            if checkpoint.active:
-                self.effects.start_emitter(
-                    f"checkpoint:{checkpoint.object_id}", "checkpoint_idle", checkpoint.rect.center
-                )
-
-    def _drain_combat_effects(self, legacy: list[object], boss: bool = False) -> None:
-        for effect in legacy:
-            strong = bool(getattr(effect, "strong", False))
-            if boss:
-                effect_id = "warden_defeat" if strong else "warden_core_hit"
-            elif effect.color[2] > effect.color[0]:
-                effect_id = "armored_stomp_block"
-            else:
-                effect_id = "enemy_defeat" if strong else "enemy_hit"
-                if strong and effect.color[1] >= 180:
-                    self.effects.spawn("stomp_impact", effect.position)
-            self.effects.spawn(effect_id, effect.position)
-            audio_id = {
-                "armored_stomp_block": "armored_block",
-                "enemy_defeat": "enemy_defeat",
-                "enemy_hit": "enemy_hit",
-                "warden_defeat": "warden_defeat",
-                "warden_core_hit": "warden_hurt",
-            }[effect_id]
-            self.audio.play_sound(audio_id, position=effect.position, listener_x=self.player.rect.centerx)
-        legacy.clear()
-
-    def _emit_boss_effects(self, result: object) -> None:
-        if result.triggered:
-            self.effects.spawn("warden_awaken", self.boss_system.boss.rect.center)
-        mapping = {
-            "phase": "warden_phase_three" if self.boss_system.boss.phase >= 3 else "warden_phase_two",
-            "slam": "warden_ground_slam",
-            "ground_slam": "warden_ground_slam",
-            "projectile": "warden_bolt_launch",
-            "bolt": "warden_bolt_launch",
-            "ember_rain": "warden_bolt_launch",
-            "leap": "warden_leap_takeoff",
-            "charge": "warden_leap_takeoff",
-            "core_burst": "warden_core_burst",
-            "hurt": "warden_core_hit",
-            "defeat": "warden_defeat",
-        }
-        for hook in result.audio_events:
-            effect_id = mapping.get(hook)
-            if effect_id:
-                self.effects.spawn(effect_id, self.boss_system.boss.rect.center)
-        owner = "boss:warden:vulnerable"
-        if self.boss_system.boss.vulnerable:
-            if owner not in self.effects.emitters:
-                self.effects.start_emitter(owner, "warden_core_vulnerable", self.boss_system.boss.rect.center)
-            self.effects.update_emitter_position(owner, self.boss_system.boss.rect.center)
-        else:
-            self.effects.stop_emitter(owner)
-
-    def _update_effects(self, dt: float) -> None:
-        for event in self.projectiles.consume_effect_events():
-            self.effects.spawn(event.effect_id, event.position)
-            self.audio.play_sound(
-                "breakable_destroy" if event.effect_id == "breakable_destroy" else "ember_pulse_hit",
-                position=event.position,
-                listener_x=self.player.rect.centerx,
-            )
-        self._effect_trail_timer -= dt
-        if self._effect_trail_timer <= 0:
-            for projectile in self.projectiles.projectiles:
-                if projectile.faction.value == "player":
-                    self.effects.spawn("ember_pulse_trail", projectile.rect.center)
-            if self.powerups.has(PowerUpType.WIND_BOOTS) and abs(self.player.velocity.x) > 80:
-                self.effects.spawn("wind_boots_trail", self.player.rect.midbottom)
-            self._effect_trail_timer = 0.05
-        self.effects.update(dt, self.camera.view_rect)
-        self.effects.apply_shake(self.camera)
-        self.audio.update(dt)
-
-    def _emit_achievement(self, event: str, **payload: object) -> None:
-        if self.debug.enabled:
-            self.debug.record_event("ACHIEVEMENT", event, **payload)
-            return
-        unlocked = self.achievements.emit(event, **payload)
-        for definition in unlocked:
-            self.achievement_toasts.push(definition)
-            self.audio.play_sound("achievement_unlocked")
-            self.effects.spawn("route_unlocked", (self.canvas.get_width() - 220, 90))
-        self.achievements.notifications.clear()
-
-    def open_achievements(self) -> None:
-        self.app_mode = "achievements"
-        self.input.suppress_edges()
-
-    def open_pause(self) -> None:
-        if self.app_mode == "gameplay":
-            self.app_mode = "pause"
-            self.pause_controller.dialog = None
-            self.input.suppress_edges()
-
-    def resume_game(self) -> None:
-        if self.app_mode in {"pause", "settings"}:
-            self.app_mode = "gameplay"
-            self.input.suppress_edges()
-
-    def restart_from_menu(self) -> None:
-        self.reset_level()
-        self.app_mode = "gameplay"
-
-    def retry_after_game_over(self) -> None:
-        self.reset_level()
-        self.app_mode = "gameplay"
-
-    def abandon_to_map(self) -> None:
-        self.level_result = None
-        self.return_to_world_map()
-
-    def open_settings(self, parent: str) -> None:
-        self.settings_parent = parent
-        self.app_mode = "settings"
-        self.input.suppress_edges()
-        self.settings_controller._rebuild()
-
-    def close_settings(self) -> None:
-        self.app_mode = self.settings_parent
-        self.input.suppress_edges()
-
-    def set_fullscreen(self, enabled: bool) -> None:
-        if self.fullscreen != bool(enabled):
-            self.toggle_fullscreen()
-        self.app_settings.fullscreen = self.fullscreen
-
-    def start_campaign(self, slot_id: int, new_game: bool = False) -> None:
-        if self.save_manager is None:
-            self.save_manager = SaveManager(self.registry)
-        if new_game:
-            self.save_session = self.save_manager.new_game(slot_id, overwrite=True)
-        else:
-            outcome = self.save_manager.load(slot_id)
-            if outcome.session is None:
-                return
-            self.save_session = outcome.session
-            self.save_warning = "SAVE RECOVERED FROM BACKUP" if outcome.state is SlotState.RECOVERED else ""
-        self.persistence_enabled = True
-        self.world_progress = self.save_session.progress
-        self.world_map_runtime = WorldMapRuntime(self.registry.map_definition, self.world_progress)
-        node = self.registry.map_definition.nodes[self.save_session.current_map_node]
-        self.world_map_runtime.current_node_id = node.node_id
-        self.world_map_runtime.avatar_position.update(node.position)
-        self.world_map_screen = WorldMapScreen(
-            self.world_map_runtime,
-            self.assets.font(None, 38),
-            self.assets.font(None, 25),
-            self.assets.font(None, 19),
-            self.input,
-        )
-        if self.save_warning:
-            self.world_map_screen.notify(self.save_warning)
-        self.app_mode = "map"
-        self.input.suppress_edges()
-        self.show_world_summary = False
-        self.effects.clear()
-        self._configure_map_effects()
-        self._configure_map_audio()
-
-    def return_to_main_menu(self) -> None:
-        self._close_dialogue()
-        self.achievements.flush()
-        self._autosave(force=True)
-        self.app_mode = "frontend"
-        self.input.suppress_edges()
-        self.effects.clear()
-        self.effects.start_emitter("frontend:title", "sanctum_available", (640, 500))
-        self.audio.reset_context()
-        self.audio.play_music("music_world_map")
-        self.frontend.refresh_slots()
-        self.frontend._main()
-
-    def reset_level(self) -> None:
-        """Reload original level state, including collectibles and current score."""
-        self._load_level_runtime()
-        self._jump_pressed = False
-        self._jump_released = False
-        self._attack_pressed = False
-        self._interact_pressed = False
-        self.hud.reset_feedback()
-        self.notifications.clear()
-        LOGGER.info("Restarted level: %s", self.level.name)
-
-    def load_level(self, level_id: str) -> None:
-        self.app_mode = "gameplay"
-        self.input.suppress_edges()
-        self.level_path = self.registry.level_paths[level_id]
-        self.reset_level()
-
-    def return_to_world_map(self) -> None:
-        self._close_dialogue()
-        level_id = self.level.metadata.level_id
-        self.world_map_runtime.return_to_level_node(level_id)
-        self.app_mode = "map"
-        self.input.suppress_edges()
-        self.show_world_summary = False
-        self.effects.clear()
-        self._configure_map_effects()
-        self._configure_map_audio()
-        if self.level_result is not None:
-            center = (self.canvas.get_width() / 2, self.canvas.get_height() / 2)
-            self.effects.spawn(
-                "ember_veil_reveal" if self.level_result.exit_type is ExitType.SECRET else "route_unlocked", center
-            )
-            if self.level_result.exit_type is ExitType.SECRET:
-                self.audio.play_sound("ember_veil_reveal")
-            else:
-                self.audio.play_sound("route_unlock")
-            if self.world_progress.world_completed_once:
-                self.effects.spawn("world_complete", center)
-                self.audio.play_music("music_world_complete")
-                self.audio.play_sound("world_complete")
-        self._mark_save_dirty()
-        self._autosave()
-        if self.level_result is not None:
-            self.world_map_screen.notify("PATH OPENED — CHOOSE YOUR NEXT DESTINATION")
-
-    def _close_dialogue(self) -> None:
-        dialogue = getattr(self, "dialogue", None)
-        if dialogue is not None and dialogue.active:
-            dialogue.close()
-        npcs = getattr(self, "npcs", None)
-        if npcs is not None:
-            npcs.end()
-
-    def _commit_dialogue_flag(self, flag: str) -> None:
-        """Persist semantic story flags immediately when authored dialogue grants one."""
-        self._mark_save_dirty()
-        self._autosave()
-
-    def _mark_save_dirty(self) -> None:
-        if self.persistence_enabled and self.save_session is not None:
-            self.save_session.dirty = True
-
-    def _autosave(self, force: bool = False) -> None:
-        if self.debug.enabled:
-            return
-        if not self.persistence_enabled or self.save_manager is None or self.save_session is None:
-            return
-        if not force and not self.save_session.dirty:
-            return
-        self.save_session.progress = self.world_progress
-        self.save_session.current_map_node = self.world_map_runtime.current_node_id
-        try:
-            self.save_manager.save(self.save_session)
-        except OSError:
-            LOGGER.exception("Autosave failed; campaign remains active in memory")
-
-    def continue_campaign(self) -> None:
-        """Compatibility alias: Continue now returns to the authored World Map."""
-        self.return_to_world_map()
 
     def shutdown(self) -> None:
         if self._shutdown:
