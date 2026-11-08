@@ -79,17 +79,30 @@ Status vocabulary: CANON, PROPOSED, OPEN QUESTION, DEFERRED.
 - **Alternatives:** rewrite achievement/dialogue now.
 - **Status:** CANON interpretation; no production changes.
 
-## Open questions with recommended defaults
+## Full four-world scope approved
 
-| Question | Recommended default | Status |
+- **Decision:** build all four worlds (Milestones C–N) rather than a reduced 1.0.
+- **Rationale:** project owner decision, 2026-11-08.
+- **Status:** CANON scope.
+
+## Nova speaks in text
+
+- **Decision:** Nova has her own short dialogue lines (`speaker: "Nova"` line nodes) plus selectable responses, shown in the standard text box like every other character. No voiced audio.
+- **Rationale:** project owner decision, 2026-11-08; matches classic text-box RPG presentation while letting Nova's Discovery → Choice arc be expressed directly.
+- **Alternatives:** silent protagonist with choices only; voiced lines.
+- **Status:** CANON. The existing dialogue engine already supports any speaker name; no schema change is required.
+
+## Resolved questions (recommended defaults adopted 2026-11-08)
+
+| Question | Decision | Status |
 |---|---|---|
-| Final Worlds 2–4 names | Keep working names through prototypes | OPEN QUESTION |
-| First Keeper origin | Ancient stewardship intelligence consolidated into singular authority | OPEN QUESTION |
-| Nova's speech | Sparse short responses, action-led characterization | OPEN QUESTION |
-| Additional power | None until a repeated prototype gap is demonstrated | OPEN QUESTION |
-| World 4 branch rule | Any order, all three required | OPEN QUESTION |
-| Keeper Below fate | Withdrawal/disable rather than routine kill | OPEN QUESTION |
-| Secret Token threshold | Optional lore tiers, never mandatory ending | OPEN QUESTION |
+| Final Worlds 2–4 names | Glassreach Expanse, Hollow Deep, Crown of Cinders | CANON (revisable) |
+| First Keeper origin | Ancient stewardship intelligence consolidated into singular authority | CANON (revisable) |
+| Nova's speech | Text-only own lines plus reply choices (see above) | CANON |
+| Additional power | None until a repeated prototype gap is demonstrated | CANON (revisable) |
+| World 4 branch rule | Any order, all three required | CANON (revisable) |
+| Keeper Below fate | Withdrawal/disable rather than routine kill | CANON (revisable) |
+| Secret Token threshold | Optional lore tiers, never mandatory ending | CANON; exact tier counts set during World 2–4 production |
 
 ## Deferred ideas
 

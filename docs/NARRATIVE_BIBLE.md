@@ -25,6 +25,9 @@ Normal-path players must understand every decision needed for the ending. Secret
 
 ## Nova's arc
 
+Nova speaks through text boxes only (no voice audio): brief lines of her own plus reply choices. Her lines should track the arc below, e.g. confident and curious in World 1, questioning in World 2.
+
+
 - **Discovery:** hopeful repairer; follows the world's visible guidance.
 - **Doubt:** listens to contradictions rather than defending her first story.
 - **Revelation:** accepts that well-intended institutions can create catastrophe without a simple villain.

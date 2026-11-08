@@ -24,7 +24,7 @@ Wonder sits beside melancholy, never nihilism. Humor and warmth may come from ch
 
 **CANON:** Nova is an explorer who follows Ember Shards through Verdant Reaches, helps no faction through a quest/inventory system, and defeats the Ashen Warden. **CANON full-game arc:** Discovery → Doubt → Revelation → Choice. Nova begins by believing something valuable was lost and can be restored. She learns the accepted catastrophe story is incomplete, discovers decline was tied to deliberate containment, and chooses decentralized renewal over restoring central authority.
 
-**PROPOSED:** Nova communicates through action and concise responses rather than long speeches. Her defining trait is willingness to revise a hopeful belief when evidence changes.
+**CANON (approved 2026-11-08):** Nova speaks in text only, never voiced audio, in the same text-box form as other characters (classic Pokémon-style dialogue boxes). She has her own short spoken lines (`"speaker": "Nova"` line nodes) in addition to selectable reply choices. Lines stay brief and action-led; she is neither silent nor an exposition vehicle. Her defining trait is willingness to revise a hopeful belief when evidence changes.
 
 ## Ember
 
@@ -43,7 +43,7 @@ Wonder sits beside melancholy, never nihilism. Humor and warmth may come from ch
 | Hollow Deep | Revelation | Adapt | Buried records reveal deliberate centralization and systemic responsibility. |
 | Crown of Cinders | Choice | Master | Nova confronts the First Keeper and redirects the network. |
 
-World names 2–4 remain **PROPOSED working names** pending creative approval.
+World names 2–4 are approved production names (2026-11-08), revisable by the project owner.
 
 ## Ending direction
 
@@ -71,14 +71,17 @@ The Ashen Warden has 18 health and three implemented phases: Ground Slam/Ember B
 
 **Documented tension, not retcon:** `verdant_restored` and World Complete express the characters' World 1 understanding, not proof the systemic crisis is solved. Talen's “protect without becoming a cage” line reflects a partial hopeful interpretation before later evidence. “Verdant Reach” in the 1-1 subtitle is a local/singular wording variant; the registered world is **Verdant Reaches**.
 
-## Open questions and recommended defaults
+## Resolved creative decisions (approved 2026-11-08)
 
-- **World names:** keep the three working names through prototypes; approve before full production.
-- **First Keeper origin:** recommended ancient distributed stewardship intelligence consolidated into a singular authority; avoid a surprise human mastermind.
-- **Does Nova speak?** recommended sparse selectable/short responses, no fully silent or exposition-heavy protagonist.
-- **Additional ability:** recommended none until World 2 prototype proves a recurring design gap.
-- **World 4 branches:** recommended free branch order after Cinder Gate, all three required for Last Conduit.
-- **Secret Token gate:** recommended optional Veil lore thresholds, never mandatory campaign progress.
+Scope is the **full four-world game**. The former open questions are resolved as follows; each remains revisable by the project owner.
+
+- **World names:** Glassreach Expanse, Hollow Deep, and Crown of Cinders are adopted as production names.
+- **First Keeper origin:** an ancient distributed stewardship intelligence consolidated into a singular authority; no surprise human mastermind.
+- **Does Nova speak?** Yes, in text only (no voice audio): short lines of her own in standard dialogue boxes plus reply choices.
+- **Additional ability:** none until a World 2+ prototype proves a recurring design gap.
+- **World 4 branches:** free branch order after Cinder Gate; all three required for Last Conduit.
+- **Secret Token gate:** optional Veil lore thresholds only, never mandatory campaign progress.
+- **Keeper Below fate:** withdrawal/disable rather than a routine kill.
 
 ## Deferred
 
