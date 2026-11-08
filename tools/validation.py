@@ -11,6 +11,7 @@ from tools.object_validation import validate_objects
 from world.tile import TILE_DEFINITIONS
 from world.secret_area import SecretTrigger, SecretType
 from world.ember_current import CURRENT_STYLES, CURRENT_TARGETS
+from world.themes import LEVEL_THEMES
 
 
 class LevelValidationError(ValueError):
@@ -263,6 +264,9 @@ def _validate_metadata(data: dict[str, Any], errors: list[str]) -> None:
         value = data.get(field)
         if not isinstance(value, str) or not value.strip():
             errors.append(f"{field} must be a non-empty string")
+    theme = data.get("theme")
+    if isinstance(theme, str) and theme.strip() and theme not in LEVEL_THEMES:
+        errors.append(f"theme {theme!r} is not a known level theme (see world/themes.py)")
     world_id = data.get("world_id")
     if isinstance(world_id, str) and (not world_id.replace("_", "").isalnum() or world_id.lower() != world_id):
         errors.append("world_id must use lowercase letters, numbers, and underscores")

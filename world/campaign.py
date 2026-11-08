@@ -7,6 +7,7 @@ from pathlib import Path
 from settings import PROJECT_ROOT
 from systems.level_completion import LevelResult
 from tools.validation import load_and_validate_level
+from world.themes import MAP_THEMES
 from world.world_map import MapDefinitionError, WorldMapDefinition, requirement_leaves
 
 
@@ -24,6 +25,7 @@ class WorldRegistry:
     boss_ids: tuple[str, ...]
     boss_level_ids: tuple[str, ...]
     boss_display_names: dict[str, str] = field(default_factory=dict)
+    map_theme: str = "verdant"
 
     @classmethod
     def load(cls, path: Path) -> "WorldRegistry":
@@ -44,6 +46,9 @@ class WorldRegistry:
             levels = []
         if len(levels) != len(set(levels)):
             errors.append("duplicate level reference")
+        theme = data.get("map_theme", "verdant") if isinstance(data, dict) else "verdant"
+        if theme not in MAP_THEMES:
+            errors.append(f"unknown map_theme: {theme!r}")
         paths: dict[str, Path] = {}
         secret_exit_refs: set[tuple[str, str]] = set()
         for level_id in levels:
@@ -83,6 +88,7 @@ class WorldRegistry:
             tuple(node.boss_id for node in boss_nodes),
             tuple(node.level_id for node in boss_nodes),
             boss_names,
+            theme,
         )
 
 

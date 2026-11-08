@@ -8,6 +8,7 @@ import pygame
 
 from core.input_manager import Action, InputManager
 from systems.level_completion import format_time
+from world.themes import MapTheme, map_theme
 from world.world_map import ConnectionState, NodeState, NodeType, WorldMapRuntime
 
 
@@ -70,23 +71,29 @@ class WorldMapScreen:
             pygame.draw.rect(surface, (229, 166, 88), box, 2, border_radius=13)
             surface.blit(image, image.get_rect(center=box.center))
 
+    @property
+    def theme(self) -> MapTheme:
+        registry = getattr(self.runtime.progress, "registry", None)
+        return map_theme(getattr(registry, "map_theme", "verdant"))
+
     def _background(self, surface: pygame.Surface) -> None:
-        surface.fill((57, 83, 76))
-        pygame.draw.rect(surface, (183, 164, 111), (30, 25, 1220, 670), border_radius=32)
-        pygame.draw.rect(surface, (72, 105, 82), (55, 50, 1170, 620), border_radius=28)
+        theme = self.theme
+        surface.fill(theme.frame)
+        pygame.draw.rect(surface, theme.parchment, (30, 25, 1220, 670), border_radius=32)
+        pygame.draw.rect(surface, theme.land, (55, 50, 1170, 620), border_radius=28)
         for index in range(18):
             x = 90 + (index * 137) % 1080
             y = 100 + (index * 83) % 410
             sway = round(math.sin(self.age * 0.8 + index) * 3)
-            pygame.draw.circle(surface, (45, 91, 65), (x + sway, y), 26)
-            pygame.draw.rect(surface, (78, 68, 53), (x - 4, y + 18, 8, 28))
+            pygame.draw.circle(surface, theme.tree, (x + sway, y), 26)
+            pygame.draw.rect(surface, theme.trunk, (x - 4, y + 18, 8, 28))
         river = [(70, 590), (260, 545), (430, 575), (620, 505), (790, 540), (1000, 465), (1210, 500)]
-        pygame.draw.lines(surface, (73, 141, 157), False, river, 26)
-        pygame.draw.lines(surface, (143, 205, 199), False, river, 5)
+        pygame.draw.lines(surface, theme.river, False, river, 26)
+        pygame.draw.lines(surface, theme.river_highlight, False, river, 5)
         for index in range(10):
             x = 150 + index * 103
             y = 82 + round(math.sin(self.age + index) * 5)
-            pygame.draw.circle(surface, (255, 190, 92), (x, y), 3)
+            pygame.draw.circle(surface, theme.sparkle, (x, y), 3)
 
     def _connections(self, surface: pygame.Surface) -> None:
         for connection in self.runtime.definition.connections:
@@ -115,6 +122,8 @@ class WorldMapScreen:
                 pygame.draw.lines(surface, color, False, points, width)
 
     def _landmarks(self, surface: pygame.Surface) -> None:
+        if not self.theme.verdant_landmarks:
+            return
         pygame.draw.polygon(surface, (91, 74, 67), [(690, 510), (770, 390), (850, 510)])
         pygame.draw.polygon(surface, (128, 104, 83), [(720, 510), (770, 430), (815, 510)])
         pygame.draw.rect(surface, (98, 85, 76), (1025, 105, 100, 80))

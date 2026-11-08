@@ -49,7 +49,7 @@ class LevelDocument:
             "level_number": 1,
             "display_name": "New Level",
             "description": "Unregistered editor-authored level.",
-            "theme": "verdant",
+            "theme": "verdant_day",
             "time_target": 180,
             "shard_total": 0,
             "rare_crystal_total": 0,

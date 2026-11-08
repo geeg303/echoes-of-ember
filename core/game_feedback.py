@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from systems.powerup_system import PowerUpType
+from world.themes import level_theme, map_theme
 
 
 class GameFeedbackMixin:
@@ -12,24 +13,14 @@ class GameFeedbackMixin:
 
     def _configure_level_audio(self) -> None:
         self.audio.reset_context()
-        level_id = self.level.metadata.level_id
-        if level_id == "verdant_03":
-            track, ambience = "music_ravine", "ambience_ravine"
-        elif level_id == "verdant_04":
-            track, ambience = "music_ruins", "ambience_ruins"
-        elif self.level.boss_encounter:
-            track, ambience = "music_ruins", "ambience_sanctum"
-        elif level_id == "verdant_02":
-            track, ambience = "music_verdant", "ambience_canopy"
-        else:
-            track, ambience = "music_verdant", "ambience_verdant"
-        self.audio.play_music(track)
-        self.audio.start_ambience("level", ambience)
+        theme = level_theme(self.level.metadata.theme)
+        self.audio.play_music(theme.music)
+        self.audio.start_ambience("level", theme.ambience)
 
     def _configure_map_audio(self) -> None:
         self.audio.reset_context()
         self.audio.play_music("music_world_map")
-        self.audio.start_ambience("map", "ambience_verdant")
+        self.audio.start_ambience("map", map_theme(self.registry.map_theme).ambience)
 
     def _emit_boss_audio(self, result: object) -> None:
         mapping = self.boss_system.runtime.audio_events

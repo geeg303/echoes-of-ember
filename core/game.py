@@ -58,6 +58,7 @@ from ui.achievement_toast import AchievementToastQueue
 from ui.notifications import NotificationQueue
 from ui.dialogue_box import DialogueBox
 from world.background import ParallaxBackground
+from world.themes import level_theme
 from world.camera import Camera
 from world.collision import CollisionEngine
 from world.level import Level
@@ -230,7 +231,7 @@ class Game(GameFlowMixin, GameFeedbackMixin):
         world_size = (self.level.tilemap.pixel_width, self.level.tilemap.pixel_height)
         self.camera = Camera(DISPLAY.internal_size, world_size)
         self.camera.snap_to(self.player.rect)
-        self.background = ParallaxBackground(*world_size)
+        self.background = ParallaxBackground(*world_size, palette=level_theme(self.level.metadata.theme).background)
         self.progress = LevelProgress.from_types([spawn.kind for spawn in self.level.collectible_spawns])
         self.collectibles = CollectibleManager(self.level.collectible_spawns)
         self.projectiles = ProjectileManager()
