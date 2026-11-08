@@ -11,6 +11,7 @@ from typing import Any
 
 from systems.level_completion import CompletionRating, ExitType, LevelResult
 from world.campaign import WorldProgress, WorldRegistry
+from world.world_map import requirement_leaves
 
 
 CURRENT_SAVE_VERSION = 3
@@ -92,9 +93,10 @@ class SaveSession:
         if current_node not in registry.map_definition.nodes:
             raise SaveValidationError("save references an unknown current map node")
         valid_exits = {
-            (connection.unlock.level_id, connection.unlock.exit_id)
+            (requirement.level_id, requirement.exit_id)
             for connection in registry.map_definition.connections
-            if connection.unlock.exit_id is not None
+            for requirement in requirement_leaves(connection.unlock)
+            if requirement.exit_id is not None
         }
         boss_exit_ids = dict(zip(registry.boss_level_ids, registry.boss_ids, strict=True))
         raw_results = _mapping(campaign.get("level_results"), "campaign.level_results")

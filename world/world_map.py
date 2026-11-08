@@ -29,6 +29,7 @@ class RequirementType(str, Enum):
     SECRET_EXIT_DISCOVERED = "secret_exit_discovered"
     BOSS_DEFEATED = "boss_defeated"
     WORLD_COMPLETE = "world_complete"
+    ALL_OF = "all_of"
 
 
 class NodeState(str, Enum):
@@ -52,6 +53,16 @@ class UnlockRequirement:
     level_id: str | None = None
     exit_id: str | None = None
     boss_id: str | None = None
+    requirements: tuple["UnlockRequirement", ...] = ()
+
+
+def requirement_leaves(requirement: UnlockRequirement):
+    """Yield the non-composite requirements inside ``requirement`` in authored order."""
+    if requirement.kind is RequirementType.ALL_OF:
+        for item in requirement.requirements:
+            yield from requirement_leaves(item)
+    else:
+        yield requirement
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,6 +222,20 @@ def _requirement(
     except (TypeError, ValueError):
         errors.append(f"{prefix} has invalid unlock requirement")
         return None
+    if kind is RequirementType.ALL_OF:
+        nested = raw.get("requirements")
+        if not isinstance(nested, list) or not nested:
+            errors.append(f"{prefix}.unlock all_of requires a non-empty requirements list")
+            return None
+        children = []
+        for index, item in enumerate(nested):
+            child = _requirement(
+                item, level_ids, f"{prefix}.requirements[{index}]", errors, valid_secret_exits, valid_boss_ids
+            )
+            if child is None:
+                return None
+            children.append(child)
+        return UnlockRequirement(kind, requirements=tuple(children))
     level_id = raw.get("level_id")
     exit_id = raw.get("exit_id")
     boss_id = raw.get("boss_id")
@@ -362,6 +387,8 @@ class WorldMapRuntime:
         )
 
     def _requirement_met(self, requirement: UnlockRequirement) -> bool:
+        if requirement.kind is RequirementType.ALL_OF:
+            return all(self._requirement_met(item) for item in requirement.requirements)
         if requirement.kind is RequirementType.ALWAYS:
             return True
         if requirement.kind is RequirementType.LEVEL_COMPLETE:

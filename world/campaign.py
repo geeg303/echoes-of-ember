@@ -7,7 +7,7 @@ from pathlib import Path
 from settings import PROJECT_ROOT
 from systems.level_completion import LevelResult
 from tools.validation import load_and_validate_level
-from world.world_map import MapDefinitionError, WorldMapDefinition
+from world.world_map import MapDefinitionError, WorldMapDefinition, requirement_leaves
 
 
 class WorldRegistryError(ValueError):
@@ -119,10 +119,10 @@ class WorldProgress:
             discovery = (result.level_id, result.exit_id)
             self.discovered_secret_exits.add(discovery)
             for connection in self.registry.map_definition.connections:
-                requirement = connection.unlock
-                if (
+                if any(
                     requirement.kind.value == "secret_exit_discovered"
                     and (requirement.level_id, requirement.exit_id) == discovery
+                    for requirement in requirement_leaves(connection.unlock)
                 ):
                     self.revealed_map_nodes.add(connection.target)
 

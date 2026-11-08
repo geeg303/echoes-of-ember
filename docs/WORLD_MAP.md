@@ -29,7 +29,19 @@ Supported types are `start`, `level`, `world_goal`, `optional`, and `secret`. Le
 }
 ```
 
-Waypoints make routes wind through the map. Supported requirements are `always`, `level_complete`, `secret_exit_discovered`, and `world_complete`. Secret-exit requirements also include `exit_id`.
+Waypoints make routes wind through the map. Supported requirements are `always`, `level_complete`, `secret_exit_discovered`, `boss_defeated`, `world_complete`, and `all_of`. Secret-exit requirements also include `exit_id`; boss requirements include `boss_id`.
+
+`all_of` opens a route only when every nested requirement holds, in any order. It exists for World 4, where the Last Conduit needs all three branches:
+
+```json
+"unlock": {"type": "all_of", "requirements": [
+  {"type": "level_complete", "level_id": "cinders_archive"},
+  {"type": "level_complete", "level_id": "cinders_foundry"},
+  {"type": "level_complete", "level_id": "cinders_wells"}
+]}
+```
+
+The list must be non-empty and every nested rule is validated like a top-level rule; `all_of` may nest. Secret exits inside `all_of` still reveal their node and remain valid in saves.
 
 Node states are hidden, locked, available, completed, and mastered. Connection states are hidden, locked, available, and traversed. Mastered currently means the latest result has a Gold rating.
 
