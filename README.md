@@ -1,14 +1,18 @@
 # Echoes of Ember
 
+[![verify](https://github.com/geeg303/echoes-of-ember/actions/workflows/verify.yml/badge.svg)](https://github.com/geeg303/echoes-of-ember/actions/workflows/verify.yml)
+
 **Current status:** `0.1.0-alpha` — World 1 Vertical Slice / Pre-Alpha. The Verdant Reaches vertical slice is complete and tested; Worlds 2–4 are not yet included.
 
-The original technical roadmap (Phases 0–26) is complete. Future work follows the separate [Content Production Roadmap](docs/CONTENT_ROADMAP.md), beginning with the documentation-only [Game & Content Bible](docs/GAME_BIBLE.md). Proposed Worlds 2–4 are preproduction designs, not shipped content.
+The original technical roadmap (Phases 0–26) is complete, as are content Milestones A ([Game & Content Bible](docs/GAME_BIBLE.md)) and B ([Ember Currents prototype](docs/EMBER_CURRENTS_PROTOTYPE.md)). The project is committed to the full four-world game; remaining work follows the [Content Production Roadmap](docs/CONTENT_ROADMAP.md). Worlds 2–4 are designed but not yet authored.
 
 An original, colorful 2D platform adventure starring Nova, an explorer searching for Ember Shards. The project is being built in tested, playable phases with Python and Pygame.
 
 ## Current status
 
-Phase 16 is playable. Verdant Reaches now combines the complete campaign, secrets, world map, persistent saves, Ashen Warden boss encounter, centralized effects, and a robust optional audio/music/ambience presentation layer.
+World 1 (Verdant Reaches) is fully playable from the title screen: four levels, twelve secrets, the World Map with the hidden Ember Veil branch, NPC dialogue, the three-phase Ashen Warden, three persistent save slots, achievements, pause/Game Over, settings, and keyboard/controller support. Visuals are original procedural placeholders and audio is generated placeholder WAVs. A developer-only Ember Currents test level (`python main.py --level prototype_glassreach_currents`) previews World 2's mechanic.
+
+The feature sections below were written phase by phase; where an early section describes a limitation, later sections (saves, Game Over, World Map) supersede it.
 
 ## Requirements
 
@@ -119,7 +123,7 @@ The current level deliberately places four collectible types:
 
 Collectibles animate through the same generic controller used by player animation. Their overlap rectangles remain in world coordinates, their render positions use the camera offset, and far-off collectibles are neither drawn nor animated. Pickup sounds use stable catalog IDs and the centralized failure-tolerant audio manager, so unavailable devices or missing files never interrupt gameplay.
 
-Collected objects and score persist through hazard respawns. `F7` performs a full level restart, restoring every object from JSON and clearing current-level score and counters. Save-file persistence is intentionally deferred to the save-system phase.
+Collected objects and score persist through hazard respawns. `F7` performs a full level restart, restoring every object from JSON and clearing current-level score and counters. Completed level results are persisted by the campaign save system.
 
 ### Level object format
 
@@ -144,7 +148,7 @@ Supported `type` values are `ember_shard`, `rare_crystal`, `secret_token`, and `
 
 The HUD remains fixed to the screen while the world scrolls. It contains three health hearts, remaining lives, Ember Shards collected versus available, current score, level name, and a reserved power-up slot. Shard and score values pulse briefly after pickups, while health changes flash the heart display.
 
-Nova starts with three health and three lives. Hazards remove one health and return Nova to the level spawn while preserving collected objects. Reaching zero health plays the death animation, consumes one life, restores health, and respawns. Because the game-over state is scheduled for a later phase, play currently continues when the displayed lives counter reaches zero.
+Nova starts with three health and three lives. Hazards remove one health and return Nova to the level spawn while preserving collected objects. Reaching zero health plays the death animation, consumes one life, restores health, and respawns. Losing the final life opens the Game Over screen (Retry, World Map, Main Menu); see [docs/GAME_OVER.md](docs/GAME_OVER.md).
 
 ## Enemies and damage
 
@@ -213,9 +217,10 @@ The optional `duration` override must be finite and positive. Supported types ar
 ## Current limitations
 
 - Audio uses generated temporary WAV placeholders; final composition, mastering, and subjective mix tuning remain future work.
-- Collection and enemy state are held in memory only.
-- Lives stop at zero without a Game Over transition; the existing death/respawn loop remains safe.
-- Campaign progression and permanent result persistence belong to later phases.
+- Only World 1 is authored; the campaign, save format, and boss runtime currently support a single world. Multi-world support is the next engineering step.
+- The Ember Veil map node is a revealed marker, not a playable stage.
+- Art is procedural placeholder geometry; there are no sprite sheets or tilesets yet.
+- No human playtest has been recorded yet (see [docs/HUMAN_PLAYTEST.md](docs/HUMAN_PLAYTEST.md)).
 
 ## Interactive world objects
 
@@ -268,7 +273,7 @@ Verdant Beginning is `verdant_01` in `verdant_reaches`. Its only required object
 }
 ```
 
-Completion freezes elapsed time, score, collections, unique enemy defeats, deaths, checkpoints, health, and lives in an immutable `LevelResult`. After a 1.5-second safe sequence, the Level Complete screen shows the result and a metadata-driven Bronze, Silver, or Gold rating. Enter/Space displays “Campaign progression coming later”; `R` uses the same full reconstruction as F7.
+Completion freezes elapsed time, score, collections, unique enemy defeats, deaths, checkpoints, health, and lives in an immutable `LevelResult`. After a 1.5-second safe sequence, the Level Complete screen shows the result and a metadata-driven Bronze, Silver, or Gold rating. Enter/Space continues the campaign; Replay uses the same full reconstruction as F7.
 
 ## Verdant Beginning design
 
@@ -281,7 +286,7 @@ See [docs/LEVEL_AUTHORING.md](docs/LEVEL_AUTHORING.md) for the reusable authorin
 
 ## Verdant Reaches campaign
 
-The registry at `data/worlds/verdant_reaches.json` explicitly orders `verdant_01`, `verdant_02`, `verdant_03`, and `verdant_04`. Continue advances through Verdant Beginning, Whispering Canopy, Emberfall Ravine, and Ruins of the First Flame before showing aggregate runtime statistics. Replays replace the latest result for that level rather than double-counting it; nothing is saved to disk.
+The registry at `data/worlds/verdant_reaches.json` explicitly orders `verdant_01`, `verdant_02`, `verdant_03`, and `verdant_04`. Continue advances through Verdant Beginning, Whispering Canopy, Emberfall Ravine, and Ruins of the First Flame before showing aggregate runtime statistics. Replays replace the latest result for that level rather than double-counting it.
 
 ```bash
 python main.py --level verdant_03
@@ -298,7 +303,7 @@ World 1 contains twelve optional, data-driven discoveries: caches, rooms, challe
 
 ## World Map
 
-Normal startup now opens the procedural Verdant Reaches World Map. Travel uses authored node connections and waypoints; completing a level returns Nova to that node and unlocks routes without auto-launching the next stage. Latest run results remain separate from monotonic session discoveries. The Ruins secret exit permanently reveals the in-memory Ember Veil branch, while First Flame Sanctum opens the aggregate World Complete summary. See `docs/WORLD_MAP.md`.
+Normal startup now opens the procedural Verdant Reaches World Map. Travel uses authored node connections and waypoints; completing a level returns Nova to that node and unlocks routes without auto-launching the next stage. Latest run results remain separate from monotonic session discoveries. The Ruins secret exit permanently reveals the Ember Veil branch, while First Flame Sanctum opens the aggregate World Complete summary. See `docs/WORLD_MAP.md`.
 
 ## Persistent campaign saves
 
@@ -358,7 +363,7 @@ Phase 18 adds full single-player gamepad support without changing keyboard contr
 
 ## NPCs and dialogue
 
-Phase 19 adds four original World 1 guides—Mira, Orin, Talen, and Vesper—through validated per-level NPC catalogs and branching dialogue graphs. Approach the nearest guide and press E (controller Y/north face). Enter/Space or controller A reveals then advances text; Up/Down selects responses; Escape or controller B closes optional dialogue. Prompts switch with the active device.
+Phase 19 adds four original World 1 guides—Mira, Orin, Talen, and Vesper—through validated per-level NPC catalogs and branching dialogue graphs. Approach the nearest guide and press E (controller Y/north face). Enter/Space or controller A reveals then advances text; Up/Down selects responses; Escape or controller B closes optional dialogue. Prompts switch with the active device. Nova speaks through the same text box (text only, no voice audio) using `"speaker": "Nova"` line nodes, alongside reply choices.
 
 Dialogue freezes gameplay simulation and the level timer while audio continues. Safe conditions react to completed levels, secrets, the Ember Veil exit, boss defeat, world completion, tokens, and semantic dialogue flags. The only authored effect sets an idempotent conversation flag. Save schema 3 persists those flags immediately and migrates v2 slots without losing existing progress. See [docs/NPC_SYSTEM.md](docs/NPC_SYSTEM.md), [docs/DIALOGUE_SYSTEM.md](docs/DIALOGUE_SYSTEM.md), and [docs/WORLD_1_NPCS.md](docs/WORLD_1_NPCS.md).
 
@@ -378,7 +383,7 @@ Phase 23 provides repeatable quiet, busy, boss, effects, and editor benchmarks p
 
 ## Automated verification
 
-Run `python -m tools.verify_project --quick` during development, `--full` before stable commits, and `--release` for benchmarks plus the long soak. Every mode isolates writable user data and returns a meaningful process status; `--json report.json` produces an optional local machine-readable report. The standard suite covers 405 unit, integration, scenario, data-integrity, persistence, packaging-foundation, input, editor, debug, and performance-invariant cases. See [docs/TESTING.md](docs/TESTING.md), [docs/VERIFICATION_PIPELINE.md](docs/VERIFICATION_PIPELINE.md), and [docs/TEST_COVERAGE_REVIEW.md](docs/TEST_COVERAGE_REVIEW.md).
+Run `python -m tools.verify_project --quick` during development, `--full` before stable commits, and `--release` for benchmarks plus the long soak. Every mode isolates writable user data and returns a meaningful process status; `--json report.json` produces an optional local machine-readable report. The standard suite covers 418 unit, integration, scenario, data-integrity, persistence, packaging-foundation, input, editor, debug, and performance-invariant cases. See [docs/TESTING.md](docs/TESTING.md), [docs/VERIFICATION_PIPELINE.md](docs/VERIFICATION_PIPELINE.md), and [docs/TEST_COVERAGE_REVIEW.md](docs/TEST_COVERAGE_REVIEW.md). GitHub Actions runs `--full` on Linux and Windows (Python 3.11 and 3.14) for every push to `master` and every pull request.
 
 ## Building distributions
 

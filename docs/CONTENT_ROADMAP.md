@@ -26,3 +26,11 @@ This roadmap begins after the completed technical/World 1 Phases 0–26. Milesto
 - World 4: entry level, three nonlinear branches, Last Conduit, final sanctum/encounter; roughly 12–16 secrets; primarily mastered combinations with at most 2 new roles; cast convergence used sparingly.
 
 Exact collectible counts and stage lengths wait for graybox pacing. Existing power-ups and collectibles remain the baseline. Any save schema change belongs to the milestone that first persists new state and must preserve all World 1 data.
+
+## Engineering prerequisites before Milestone C (approved 2026-11-08)
+
+Scope is the full four-world game. Before World 2 content is registered, the following engineering work lands first:
+
+1. **Repository health:** GitHub Actions verification on Linux/Windows, `v0.1.0-alpha` tag, current README, and decomposition of `core/game.py` plus the densely compressed one-line modules into readable code with no behavior change.
+2. **Multi-world foundation:** a world list instead of the single `DEFAULT_WORLD_REGISTRY`; save schema 4 with lossless v3 migration (all World 1 results, secrets, Ember Veil reveal, boss defeat, dialogue flags, playtime); a boss registry replacing hardcoded `ashen_warden` checks in `BossSystem`, `Game`, `world_complete`, and the World Map panel; data-driven world-complete text; per-world background/theme selection; an all-prerequisites map unlock predicate for World 4; and world-to-world travel on the map.
+3. **Human playtest gate:** World 1 and the Ember Currents prototype checklist in `HUMAN_PLAYTEST.md`, completed by a person, before Milestone C tuning is treated as canon.

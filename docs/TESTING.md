@@ -4,7 +4,7 @@
 
 Tests assert authoritative behavior and public outcomes rather than pixel-perfect rendering or incidental collection ordering. The suite combines focused units, subsystem integrations, user-visible scenarios, reload-driven campaign journeys, authored-data validation, and bounded stability checks. Timing-sensitive behavior advances explicit `dt`; tests never sleep to wait for gameplay timers.
 
-The Phase 24 baseline was 312 tests in 14.74 seconds. After Phase 26, the expanded standard suite contains 405 tests, including resource, build-flavor, manifest, safe-clean, version, and packaged-persistence foundations. Durations vary by hardware.
+The Phase 24 baseline was 312 tests in 14.74 seconds. After Phase 26 and Milestone B, the expanded standard suite contains 418 tests (405 at Phase 26), including resource, build-flavor, manifest, safe-clean, version, and packaged-persistence foundations. Durations vary by hardware.
 
 Milestone B adds `tests/test_ember_currents.py` for optional-format compatibility, validation, directional/additive/clamped influence, player agency/collision/jump behavior, projectile safety, reset, editor round trip, effects-independent rendering, and debug isolation. Run six prototype scenarios with `python -m tools.current_benchmark all --frames 600`; World 1 envelopes remain in `tools.performance_benchmark`.
 
