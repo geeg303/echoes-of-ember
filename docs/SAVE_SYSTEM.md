@@ -16,13 +16,13 @@ Normal campaign startup uses slot 1. Choose another with `python main.py --slot 
 
 `python main.py --level verdant_03` remains a nonpersistent development launch. It cannot read or modify campaign slots. It cannot be combined with `--new-game`.
 
-## Version 3 schema
+## Version 4 schema (multi-world)
 
-A sanitized abbreviated save looks like this:
+Schema 4 stores progress per world so the campaign can span all four worlds. Story flags are campaign-wide; each world keeps its own results, discoveries, boss defeats, completion flag, and last map node. A sanitized abbreviated save:
 
 ```json
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "metadata": {
     "slot_id": 1,
     "created_at": "2026-08-31T12:00:00Z",
@@ -31,43 +31,58 @@ A sanitized abbreviated save looks like this:
   },
   "campaign": {
     "active_world_id": "verdant_reaches",
-    "current_map_node": "node_verdant_03",
-    "level_results": {
-      "verdant_01": {
-        "completed": true,
-        "completion_time": 281.4,
-        "score": 8200,
-        "ember_shards_collected": 43,
-        "ember_shards_total": 52,
-        "rare_crystals_collected": 2,
-        "rare_crystals_total": 3,
-        "secret_tokens_collected": 1,
-        "secret_tokens_total": 1,
-        "enemies_defeated": 8,
-        "enemies_total": 12,
-        "deaths": 1,
-        "lives_remaining": 2,
-        "health_remaining": 3,
-        "checkpoints_activated": 2,
-        "rating": "SILVER",
-        "secrets_discovered": 1,
-        "secrets_total": 3,
-        "secret_rooms_completed": 1,
-        "exit_type": "normal_exit",
-        "exit_id": "ember_gate"
+    "dialogue_flags": ["met_mira"],
+    "worlds": {
+      "verdant_reaches": {
+        "current_map_node": "node_verdant_03",
+        "level_results": {
+          "verdant_01": {
+            "completed": true,
+            "completion_time": 281.4,
+            "score": 8200,
+            "ember_shards_collected": 43,
+            "ember_shards_total": 52,
+            "rare_crystals_collected": 2,
+            "rare_crystals_total": 3,
+            "secret_tokens_collected": 1,
+            "secret_tokens_total": 1,
+            "enemies_defeated": 8,
+            "enemies_total": 12,
+            "deaths": 1,
+            "lives_remaining": 2,
+            "health_remaining": 3,
+            "checkpoints_activated": 2,
+            "rating": "SILVER",
+            "secrets_discovered": 1,
+            "secrets_total": 3,
+            "secret_rooms_completed": 1,
+            "exit_type": "normal_exit",
+            "exit_id": "ember_gate"
+          }
+        },
+        "progression": {
+          "completed_levels_once": ["verdant_01", "verdant_02"],
+          "discovered_secret_exits": [],
+          "revealed_map_nodes": [],
+          "defeated_bosses": [],
+          "world_complete": false
+        }
       }
-    },
-    "progression": {
-      "completed_levels_once": ["verdant_01", "verdant_02"],
-      "discovered_secret_exits": [],
-      "revealed_map_nodes": [],
-      "defeated_bosses": [],
-      "dialogue_flags": ["met_mira"],
-      "completed_worlds_once": []
     }
   }
 }
 ```
+
+The world list comes from `data/campaign.json`. Rules:
+
+- `active_world_id` must be a campaign world that is unlocked (the previous world is truly complete).
+- `worlds` may omit campaign worlds: a world added by a later game update starts fresh, so existing saves stay valid when Worlds 2–4 ship. Worlds the campaign does not know are rejected.
+- Each world validates against its own registry exactly as v3 did (levels, exits, nodes, bosses), and `world_complete` must match its defeated bosses.
+- Dialogue/NPC conditions read a campaign-wide view, so World 2 characters can react to World 1 events. `world_completed` conditions accept `true/false` (the current world) or a world ID.
+
+### v3 → v4 migration
+
+The single v3 campaign moves under `campaign.worlds[<its active world>]` unchanged: results, completed levels, secret exits, revealed nodes (including the Ember Veil), defeated bosses, current map node, timestamps, and play time. `completed_worlds_once` becomes the boolean `world_complete`; `dialogue_flags` moves to `campaign.dialogue_flags`. A v3 file listing a completed world it never contained is rejected. The next successful save rewrites the slot as schema 4. The full chain v1→v2→v3→v4 is covered by tests.
 
 Authored level files and the world registry remain authoritative for graph topology, coordinates, content totals, and secret definitions. Saves store the latest completed `LevelResult` for each level plus separate monotonic discoveries. A later replay replaces the latest result but cannot revoke completed-once, secret-exit, revealed-node, or world-completed-once flags. Best-result ranking is intentionally deferred.
 
@@ -105,7 +120,7 @@ Phase 13 considered Verdant Reaches complete after all four platforming levels, 
 
 ## Phase 17 front-end integration
 
-Normal startup inspects three slots through summaries. Continue chooses the newest valid or recovered slot; corrupt slots can be explicitly reset/deleted and unsupported versions are protected. Pause/Game Over exits never serialize unfinished runtime state or create a failed result. Application preferences live in separate schema-1 `settings.json`; campaign schema remains 2.
+Normal startup inspects three slots through summaries. Continue chooses the newest valid or recovered slot; corrupt slots can be explicitly reset/deleted and unsupported versions are protected. Pause/Game Over exits never serialize unfinished runtime state or create a failed result. Application preferences live in separate `settings.json` with their own schema version.
 
 ## Version 2 → 3 migration
 
@@ -113,7 +128,7 @@ Version 3 adds validated `progression.dialogue_flags`. Loading a v2 slot inserts
 
 ## Achievement profile isolation
 
-Local achievements use a separate schema-1 `achievements.json` beside this save directory. Slot creation, overwrite, deletion, recovery, and campaign schema migration never read, reset, or embed achievement state. Campaign schema remains 3.
+Local achievements use a separate schema-1 `achievements.json` beside this save directory. Slot creation, overwrite, deletion, recovery, and campaign schema migration never read, reset, or embed achievement state. Campaign schema is now 4 (see above).
 
 ## Editor isolation
 
@@ -124,4 +139,4 @@ Editor playtests construct nonpersistent temporary runtime state. They never loa
 
 ## Phase 24 verification
 
-Isolated tests cover empty/valid/corrupt/future slots, backup recovery, slot independence, invalid fields, atomic replacement failure, schema 1→2→3 migration, reload after every World 1 stage, secret-route monotonicity, boss-gated world completion, and debug/direct/editor persistence isolation. Verification tools redirect user data to a temporary root.
+Isolated tests cover empty/valid/corrupt/future slots, backup recovery, slot independence, invalid fields, atomic replacement failure, schema 1→2→3→4 migration, two-world round trips, reload after every World 1 stage, secret-route monotonicity, boss-gated world completion, and debug/direct/editor persistence isolation. Verification tools redirect user data to a temporary root.

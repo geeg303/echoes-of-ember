@@ -12,7 +12,12 @@ from core.game import Game
 from systems.level_completion import CompletionRating, ExitType, LevelResult
 from systems.save_data import CURRENT_SAVE_VERSION, SaveSession, SaveValidationError
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
+from tests.helpers import legacy_v3
 from world.world_map import NodeState, WorldMapRuntime
+
+
+def _world(data: dict) -> dict:
+    return data["campaign"]["worlds"]["verdant_reaches"]
 
 
 @pytest.fixture
@@ -59,8 +64,8 @@ def test_new_game_writes_versioned_readable_json(manager: SaveManager) -> None:
     path = manager.save_root / "slot_1.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["schema_version"] == CURRENT_SAVE_VERSION
-    assert data["campaign"]["current_map_node"] == "starting_grove"
-    assert data["campaign"]["level_results"] == {}
+    assert _world(data)["current_map_node"] == "starting_grove"
+    assert _world(data)["level_results"] == {}
     assert session.progress.completed_levels_once == set()
     assert len(path.read_bytes()) < 10_000
 
@@ -163,10 +168,10 @@ def test_future_version_is_unsupported_and_untouched(manager: SaveManager) -> No
         lambda data: data.pop("schema_version"),
         lambda data: data["metadata"].update(play_time_seconds=-1),
         lambda data: data["campaign"].update(active_world_id="unknown"),
-        lambda data: data["campaign"].update(current_map_node="unknown"),
-        lambda data: data["campaign"]["progression"].update(completed_levels_once=["unknown"]),
-        lambda data: data["campaign"]["progression"].update(revealed_map_nodes=["unknown"]),
-        lambda data: data["campaign"]["progression"].update(
+        lambda data: _world(data).update(current_map_node="unknown"),
+        lambda data: _world(data)["progression"].update(completed_levels_once=["unknown"]),
+        lambda data: _world(data)["progression"].update(revealed_map_nodes=["unknown"]),
+        lambda data: _world(data)["progression"].update(
             discovered_secret_exits=[{"level_id": "verdant_04", "exit_id": "unknown"}]
         ),
     ],
@@ -195,7 +200,7 @@ def test_impossible_level_results_are_rejected(manager: SaveManager, field: str,
     session = SaveSession.fresh(1, manager.registry)
     session.progress.record(result("verdant_01"))
     data = session.to_dict()
-    data["campaign"]["level_results"]["verdant_01"][field] = value
+    _world(data)["level_results"]["verdant_01"][field] = value
     with pytest.raises(SaveValidationError):
         SaveSession.from_dict(data, manager.registry, 1)
 
@@ -359,7 +364,7 @@ def test_level_result_exit_id_must_match_authored_content(manager: SaveManager) 
     session = SaveSession.fresh(1, manager.registry)
     session.progress.record(result("verdant_04"))
     data = session.to_dict()
-    saved = data["campaign"]["level_results"]["verdant_04"]
+    saved = _world(data)["level_results"]["verdant_04"]
     saved["exit_type"] = ExitType.SECRET.value
     saved["exit_id"] = "unknown_secret_exit"
     with pytest.raises(SaveValidationError):
@@ -373,7 +378,7 @@ def test_v1_migration_preserves_progress_but_revokes_legacy_world_completion(man
     session.progress.record(result("verdant_04", exit_type=ExitType.SECRET, exit_id="v04_secret_exit"))
     session.current_map_node = "first_flame_sanctum"
     session.play_time_seconds = 4321.5
-    data = session.to_dict()
+    data = legacy_v3(session.to_dict())
     data["schema_version"] = 1
     progression = data["campaign"]["progression"]
     progression.pop("defeated_bosses")
@@ -392,7 +397,7 @@ def test_v1_migration_preserves_progress_but_revokes_legacy_world_completion(man
     runtime = WorldMapRuntime(manager.registry.map_definition, migrated.progress)
     assert runtime.node_state("first_flame_sanctum") is NodeState.AVAILABLE
     manager.save(migrated)
-    assert json.loads(path.read_text())["schema_version"] == 3
+    assert json.loads(path.read_text())["schema_version"] == 4
 
 
 def test_boss_defeat_and_true_world_completion_round_trip(manager: SaveManager) -> None:
@@ -430,7 +435,7 @@ def test_boss_progression_is_isolated_across_three_slots(manager: SaveManager) -
 
 
 def test_v2_rejects_world_complete_without_defeated_boss(manager: SaveManager) -> None:
-    data = SaveSession.fresh(1, manager.registry).to_dict()
+    data = legacy_v3(SaveSession.fresh(1, manager.registry).to_dict())
     data["campaign"]["progression"]["completed_worlds_once"] = ["verdant_reaches"]
     with pytest.raises(SaveValidationError, match="defeated bosses"):
         SaveSession.from_dict(data, manager.registry, 1)

@@ -68,9 +68,9 @@ def test_continuous_emitters_remain_bounded_and_cleanup_after_long_run():
         game.shutdown()
 
 
-def test_save_schema_remains_version_three_and_contains_no_effect_state():
+def test_save_schema_is_current_and_contains_no_effect_state():
     registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
     raw = SaveSession.fresh(1, registry).to_dict()
-    assert CURRENT_SAVE_VERSION == 3 and raw["schema_version"] == 3
+    assert CURRENT_SAVE_VERSION == 4 and raw["schema_version"] == 4
     text = str(raw).lower()
     assert "particle" not in text and "emitter" not in text and "effect_quality" not in text

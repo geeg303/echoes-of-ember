@@ -52,3 +52,30 @@ def campaign_result(
         exit_type,
         exit_id,
     )
+
+
+def legacy_v3(data: dict) -> dict:
+    """Rebuild the single-world v3 layout (as written by 0.1.0-alpha) from a one-world v4 save dict."""
+    import copy
+
+    data = copy.deepcopy(data)
+    campaign = data["campaign"]
+    ((world_id, world),) = campaign["worlds"].items()
+    progression = world["progression"]
+    return {
+        "schema_version": 3,
+        "metadata": data["metadata"],
+        "campaign": {
+            "active_world_id": world_id,
+            "current_map_node": world["current_map_node"],
+            "level_results": world["level_results"],
+            "progression": {
+                "completed_levels_once": progression["completed_levels_once"],
+                "discovered_secret_exits": progression["discovered_secret_exits"],
+                "revealed_map_nodes": progression["revealed_map_nodes"],
+                "defeated_bosses": progression["defeated_bosses"],
+                "dialogue_flags": campaign["dialogue_flags"],
+                "completed_worlds_once": [world_id] if progression["world_complete"] else [],
+            },
+        },
+    }

@@ -130,7 +130,7 @@ def test_direct_level_disabled_and_schema_isolation(tmp_path):
         assert not m.profile.unlocked and not (tmp_path / "achievements.json").exists()
     finally:
         game.shutdown()
-    assert CURRENT_SAVE_VERSION == 3 and SETTINGS_SCHEMA_VERSION == 2
+    assert CURRENT_SAVE_VERSION == 4 and SETTINGS_SCHEMA_VERSION == 2
 
 
 def test_toast_queue_is_bounded_serial_and_pause_safe(tmp_path):

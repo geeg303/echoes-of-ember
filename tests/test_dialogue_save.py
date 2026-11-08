@@ -1,6 +1,7 @@
 from copy import deepcopy
 import pytest
 from systems.save_data import CURRENT_SAVE_VERSION, SaveSession, SaveValidationError
+from tests.helpers import legacy_v3
 from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
 
 
@@ -11,18 +12,17 @@ def test_dialogue_flags_round_trip_and_v2_migration():
     raw = session.to_dict()
     loaded = SaveSession.from_dict(raw, registry, 1)
     assert loaded.progress.dialogue_flags == session.progress.dialogue_flags
-    legacy = deepcopy(raw)
+    legacy = legacy_v3(raw)
     legacy["schema_version"] = 2
     legacy["campaign"]["progression"].pop("dialogue_flags")
     migrated = SaveSession.from_dict(legacy, registry, 1)
-    assert migrated.progress.dialogue_flags == set() and CURRENT_SAVE_VERSION == 3
+    assert migrated.progress.dialogue_flags == set() and CURRENT_SAVE_VERSION == 4
 
 
 def test_dialogue_flags_reject_duplicates_and_invalid_values():
     registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
     raw = SaveSession.fresh(1, registry).to_dict()
-    progress = raw["campaign"]["progression"]
     for flags in (["met_mira", "met_mira"], ["BAD FLAG"], "met_mira"):
-        progress["dialogue_flags"] = flags
+        raw["campaign"]["dialogue_flags"] = flags
         with pytest.raises(SaveValidationError):
             SaveSession.from_dict(raw, registry, 1)

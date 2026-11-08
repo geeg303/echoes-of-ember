@@ -68,8 +68,9 @@ def _conditions(raw, where):
         kind = item["type"]
         value = item.get("value", True)
         string_kinds = {"flag", "flag_missing", "level_completed", "boss_defeated", "secret_exit_found"}
+        world_id_value = kind == "world_completed" and isinstance(value, str) and bool(value)
         if (kind in string_kinds and (not isinstance(value, str) or not value)) or (
-            kind not in string_kinds and not isinstance(value, bool)
+            kind not in string_kinds and not isinstance(value, bool) and not world_id_value
         ):
             raise DialogueDataError(f"{where} has unknown/malformed condition")
         if kind in {"flag", "flag_missing"} and not FLAG_RE.fullmatch(value):
@@ -184,6 +185,11 @@ def condition_matches(condition: dict, progress) -> bool:
     if kind == "secret_token":
         return any(r.secret_tokens_collected > 0 for r in progress.results.values()) is bool(value)
     if kind == "world_completed":
+        if isinstance(value, str):
+            completed = getattr(progress, "completed_world_ids", None)
+            if completed is None:
+                completed = {progress.registry.world_id} if progress.world_completed_once else set()
+            return value in completed
         return progress.world_completed_once is bool(value)
     return False
 

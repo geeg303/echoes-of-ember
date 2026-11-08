@@ -18,7 +18,7 @@ class LevelValidationError(ValueError):
     """Raised when external level content cannot be safely loaded."""
 
 
-def validate_level_data(data: Any) -> list[str]:
+def validate_level_data(data: Any, bosses_root: Path | None = None) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["level root must be a JSON object"]
@@ -101,7 +101,9 @@ def validate_level_data(data: Any) -> list[str]:
     _validate_ember_currents(data.get("ember_currents", []), data.get("objects", []), pixel_width, pixel_height, errors)
     _validate_secrets(data.get("secrets", []), data.get("objects", []), pixel_width, pixel_height, errors)
     _validate_goal(data.get("goal"), pixel_width, pixel_height, errors)
-    _validate_boss_encounter(data.get("boss_encounter"), data.get("objects", []), pixel_width, pixel_height, errors)
+    _validate_boss_encounter(
+        data.get("boss_encounter"), data.get("objects", []), pixel_width, pixel_height, errors, bosses_root
+    )
     if isinstance(data.get("objects"), list):
         counts = {
             "shard_total": sum(
@@ -337,7 +339,12 @@ def _validate_goal(goal: object, pixel_width: int, pixel_height: int, errors: li
 
 
 def _validate_boss_encounter(
-    raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]
+    raw: object,
+    objects: object,
+    pixel_width: int,
+    pixel_height: int,
+    errors: list[str],
+    bosses_root: Path | None = None,
 ) -> None:
     if raw is None:
         return
@@ -354,7 +361,7 @@ def _validate_boss_encounter(
         from settings import PROJECT_ROOT
         from bosses.boss_base import BossConfigError, load_boss_config
 
-        config_path = PROJECT_ROOT / "data" / "bosses" / f"{boss_id}.json"
+        config_path = (bosses_root or PROJECT_ROOT / "data" / "bosses") / f"{boss_id}.json"
         try:
             config = load_boss_config(config_path)
             if config.boss_id != boss_id:
@@ -434,13 +441,13 @@ def pygame_rect(values: tuple[float, float, float, float]):
     return pygame.Rect(*[round(item) for item in values])
 
 
-def load_and_validate_level(path: Path) -> dict[str, Any]:
+def load_and_validate_level(path: Path, bosses_root: Path | None = None) -> dict[str, Any]:
     try:
         with path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
     except (OSError, json.JSONDecodeError) as exc:
         raise LevelValidationError(f"could not read level {path}: {exc}") from exc
-    errors = validate_level_data(data)
+    errors = validate_level_data(data, bosses_root=bosses_root)
     if errors:
         details = "; ".join(errors)
         raise LevelValidationError(f"invalid level {path}: {details}")

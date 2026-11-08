@@ -95,6 +95,6 @@ def test_dialogue_flag_callback_autosaves_immediately(tmp_path):
         game.world_progress.dialogue_flags.add("met_mira")
         game._commit_dialogue_flag("met_mira")
         raw = json.loads((tmp_path / "saves" / "slot_1.json").read_text())
-        assert raw["schema_version"] == 3 and raw["campaign"]["progression"]["dialogue_flags"] == ["met_mira"]
+        assert raw["schema_version"] == 4 and raw["campaign"]["dialogue_flags"] == ["met_mira"]
     finally:
         game.shutdown()

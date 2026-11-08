@@ -10,11 +10,11 @@ import re
 from typing import Any
 
 from systems.level_completion import CompletionRating, ExitType, LevelResult
-from world.campaign import WorldProgress, WorldRegistry
+from world.campaign import CampaignProgress, CampaignRegistry, WorldProgress, WorldRegistry
 from world.world_map import requirement_leaves
 
 
-CURRENT_SAVE_VERSION = 3
+CURRENT_SAVE_VERSION = 4
 _DIALOGUE_FLAG_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 
 
@@ -32,20 +32,46 @@ def utc_now() -> str:
 
 @dataclass(slots=True)
 class SaveSession:
+    """One save slot: progress for every world, each world's map position, and slot metadata."""
+
     slot_id: int
-    progress: WorldProgress
-    current_map_node: str
+    campaign_progress: CampaignProgress
+    map_nodes: dict[str, str]
     created_at: str
     updated_at: str
     play_time_seconds: float = 0.0
     dirty: bool = False
 
     @classmethod
-    def fresh(cls, slot_id: int, registry: WorldRegistry) -> "SaveSession":
+    def fresh(cls, slot_id: int, registry: CampaignRegistry | WorldRegistry) -> "SaveSession":
+        campaign = CampaignRegistry.coerce(registry)
         now = utc_now()
-        return cls(slot_id, WorldProgress(registry), registry.map_definition.start_node, now, now)
+        nodes = {world.world_id: world.map_definition.start_node for world in campaign.worlds}
+        return cls(slot_id, CampaignProgress.fresh(campaign), nodes, now, now)
+
+    @property
+    def campaign(self) -> CampaignRegistry:
+        return self.campaign_progress.campaign
+
+    @property
+    def progress(self) -> WorldProgress:
+        """Progress of the world Nova is currently in."""
+        return self.campaign_progress.active
+
+    @progress.setter
+    def progress(self, value: WorldProgress) -> None:
+        self.campaign_progress.replace_world(value)
+
+    @property
+    def current_map_node(self) -> str:
+        return self.map_nodes[self.campaign_progress.active_world_id]
+
+    @current_map_node.setter
+    def current_map_node(self, node_id: str) -> None:
+        self.map_nodes[self.campaign_progress.active_world_id] = node_id
 
     def to_dict(self) -> dict[str, object]:
+        progress = self.campaign_progress
         return {
             "schema_version": CURRENT_SAVE_VERSION,
             "metadata": {
@@ -55,94 +81,124 @@ class SaveSession:
                 "play_time_seconds": round(self.play_time_seconds, 3),
             },
             "campaign": {
-                "active_world_id": self.progress.registry.world_id,
-                "current_map_node": self.current_map_node,
-                "level_results": {
-                    level_id: _result_to_dict(result) for level_id, result in sorted(self.progress.results.items())
-                },
-                "progression": {
-                    "completed_levels_once": sorted(self.progress.completed_levels_once),
-                    "discovered_secret_exits": [
-                        {"level_id": level_id, "exit_id": exit_id}
-                        for level_id, exit_id in sorted(self.progress.discovered_secret_exits)
-                    ],
-                    "revealed_map_nodes": sorted(self.progress.revealed_map_nodes),
-                    "defeated_bosses": sorted(self.progress.defeated_bosses),
-                    "dialogue_flags": sorted(self.progress.dialogue_flags),
-                    "completed_worlds_once": (
-                        [self.progress.registry.world_id] if self.progress.world_completed_once else []
-                    ),
+                "active_world_id": progress.active_world_id,
+                "dialogue_flags": sorted(progress.dialogue_flags),
+                "worlds": {
+                    world_id: _world_to_dict(progress.worlds[world_id], self.map_nodes[world_id])
+                    for world_id in progress.campaign.world_ids
                 },
             },
         }
 
     @classmethod
-    def from_dict(cls, raw: object, registry: WorldRegistry, expected_slot: int) -> "SaveSession":
+    def from_dict(cls, raw: object, registry: CampaignRegistry | WorldRegistry, expected_slot: int) -> "SaveSession":
+        campaign = CampaignRegistry.coerce(registry)
         data = migrate_save(raw)
         metadata = _mapping(data.get("metadata"), "metadata")
-        campaign = _mapping(data.get("campaign"), "campaign")
+        campaign_raw = _mapping(data.get("campaign"), "campaign")
         slot_id = _integer(metadata.get("slot_id"), "metadata.slot_id", minimum=1)
         if slot_id != expected_slot:
             raise SaveValidationError("save slot ID does not match requested slot")
         created = _timestamp(metadata.get("created_at"), "metadata.created_at")
         updated = _timestamp(metadata.get("updated_at"), "metadata.updated_at")
         play_time = _number(metadata.get("play_time_seconds"), "metadata.play_time_seconds", minimum=0)
-        if campaign.get("active_world_id") != registry.world_id:
+        active = campaign_raw.get("active_world_id")
+        if active not in campaign.world_ids:
             raise SaveValidationError("save references an unknown active world")
-        current_node = campaign.get("current_map_node")
-        if current_node not in registry.map_definition.nodes:
-            raise SaveValidationError("save references an unknown current map node")
-        valid_exits = {
-            (requirement.level_id, requirement.exit_id)
-            for connection in registry.map_definition.connections
-            for requirement in requirement_leaves(connection.unlock)
-            if requirement.exit_id is not None
-        }
-        boss_exit_ids = dict(zip(registry.boss_level_ids, registry.boss_ids, strict=True))
-        raw_results = _mapping(campaign.get("level_results"), "campaign.level_results")
-        progress = WorldProgress(registry)
-        for level_id, result_raw in raw_results.items():
-            if level_id not in registry.level_ids:
-                raise SaveValidationError(f"save references unknown level: {level_id}")
-            result = _result_from_dict(result_raw, level_id)
-            if result.exit_type is ExitType.SECRET and (level_id, result.exit_id) not in valid_exits:
-                raise SaveValidationError(f"level result {level_id} references an unknown secret exit")
-            valid_normal_exit = result.exit_id == "ember_gate" or boss_exit_ids.get(level_id) == result.exit_id
-            if result.exit_type is ExitType.NORMAL and not valid_normal_exit:
-                raise SaveValidationError(f"level result {level_id} references an unknown normal exit")
-            progress.results[level_id] = result
-        progression = _mapping(campaign.get("progression"), "campaign.progression")
-        progress.completed_levels_once = _unique_known_strings(
-            progression.get("completed_levels_once"), set(registry.level_ids), "completed_levels_once"
-        )
-        exits = progression.get("discovered_secret_exits")
-        if not isinstance(exits, list):
-            raise SaveValidationError("discovered_secret_exits must be a list")
-        parsed_exits: set[tuple[str, str]] = set()
-        for entry in exits:
-            item = _mapping(entry, "discovered_secret_exits entry")
-            pair = (item.get("level_id"), item.get("exit_id"))
-            if pair not in valid_exits:
-                raise SaveValidationError("save references an unknown secret exit")
-            if pair in parsed_exits:
-                raise SaveValidationError("duplicate discovered secret exit")
-            parsed_exits.add(pair)
-        progress.discovered_secret_exits = parsed_exits
-        progress.revealed_map_nodes = _unique_known_strings(
-            progression.get("revealed_map_nodes"), set(registry.map_definition.nodes), "revealed_map_nodes"
-        )
-        progress.defeated_bosses = _unique_known_strings(
-            progression.get("defeated_bosses"), set(registry.boss_ids), "defeated_bosses"
-        )
-        progress.dialogue_flags = _unique_dialogue_flags(progression.get("dialogue_flags"), "dialogue_flags")
-        worlds = _unique_known_strings(
-            progression.get("completed_worlds_once"), {registry.world_id}, "completed_worlds_once"
-        )
-        progress.world_completed_once = registry.world_id in worlds
-        boss_complete = bool(registry.boss_ids) and set(registry.boss_ids) <= progress.defeated_bosses
-        if progress.world_completed_once != boss_complete:
-            raise SaveValidationError("world completion does not match defeated bosses")
-        return cls(slot_id, progress, str(current_node), created, updated, play_time)
+        flags = _unique_dialogue_flags(campaign_raw.get("dialogue_flags"), "dialogue_flags")
+        raw_worlds = _mapping(campaign_raw.get("worlds"), "campaign.worlds")
+        unknown = set(raw_worlds) - set(campaign.world_ids)
+        if unknown:
+            raise SaveValidationError(f"save references unknown worlds: {sorted(unknown)}")
+        progress = CampaignProgress.fresh(campaign, dialogue_flags=flags)
+        nodes: dict[str, str] = {}
+        for world in campaign.worlds:
+            if world.world_id in raw_worlds:
+                world_progress, node = _world_from_dict(raw_worlds[world.world_id], world, flags)
+                progress.worlds[world.world_id] = world_progress
+            else:
+                # A world added by a later game update starts fresh; existing progress is untouched.
+                node = world.map_definition.start_node
+            nodes[world.world_id] = node
+        if not progress.world_unlocked(active):
+            raise SaveValidationError("save's active world is locked")
+        progress.active_world_id = active
+        return cls(slot_id, progress, nodes, created, updated, play_time)
+
+
+def _world_to_dict(progress: WorldProgress, current_node: str) -> dict[str, object]:
+    return {
+        "current_map_node": current_node,
+        "level_results": {level_id: _result_to_dict(result) for level_id, result in sorted(progress.results.items())},
+        "progression": {
+            "completed_levels_once": sorted(progress.completed_levels_once),
+            "discovered_secret_exits": [
+                {"level_id": level_id, "exit_id": exit_id}
+                for level_id, exit_id in sorted(progress.discovered_secret_exits)
+            ],
+            "revealed_map_nodes": sorted(progress.revealed_map_nodes),
+            "defeated_bosses": sorted(progress.defeated_bosses),
+            "world_complete": progress.world_completed_once,
+        },
+    }
+
+
+def _world_from_dict(raw: object, registry: WorldRegistry, flags: set[str]) -> tuple[WorldProgress, str]:
+    name = f"campaign.worlds.{registry.world_id}"
+    world = _mapping(raw, name)
+    current_node = world.get("current_map_node")
+    if current_node not in registry.map_definition.nodes:
+        raise SaveValidationError(f"{name} references an unknown current map node")
+    valid_exits = {
+        (requirement.level_id, requirement.exit_id)
+        for connection in registry.map_definition.connections
+        for requirement in requirement_leaves(connection.unlock)
+        if requirement.exit_id is not None
+    }
+    boss_exit_ids = dict(zip(registry.boss_level_ids, registry.boss_ids, strict=True))
+    raw_results = _mapping(world.get("level_results"), f"{name}.level_results")
+    progress = WorldProgress(registry, dialogue_flags=flags)
+    for level_id, result_raw in raw_results.items():
+        if level_id not in registry.level_ids:
+            raise SaveValidationError(f"save references unknown level: {level_id}")
+        result = _result_from_dict(result_raw, level_id)
+        if result.exit_type is ExitType.SECRET and (level_id, result.exit_id) not in valid_exits:
+            raise SaveValidationError(f"level result {level_id} references an unknown secret exit")
+        valid_normal_exit = result.exit_id == "ember_gate" or boss_exit_ids.get(level_id) == result.exit_id
+        if result.exit_type is ExitType.NORMAL and not valid_normal_exit:
+            raise SaveValidationError(f"level result {level_id} references an unknown normal exit")
+        progress.results[level_id] = result
+    progression = _mapping(world.get("progression"), f"{name}.progression")
+    progress.completed_levels_once = _unique_known_strings(
+        progression.get("completed_levels_once"), set(registry.level_ids), "completed_levels_once"
+    )
+    exits = progression.get("discovered_secret_exits")
+    if not isinstance(exits, list):
+        raise SaveValidationError("discovered_secret_exits must be a list")
+    parsed_exits: set[tuple[str, str]] = set()
+    for entry in exits:
+        item = _mapping(entry, "discovered_secret_exits entry")
+        pair = (item.get("level_id"), item.get("exit_id"))
+        if pair not in valid_exits:
+            raise SaveValidationError("save references an unknown secret exit")
+        if pair in parsed_exits:
+            raise SaveValidationError("duplicate discovered secret exit")
+        parsed_exits.add(pair)
+    progress.discovered_secret_exits = parsed_exits
+    progress.revealed_map_nodes = _unique_known_strings(
+        progression.get("revealed_map_nodes"), set(registry.map_definition.nodes), "revealed_map_nodes"
+    )
+    progress.defeated_bosses = _unique_known_strings(
+        progression.get("defeated_bosses"), set(registry.boss_ids), "defeated_bosses"
+    )
+    world_complete = progression.get("world_complete")
+    if not isinstance(world_complete, bool):
+        raise SaveValidationError(f"{name}.progression.world_complete must be boolean")
+    progress.world_completed_once = world_complete
+    boss_complete = bool(registry.boss_ids) and set(registry.boss_ids) <= progress.defeated_bosses
+    if progress.world_completed_once != boss_complete:
+        raise SaveValidationError("world completion does not match defeated bosses")
+    return progress, str(current_node)
 
 
 def migrate_save(raw: object) -> dict[str, Any]:
@@ -160,6 +216,8 @@ def migrate_save(raw: object) -> dict[str, Any]:
             data = _migrate_v1_to_v2(data)
         elif version == 2:
             data = _migrate_v2_to_v3(data)
+        elif version == 3:
+            data = _migrate_v3_to_v4(data)
         else:
             raise UnsupportedSaveVersion(f"no migration path from save version {version}")
         version = data["schema_version"]
@@ -182,6 +240,38 @@ def _migrate_v2_to_v3(data: dict[str, Any]) -> dict[str, Any]:
     progression = _mapping(campaign.get("progression"), "campaign.progression")
     progression["dialogue_flags"] = []
     data["schema_version"] = 3
+    return data
+
+
+def _migrate_v3_to_v4(data: dict[str, Any]) -> dict[str, Any]:
+    """Move the single-world v3 campaign under campaign.worlds[<its world>]; story flags become campaign-wide."""
+    campaign = _mapping(data.get("campaign"), "campaign")
+    progression = _mapping(campaign.get("progression"), "campaign.progression")
+    active = campaign.get("active_world_id")
+    if not isinstance(active, str) or not active:
+        raise SaveValidationError("v3 save has no active world")
+    completed = progression.get("completed_worlds_once")
+    if not isinstance(completed, list) or not all(isinstance(item, str) for item in completed):
+        raise SaveValidationError("completed_worlds_once must be a string list")
+    if set(completed) - {active}:
+        raise SaveValidationError("v3 save lists a completed world it never contained")
+    world = {
+        "current_map_node": campaign.get("current_map_node"),
+        "level_results": campaign.get("level_results"),
+        "progression": {
+            "completed_levels_once": progression.get("completed_levels_once"),
+            "discovered_secret_exits": progression.get("discovered_secret_exits"),
+            "revealed_map_nodes": progression.get("revealed_map_nodes"),
+            "defeated_bosses": progression.get("defeated_bosses"),
+            "world_complete": active in completed,
+        },
+    }
+    data["campaign"] = {
+        "active_world_id": active,
+        "dialogue_flags": progression.get("dialogue_flags"),
+        "worlds": {active: world},
+    }
+    data["schema_version"] = 4
     return data
 
 

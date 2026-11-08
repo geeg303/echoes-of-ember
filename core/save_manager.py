@@ -12,7 +12,7 @@ import shutil
 
 from core.paths import user_data_root
 from systems.save_data import SaveSession, SaveValidationError, UnsupportedSaveVersion, utc_now
-from world.campaign import WorldRegistry
+from world.campaign import CampaignRegistry, WorldRegistry
 
 LOGGER = logging.getLogger(__name__)
 VALID_SLOTS = (1, 2, 3)
@@ -49,8 +49,9 @@ class LoadOutcome:
 
 
 class SaveManager:
-    def __init__(self, registry: WorldRegistry, save_root: Path | None = None) -> None:
+    def __init__(self, registry: CampaignRegistry | WorldRegistry, save_root: Path | None = None) -> None:
         self.registry = registry
+        self.campaign = CampaignRegistry.coerce(registry)
         self.save_root = save_root or default_save_root()
         self.save_root.mkdir(parents=True, exist_ok=True)
 
@@ -63,13 +64,14 @@ class SaveManager:
         if outcome.session is None:
             return SlotSummary(slot_id, outcome.state, message=outcome.message)
         session = outcome.session
-        tokens = session.progress.aggregate("secret_tokens_collected", "secret_tokens_total")
-        secrets = session.progress.secrets
+        totals = session.campaign_progress
+        tokens = totals.aggregate("secret_tokens_collected", "secret_tokens_total")
+        secrets = totals.secrets
         return SlotSummary(
             slot_id,
             outcome.state,
-            session.progress.levels_completed,
-            session.progress.score,
+            totals.levels_completed,
+            totals.score,
             secrets[0],
             secrets[1],
             tokens[0],
@@ -85,7 +87,7 @@ class SaveManager:
             raise FileExistsError(f"slot {slot_id} already contains save data")
         if overwrite:
             self.delete(slot_id)
-        session = SaveSession.fresh(slot_id, self.registry)
+        session = SaveSession.fresh(slot_id, self.campaign)
         self.save(session)
         return session
 
@@ -155,7 +157,7 @@ class SaveManager:
 
     def _read(self, path: Path, slot_id: int) -> SaveSession:
         with path.open("r", encoding="utf-8") as handle:
-            return SaveSession.from_dict(json.load(handle), self.registry, slot_id)
+            return SaveSession.from_dict(json.load(handle), self.campaign, slot_id)
 
     def _cleanup_temp(self, slot_id: int) -> None:
         for path in (self._temp(slot_id), self._backup(slot_id).with_suffix(".bak.tmp")):
