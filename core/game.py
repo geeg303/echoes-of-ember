@@ -664,7 +664,7 @@ class Game(GameFlowMixin, GameFeedbackMixin):
             if (
                 projectile.projectile_id not in prior_projectiles
                 and projectile.faction.value == "enemy"
-                and projectile.owner_id != "ashen_warden"
+                and not (self.boss_system is not None and projectile.owner_id == self.boss_system.boss.boss_id)
             ):
                 self.audio.play_sound(
                     "turret_fire", position=projectile.rect.center, listener_x=self.player.rect.centerx
@@ -707,7 +707,8 @@ class Game(GameFlowMixin, GameFeedbackMixin):
         self._drain_combat_effects(self.boss_system.effects, boss=True)
         self._emit_boss_audio(boss_result)
         if boss_result.defeat_sequence_complete:
-            self._begin_completion("ashen_warden", ExitType.NORMAL, boss_id="ashen_warden")
+            boss_id = self.boss_system.boss.boss_id
+            self._begin_completion(boss_id, ExitType.NORMAL, boss_id=boss_id)
 
     def _update_pickups(self, dt: float) -> None:
         self.collectibles.update(dt, self.camera.view_rect)
@@ -857,7 +858,7 @@ class Game(GameFlowMixin, GameFeedbackMixin):
             self.audio.play_sound("warden_defeat")
         self.effects.request_shake(4.0, 0.2)
         self.effects.spawn(
-            "world_complete" if exit_id == "ashen_warden" else "route_unlocked",
+            "world_complete" if boss_id is not None else "route_unlocked",
             (self.canvas.get_width() / 2, self.canvas.get_height() / 2),
         )
 

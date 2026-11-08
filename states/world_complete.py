@@ -1,4 +1,4 @@
-"""Temporary World 1 completion summary."""
+"""Per-world completion summary, driven by the world registry."""
 
 from __future__ import annotations
 import pygame
@@ -10,17 +10,28 @@ class WorldCompleteScreen:
     def __init__(self, title: pygame.font.Font, font: pygame.font.Font, small: pygame.font.Font) -> None:
         self.title, self.font, self.small = title, font, small
 
-    def draw(self, surface: pygame.Surface, progress: object, input_manager: InputManager | None = None) -> None:
-        surface.fill((10, 17, 38))
-        heading = self.title.render("VERDANT REACHES COMPLETE", True, (255, 218, 128))
-        surface.blit(heading, heading.get_rect(center=(640, 115)))
+    @staticmethod
+    def heading(progress: object) -> str:
+        return f"{progress.registry.display_name.upper()} COMPLETE"
+
+    @staticmethod
+    def rows(progress: object) -> list[tuple[str, str]]:
+        registry = progress.registry
+        boss_rows = [
+            (
+                "BOSS",
+                f"{registry.boss_display_names.get(boss_id, boss_id).upper()} — "
+                + ("DEFEATED" if boss_id in progress.defeated_bosses else "UNDEFEATED"),
+            )
+            for boss_id in registry.boss_ids
+        ]
         shards = progress.aggregate("ember_shards_collected", "ember_shards_total")
         rare = progress.aggregate("rare_crystals_collected", "rare_crystals_total")
         tokens = progress.aggregate("secret_tokens_collected", "secret_tokens_total")
         secrets = progress.secrets
         enemies = progress.aggregate("enemies_defeated", "enemies_total")
-        rows = [
-            ("BOSS", "ASHEN WARDEN — DEFEATED" if "ashen_warden" in progress.defeated_bosses else "UNDEFEATED"),
+        return [
+            *boss_rows,
             ("LEVELS", f"{progress.levels_completed} / {len(progress.registry.level_ids)}"),
             ("SCORE", str(progress.score)),
             ("TIME", format_time(progress.completion_time)),
@@ -31,6 +42,12 @@ class WorldCompleteScreen:
             ("ENEMIES", f"{enemies[0]} / {enemies[1]}"),
             ("DEATHS", str(progress.deaths)),
         ]
+
+    def draw(self, surface: pygame.Surface, progress: object, input_manager: InputManager | None = None) -> None:
+        surface.fill((10, 17, 38))
+        heading = self.title.render(self.heading(progress), True, (255, 218, 128))
+        surface.blit(heading, heading.get_rect(center=(640, 115)))
+        rows = self.rows(progress)
         for index, (label, value) in enumerate(rows):
             y = 165 + index * 40
             surface.blit(self.font.render(label, True, (178, 198, 226)), (390, y))

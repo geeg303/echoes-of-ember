@@ -32,16 +32,67 @@ class BossUpdateResult:
     audio_events: tuple[str, ...] = ()
 
 
+BOSS_CONFIG_ROOT = PROJECT_ROOT / "data" / "bosses"
+
+
+@dataclass(frozen=True, slots=True)
+class BossRuntime:
+    """How to build a boss and which audio cue each generic boss hook plays."""
+
+    boss_class: type
+    audio_events: dict[str, str]
+
+
+BOSS_RUNTIMES: dict[str, BossRuntime] = {}
+
+
+def register_boss_runtime(boss_id: str, runtime: BossRuntime) -> None:
+    """Register a boss implementation. Each new world boss adds one call here."""
+    if boss_id in BOSS_RUNTIMES:
+        raise ValueError(f"boss runtime already registered: {boss_id}")
+    BOSS_RUNTIMES[boss_id] = runtime
+
+
+register_boss_runtime(
+    "ashen_warden",
+    BossRuntime(
+        AshenWarden,
+        {
+            "awaken": "warden_awaken",
+            "phase": "warden_phase_transition",
+            "ground_slam": "warden_ground_slam",
+            "slam": "warden_ground_slam",
+            "bolt": "warden_bolt",
+            "projectile": "warden_bolt",
+            "ember_rain": "warden_ember_rain",
+            "leap": "warden_leap",
+            "charge": "warden_charge",
+            "core_burst": "warden_core_burst",
+            "hurt": "warden_hurt",
+            "defeat": "warden_defeat",
+        },
+    ),
+)
+
+
 class BossSystem:
-    def __init__(self, definition: BossArenaDefinition, doors: list[object], projectiles: ProjectileManager) -> None:
-        config = load_boss_config(PROJECT_ROOT / "data" / "bosses" / f"{definition.boss_id}.json")
+    def __init__(
+        self,
+        definition: BossArenaDefinition,
+        doors: list[object],
+        projectiles: ProjectileManager,
+        config_root: Path = BOSS_CONFIG_ROOT,
+    ) -> None:
+        config = load_boss_config(Path(config_root) / f"{definition.boss_id}.json")
         if config.boss_id != definition.boss_id:
             raise ValueError("boss definition/config ID mismatch")
-        if definition.boss_id != "ashen_warden":
+        runtime = BOSS_RUNTIMES.get(definition.boss_id)
+        if runtime is None:
             raise ValueError(f"no runtime implementation for boss: {definition.boss_id}")
         self.definition = definition
+        self.runtime = runtime
         self.arena = BossArena(definition, doors)
-        self.boss = AshenWarden(config, definition.spawn)
+        self.boss = runtime.boss_class(config, definition.spawn)
         self.projectiles = projectiles
         self.effects: list[CombatEffect] = []
         self.completed_reported = False

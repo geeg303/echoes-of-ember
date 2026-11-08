@@ -1,4 +1,4 @@
-"""Procedural Verdant Reaches overworld presentation and node information."""
+"""Procedural overworld presentation and node information."""
 
 from __future__ import annotations
 
@@ -208,8 +208,9 @@ class WorldMapScreen:
                 f"SECRETS {result.secrets_discovered}/{result.secrets_total}",
             ]
         elif node.kind in {NodeType.LEVEL, NodeType.BOSS}:
+            boss_names = getattr(getattr(self.runtime.progress, "registry", None), "boss_display_names", {})
             details = [
-                "ASHEN WARDEN DEFEATED"
+                f"{boss_names.get(node.boss_id, node.boss_id).upper()} DEFEATED"
                 if node.kind is NodeType.BOSS and state is NodeState.COMPLETED
                 else "NOT YET COMPLETED"
             ]

@@ -23,6 +23,7 @@ class WorldRegistry:
     map_definition: WorldMapDefinition
     boss_ids: tuple[str, ...]
     boss_level_ids: tuple[str, ...]
+    boss_display_names: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> "WorldRegistry":
@@ -70,6 +71,9 @@ class WorldRegistry:
             raise WorldRegistryError("; ".join(errors))
         assert map_definition is not None
         boss_nodes = tuple(node for node in map_definition.nodes.values() if node.kind.value == "boss")
+        boss_names: dict[str, str] = {}
+        for node in boss_nodes:
+            boss_names[node.boss_id] = _boss_display_name(node.boss_id)
         return cls(
             world_id,
             display_name,
@@ -78,7 +82,19 @@ class WorldRegistry:
             map_definition,
             tuple(node.boss_id for node in boss_nodes),
             tuple(node.level_id for node in boss_nodes),
+            boss_names,
         )
+
+
+def _boss_display_name(boss_id: str) -> str:
+    path = PROJECT_ROOT / "data" / "bosses" / f"{boss_id}.json"
+    try:
+        name = json.loads(path.read_text(encoding="utf-8")).get("display_name")
+    except (OSError, json.JSONDecodeError, AttributeError) as exc:
+        raise WorldRegistryError(f"boss config missing or unreadable for {boss_id}: {exc}") from exc
+    if not isinstance(name, str) or not name.strip():
+        raise WorldRegistryError(f"boss config for {boss_id} needs a display_name")
+    return name
 
 
 @dataclass(slots=True)

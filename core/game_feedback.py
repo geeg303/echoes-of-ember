@@ -32,20 +32,7 @@ class GameFeedbackMixin:
         self.audio.start_ambience("map", "ambience_verdant")
 
     def _emit_boss_audio(self, result: object) -> None:
-        mapping = {
-            "awaken": "warden_awaken",
-            "phase": "warden_phase_transition",
-            "ground_slam": "warden_ground_slam",
-            "slam": "warden_ground_slam",
-            "bolt": "warden_bolt",
-            "projectile": "warden_bolt",
-            "ember_rain": "warden_ember_rain",
-            "leap": "warden_leap",
-            "charge": "warden_charge",
-            "core_burst": "warden_core_burst",
-            "hurt": "warden_hurt",
-            "defeat": "warden_defeat",
-        }
+        mapping = self.boss_system.runtime.audio_events
         if result.triggered:
             self.audio.play_music("music_boss")
         for hook in result.audio_events:
