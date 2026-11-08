@@ -35,7 +35,8 @@ class FlyingEnemy(Enemy):
             self.velocity += (desired - self.velocity) * min(1.0, dt * 4.0)
             if self.config.current_affected and context.current_influence is not None:
                 self.velocity += context.current_influence(self.rect, "flyers") * dt
-                if self.velocity.length() > 360:self.velocity.scale_to_length(360)
+                if self.velocity.length() > 360:
+                    self.velocity.scale_to_length(360)
             self.position += self.velocity * dt
             self.sync_rect()
             if abs(self.velocity.x) > 2:

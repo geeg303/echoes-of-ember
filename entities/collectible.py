@@ -138,9 +138,7 @@ def create_collectible(
 
 def _build_collectible_animation(kind: CollectibleType) -> AnimationController:
     frames = [_draw_collectible_frame(kind, frame) for frame in range(6)]
-    return AnimationController(
-        [AnimationClip.from_surfaces(kind.value, frames, fps=8.0, loop=True)]
-    )
+    return AnimationController([AnimationClip.from_surfaces(kind.value, frames, fps=8.0, loop=True)])
 
 
 def _draw_collectible_frame(kind: CollectibleType, frame: int) -> pygame.Surface:
@@ -176,4 +174,3 @@ def _draw_collectible_frame(kind: CollectibleType, frame: int) -> pygame.Surface
         pygame.draw.rect(surface, (222, 88, 104), (21, 30, 16, 4))
     glow.blit(surface, (0, 0))
     return glow
-

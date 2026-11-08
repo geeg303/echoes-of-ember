@@ -20,7 +20,9 @@ def progress_for(level: Level) -> LevelProgress:
 
 
 def overlap_player(player: Player, collectible_rect: pygame.Rect) -> None:
-    player.position.update(collectible_rect.centerx - player.rect.width / 2, collectible_rect.centery - player.rect.height / 2)
+    player.position.update(
+        collectible_rect.centerx - player.rect.width / 2, collectible_rect.centery - player.rect.height / 2
+    )
     player.sync_rect()
 
 

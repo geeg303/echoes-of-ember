@@ -65,7 +65,8 @@ class CollisionEngine:
         """Preserve grounded state when sub-pixel motion rounds to exact contact."""
         probe = rect.move(0, 1)
         supported = [
-            tile for tile in self.tilemap.tiles_in_rect(
+            tile
+            for tile in self.tilemap.tiles_in_rect(
                 probe, {TileKind.SOLID, TileKind.BREAKABLE, TileKind.SLIPPERY, TileKind.ONE_WAY}
             )
             if probe.colliderect(tile.rect) and rect.bottom <= tile.rect.top
@@ -90,9 +91,7 @@ class CollisionEngine:
     ) -> None:
         position.x += velocity.x * dt
         rect.x = round(position.x)
-        collisions = [
-            tile for tile in self.tilemap.tiles_in_rect(rect, BLOCKING_KINDS) if rect.colliderect(tile.rect)
-        ]
+        collisions = [tile for tile in self.tilemap.tiles_in_rect(rect, BLOCKING_KINDS) if rect.colliderect(tile.rect)]
         if not collisions:
             return
         if velocity.x > 0.0:
@@ -136,13 +135,9 @@ class CollisionEngine:
             else:
                 velocity.y = 0.0
                 result.grounded = True
-                result.on_slippery = any(
-                    tile.definition.kind is TileKind.SLIPPERY for tile in landed
-                )
+                result.on_slippery = any(tile.definition.kind is TileKind.SLIPPERY for tile in landed)
         elif velocity.y < 0.0:
-            solid_collisions = [
-                tile for tile in collisions if tile.definition.kind is not TileKind.ONE_WAY
-            ]
+            solid_collisions = [tile for tile in collisions if tile.definition.kind is not TileKind.ONE_WAY]
             if not solid_collisions:
                 return
             rect.top = max(tile.rect.bottom for tile in solid_collisions)

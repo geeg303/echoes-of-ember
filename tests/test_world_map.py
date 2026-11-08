@@ -27,8 +27,28 @@ def result(
     exit_id: str = "ember_gate",
 ) -> LevelResult:
     return LevelResult(
-        level_id, True, 10, score, 1, 10, 0, 3, 0, 1, 1, 4,
-        0, 3, 3, 0, CompletionRating.BRONZE, 0, 2, 0, exit_type, exit_id,
+        level_id,
+        True,
+        10,
+        score,
+        1,
+        10,
+        0,
+        3,
+        0,
+        1,
+        1,
+        4,
+        0,
+        3,
+        3,
+        0,
+        CompletionRating.BRONZE,
+        0,
+        2,
+        0,
+        exit_type,
+        exit_id,
     )
 
 
@@ -42,8 +62,13 @@ def test_world_map_definition_preserves_authored_graph() -> None:
     assert definition.start_node == "starting_grove"
     assert len(definition.nodes) == 8
     assert [item.connection_id for item in definition.connections] == [
-        "grove_to_01", "route_01_02", "route_02_03", "route_03_04",
-        "route_04_goal", "route_04_secret", "sanctum_to_beacon",
+        "grove_to_01",
+        "route_01_02",
+        "route_02_03",
+        "route_03_04",
+        "route_04_goal",
+        "route_04_secret",
+        "sanctum_to_beacon",
     ]
 
 
@@ -57,7 +82,12 @@ def test_world_map_definition_preserves_authored_graph() -> None:
         (lambda data: data["connections"][0].update(to="missing"), "missing node"),
         (lambda data: data["connections"][0].update(waypoints=[[1]]), "malformed waypoint"),
         (lambda data: data["connections"][0].update(unlock={"type": "coins"}), "invalid unlock"),
-        (lambda data: next(item for item in data["connections"] if item["id"] == "route_04_secret")["unlock"].update(exit_id="missing"), "unknown secret exit"),
+        (
+            lambda data: next(item for item in data["connections"] if item["id"] == "route_04_secret")["unlock"].update(
+                exit_id="missing"
+            ),
+            "unknown secret exit",
+        ),
         (lambda data: data["connections"][-1]["unlock"].update(boss_id="missing"), "unknown boss"),
     ],
 )
@@ -65,7 +95,11 @@ def test_map_validation_rejects_malformed_graph(mutation, message: str) -> None:
     data = map_data()
     mutation(data)
     with pytest.raises(MapDefinitionError, match=message):
-        WorldMapDefinition.from_data(data, ("verdant_01", "verdant_02", "verdant_03", "verdant_04", "verdant_boss"), {("verdant_04", "v04_secret_exit")})
+        WorldMapDefinition.from_data(
+            data,
+            ("verdant_01", "verdant_02", "verdant_03", "verdant_04", "verdant_boss"),
+            {("verdant_04", "v04_secret_exit")},
+        )
 
 
 def test_initial_node_and_connection_states() -> None:
@@ -156,4 +190,3 @@ def test_normal_startup_mode_and_direct_level_bypass() -> None:
     finally:
         map_game.shutdown()
         direct_game.shutdown()
-

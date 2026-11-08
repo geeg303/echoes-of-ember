@@ -31,7 +31,8 @@ class BossHUD:
         pygame.draw.rect(surface, (230, 190, 119), outer, 2, border_radius=12)
         ratio = max(0.0, min(1.0, state.health / max(1, state.max_health)))
         pygame.draw.rect(surface, (43, 47, 58), bar, border_radius=6)
-        fill = bar.copy(); fill.width = round(bar.width * ratio)
+        fill = bar.copy()
+        fill.width = round(bar.width * ratio)
         pygame.draw.rect(surface, (225, 91, 56), fill, border_radius=6)
         pygame.draw.rect(surface, (255, 225, 156), bar, 2, border_radius=6)
         for marker in (1 / 3, 2 / 3):

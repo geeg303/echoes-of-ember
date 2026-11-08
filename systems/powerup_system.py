@@ -34,10 +34,18 @@ class PowerUpDefinition:
 
 
 POWERUP_DEFINITIONS = {
-    PowerUpType.EMBER_PULSE: PowerUpDefinition(PowerUpType.EMBER_PULSE, "Ember Pulse", POWERUP_DURATIONS["ember_pulse"], (255, 128, 55)),
-    PowerUpType.WIND_BOOTS: PowerUpDefinition(PowerUpType.WIND_BOOTS, "Wind Boots", POWERUP_DURATIONS["wind_boots"], (91, 225, 235)),
-    PowerUpType.AETHER_WING: PowerUpDefinition(PowerUpType.AETHER_WING, "Aether Wing", POWERUP_DURATIONS["aether_wing"], (198, 150, 255)),
-    PowerUpType.STONE_GUARD: PowerUpDefinition(PowerUpType.STONE_GUARD, "Stone Guard", POWERUP_DURATIONS["stone_guard"], (168, 184, 203)),
+    PowerUpType.EMBER_PULSE: PowerUpDefinition(
+        PowerUpType.EMBER_PULSE, "Ember Pulse", POWERUP_DURATIONS["ember_pulse"], (255, 128, 55)
+    ),
+    PowerUpType.WIND_BOOTS: PowerUpDefinition(
+        PowerUpType.WIND_BOOTS, "Wind Boots", POWERUP_DURATIONS["wind_boots"], (91, 225, 235)
+    ),
+    PowerUpType.AETHER_WING: PowerUpDefinition(
+        PowerUpType.AETHER_WING, "Aether Wing", POWERUP_DURATIONS["aether_wing"], (198, 150, 255)
+    ),
+    PowerUpType.STONE_GUARD: PowerUpDefinition(
+        PowerUpType.STONE_GUARD, "Stone Guard", POWERUP_DURATIONS["stone_guard"], (168, 184, 203)
+    ),
 }
 KNOWN_POWERUP_TYPES = frozenset(kind.value for kind in PowerUpType)
 
@@ -140,10 +148,7 @@ class PowerUpManager:
     def __init__(self, spawns: tuple[object, ...]) -> None:
         from entities.powerup import PowerUpPickup
 
-        self.pickups = [
-            PowerUpPickup(spawn.object_id, spawn.kind, spawn.position, spawn.duration)
-            for spawn in spawns
-        ]
+        self.pickups = [PowerUpPickup(spawn.object_id, spawn.kind, spawn.position, spawn.duration) for spawn in spawns]
 
     def update(self, dt: float, camera_view: pygame.Rect) -> None:
         padded = camera_view.inflate(320, 240)

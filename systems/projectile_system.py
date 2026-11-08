@@ -33,7 +33,8 @@ class ProjectileManager:
 
     def update(self, dt: float, tilemap: TileMap, currents: EmberCurrentSystem | None = None) -> None:
         for projectile in self.projectiles:
-            if currents is not None and projectile.active and projectile.faction is Faction.PLAYER: projectile.velocity += currents.influence(projectile.rect,"player_projectiles")*dt
+            if currents is not None and projectile.active and projectile.faction is Faction.PLAYER:
+                projectile.velocity += currents.influence(projectile.rect, "player_projectiles") * dt
             was_active = projectile.active
             projectile.update(dt, tilemap)
             if projectile.break_positions:
@@ -43,14 +44,8 @@ class ProjectileManager:
                 )
                 projectile.break_positions.clear()
             elif was_active and not projectile.active and projectile.lifetime > 0:
-                effect_id = (
-                    "ember_pulse_impact"
-                    if projectile.faction is Faction.PLAYER
-                    else "warden_bolt_impact"
-                )
-                self.effect_events.append(
-                    ProjectileEffectEvent(effect_id, pygame.Vector2(projectile.rect.center))
-                )
+                effect_id = "ember_pulse_impact" if projectile.faction is Faction.PLAYER else "warden_bolt_impact"
+                self.effect_events.append(ProjectileEffectEvent(effect_id, pygame.Vector2(projectile.rect.center)))
         self.projectiles = [projectile for projectile in self.projectiles if projectile.active]
 
     def consume_effect_events(self) -> tuple[ProjectileEffectEvent, ...]:

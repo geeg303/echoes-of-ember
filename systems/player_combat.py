@@ -28,8 +28,7 @@ class PlayerCombatController:
 
     def try_attack(self, player: Player, projectiles: ProjectileManager) -> bool:
         active_count = sum(
-            projectile.active and projectile.faction is Faction.PLAYER
-            for projectile in projectiles.projectiles
+            projectile.active and projectile.faction is Faction.PLAYER for projectile in projectiles.projectiles
         )
         if (
             not self.ember_pulse_enabled

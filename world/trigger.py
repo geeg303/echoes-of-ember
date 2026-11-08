@@ -28,7 +28,9 @@ class Switch:
 
 
 class Door:
-    def __init__(self, object_id: str, position: tuple[float, float], size: tuple[int, int], opening_duration: float) -> None:
+    def __init__(
+        self, object_id: str, position: tuple[float, float], size: tuple[int, int], opening_duration: float
+    ) -> None:
         self.object_id = object_id
         self.base_rect = pygame.Rect(round(position[0]), round(position[1]), *size)
         self.rect = self.base_rect.copy()

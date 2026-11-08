@@ -14,7 +14,15 @@ class PlatformState(str, Enum):
 
 
 class MovingPlatform:
-    def __init__(self, object_id: str, position: tuple[float, float], movement: str, distance: float, speed: float, size: tuple[int, int] = (128, 22)) -> None:
+    def __init__(
+        self,
+        object_id: str,
+        position: tuple[float, float],
+        movement: str,
+        distance: float,
+        speed: float,
+        size: tuple[int, int] = (128, 22),
+    ) -> None:
         self.object_id = object_id
         self.origin = pygame.Vector2(position)
         self.position = pygame.Vector2(position)
@@ -58,7 +66,15 @@ class MovingPlatform:
 
 
 class FallingPlatform(MovingPlatform):
-    def __init__(self, object_id: str, position: tuple[float, float], activation_delay: float, fall_acceleration: float, reset_delay: float, size: tuple[int, int] = (112, 22)) -> None:
+    def __init__(
+        self,
+        object_id: str,
+        position: tuple[float, float],
+        activation_delay: float,
+        fall_acceleration: float,
+        reset_delay: float,
+        size: tuple[int, int] = (112, 22),
+    ) -> None:
         super().__init__(object_id, position, "vertical", 0, 0, size)
         self.activation_delay = activation_delay
         self.fall_acceleration = fall_acceleration
@@ -106,7 +122,15 @@ class FallingPlatform(MovingPlatform):
 
 
 class DisappearingPlatform(MovingPlatform):
-    def __init__(self, object_id: str, position: tuple[float, float], visible_duration: float, warning_duration: float, hidden_duration: float, size: tuple[int, int] = (112, 20)) -> None:
+    def __init__(
+        self,
+        object_id: str,
+        position: tuple[float, float],
+        visible_duration: float,
+        warning_duration: float,
+        hidden_duration: float,
+        size: tuple[int, int] = (112, 20),
+    ) -> None:
         super().__init__(object_id, position, "horizontal", 0, 0, size)
         self.visible_duration = visible_duration
         self.warning_duration = warning_duration

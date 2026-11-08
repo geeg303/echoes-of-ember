@@ -66,9 +66,17 @@ class SaveManager:
         tokens = session.progress.aggregate("secret_tokens_collected", "secret_tokens_total")
         secrets = session.progress.secrets
         return SlotSummary(
-            slot_id, outcome.state, session.progress.levels_completed,
-            session.progress.score, secrets[0], secrets[1], tokens[0], tokens[1],
-            session.play_time_seconds, session.updated_at, outcome.message,
+            slot_id,
+            outcome.state,
+            session.progress.levels_completed,
+            session.progress.score,
+            secrets[0],
+            secrets[1],
+            tokens[0],
+            tokens[1],
+            session.play_time_seconds,
+            session.updated_at,
+            outcome.message,
         )
 
     def new_game(self, slot_id: int, overwrite: bool = False) -> SaveSession:
@@ -92,7 +100,9 @@ class SaveManager:
             if not path.exists():
                 continue
             try:
-                return LoadOutcome(state, self._read(path, slot_id), "recovered from backup" if state is SlotState.RECOVERED else "")
+                return LoadOutcome(
+                    state, self._read(path, slot_id), "recovered from backup" if state is SlotState.RECOVERED else ""
+                )
             except UnsupportedSaveVersion as exc:
                 unsupported = True
                 messages.append(str(exc))
@@ -105,7 +115,11 @@ class SaveManager:
         self._slot(session.slot_id)
         session.updated_at = utc_now()
         payload = json.dumps(session.to_dict(), indent=2, sort_keys=True) + "\n"
-        primary, backup, temp = self._primary(session.slot_id), self._backup(session.slot_id), self._temp(session.slot_id)
+        primary, backup, temp = (
+            self._primary(session.slot_id),
+            self._backup(session.slot_id),
+            self._temp(session.slot_id),
+        )
         if primary.exists():
             try:
                 self._read(primary, session.slot_id)
@@ -128,7 +142,12 @@ class SaveManager:
 
     def delete(self, slot_id: int) -> None:
         self._slot(slot_id)
-        for path in (self._primary(slot_id), self._backup(slot_id), self._temp(slot_id), self._backup(slot_id).with_suffix(".bak.tmp")):
+        for path in (
+            self._primary(slot_id),
+            self._backup(slot_id),
+            self._temp(slot_id),
+            self._backup(slot_id).with_suffix(".bak.tmp"),
+        ):
             try:
                 path.unlink()
             except FileNotFoundError:

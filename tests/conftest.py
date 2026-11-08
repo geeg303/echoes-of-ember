@@ -3,6 +3,7 @@
 Fixtures create all writable state under pytest's temporary directory. Nothing
 in this file points at the user's actual save, settings, or achievement roots.
 """
+
 from __future__ import annotations
 
 import os
@@ -84,4 +85,3 @@ def game_factory(
     yield create
     for game in reversed(games):
         game.shutdown()
-

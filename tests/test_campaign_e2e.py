@@ -1,4 +1,5 @@
 """Reload-driven World 1 campaign and secret-route scenarios."""
+
 from __future__ import annotations
 
 import pytest
@@ -21,7 +22,9 @@ def test_complete_world_one_with_reload_between_every_stage(isolated_save_manage
         runtime = WorldMapRuntime(manager.registry.map_definition, session.progress)
         assert runtime.node_state(expected_nodes[index]) is NodeState.AVAILABLE
         assert session.progress.completed_levels_once == set(manager.registry.level_ids[: index + 1])
-    session.progress.record_boss_defeat("ashen_warden", campaign_result("verdant_boss", score=5000, exit_id="ashen_warden"))
+    session.progress.record_boss_defeat(
+        "ashen_warden", campaign_result("verdant_boss", score=5000, exit_id="ashen_warden")
+    )
     manager.save(session)
     restored = manager.load(1).session
     assert restored is not None
@@ -59,6 +62,7 @@ def test_all_authored_world_secrets_aggregate_without_duplicate_replays(isolated
         if level_id == "verdant_boss":
             continue
         from world.level import Level
+
         count = len(Level.load(path).secret_definitions)
         counts[level_id] = count
         total += count

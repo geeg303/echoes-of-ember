@@ -62,5 +62,8 @@ class SecretArea:
 
     @property
     def score_value(self) -> int:
-        return (self.definition.reward_score if self.definition.reward_score is not None else SECRET_SCORE_VALUES[self.definition.kind])
-
+        return (
+            self.definition.reward_score
+            if self.definition.reward_score is not None
+            else SECRET_SCORE_VALUES[self.definition.kind]
+        )

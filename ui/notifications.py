@@ -44,4 +44,3 @@ class NotificationQueue:
         image.set_alpha(round(255 * fade))
         panel.blit(image, image.get_rect(center=panel.get_rect().center))
         surface.blit(panel, panel.get_rect(center=(surface.get_width() // 2, 126)))
-

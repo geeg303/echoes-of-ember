@@ -1,4 +1,5 @@
 """Cross-catalog integrity checks for all authored World 1 content."""
+
 from __future__ import annotations
 
 import json

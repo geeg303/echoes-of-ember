@@ -108,7 +108,9 @@ def test_rating_thresholds_are_metadata_driven() -> None:
         thresholds = game.level.metadata.ratings
         assert calculate_rating(0, 0, 52, 100, thresholds) is CompletionRating.BRONZE
         assert calculate_rating(thresholds.silver_score, 5, 52, 100, thresholds) is CompletionRating.SILVER
-        assert calculate_rating(thresholds.gold_score, 52, 52, thresholds.gold_time, thresholds) is CompletionRating.GOLD
+        assert (
+            calculate_rating(thresholds.gold_score, 52, 52, thresholds.gold_time, thresholds) is CompletionRating.GOLD
+        )
     finally:
         game.shutdown()
 

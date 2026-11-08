@@ -1,4 +1,5 @@
 """Semantic helpers shared by integration and scenario tests."""
+
 from __future__ import annotations
 
 from systems.level_completion import CompletionRating, ExitType, LevelResult
@@ -28,9 +29,26 @@ def campaign_result(
     secrets: int = 0,
 ) -> LevelResult:
     return LevelResult(
-        level_id, True, 30.0, score,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 3, 3, 0, CompletionRating.BRONZE,
-        secrets, secrets, 0, exit_type, exit_id,
+        level_id,
+        True,
+        30.0,
+        score,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        3,
+        0,
+        CompletionRating.BRONZE,
+        secrets,
+        secrets,
+        0,
+        exit_type,
+        exit_id,
     )
-

@@ -51,8 +51,11 @@ def test_build_flavor_defaults_to_developer_and_player_restricts(monkeypatch) ->
 def test_version_cli_and_player_cli_restriction() -> None:
     version = subprocess.run([sys.executable, "main.py", "--version"], capture_output=True, text=True, check=True)
     assert __version__ in version.stdout and BUILD_DESIGNATION in version.stdout
-    env = os.environ.copy(); env["ECHOES_BUILD_FLAVOR"] = "player"
-    denied = subprocess.run([sys.executable, "main.py", "--debug", "--smoke-test"], capture_output=True, text=True, env=env)
+    env = os.environ.copy()
+    env["ECHOES_BUILD_FLAVOR"] = "player"
+    denied = subprocess.run(
+        [sys.executable, "main.py", "--debug", "--smoke-test"], capture_output=True, text=True, env=env
+    )
     assert denied.returncode == 2
     assert "does not include developer" in denied.stderr
 
@@ -72,7 +75,9 @@ def test_safe_clean_rejects_root_and_escape(tmp_path: Path) -> None:
         safe_clean(tmp_path, tmp_path)
     with pytest.raises(ValueError, match="unsafe"):
         safe_clean(tmp_path.parent, tmp_path)
-    generated = tmp_path / "generated"; generated.mkdir(); (generated / "item").write_text("x")
+    generated = tmp_path / "generated"
+    generated.mkdir()
+    (generated / "item").write_text("x")
     safe_clean(generated, tmp_path)
     assert not generated.exists()
 
@@ -85,7 +90,10 @@ def test_artifact_name_is_safe_and_versioned() -> None:
 
 def test_package_self_test_requires_guard_and_persists_all_profiles(tmp_path: Path) -> None:
     from core.package_self_test import run_package_self_test
-    env = os.environ.copy(); env["ECHOES_USER_DATA_ROOT"] = str(tmp_path); env["ECHOES_PACKAGE_SELF_TEST"] = "1"
+
+    env = os.environ.copy()
+    env["ECHOES_USER_DATA_ROOT"] = str(tmp_path)
+    env["ECHOES_PACKAGE_SELF_TEST"] = "1"
     result = subprocess.run([sys.executable, "main.py", "--package-self-test"], env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert (tmp_path / "saves/slot_1.json").is_file()

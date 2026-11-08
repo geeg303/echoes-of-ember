@@ -24,9 +24,20 @@ def validate_level_data(data: Any) -> list[str]:
 
     core_required = {"name", "width", "height", "tile_size", "player_spawn", "tiles"}
     metadata_required = {
-        "id", "name", "world_id", "level_number", "display_name", "description",
-        "theme", "time_target", "shard_total", "rare_crystal_total",
-        "secret_token_total", "completion_requirements", "rating_thresholds", "goal",
+        "id",
+        "name",
+        "world_id",
+        "level_number",
+        "display_name",
+        "description",
+        "theme",
+        "time_target",
+        "shard_total",
+        "rare_crystal_total",
+        "secret_token_total",
+        "completion_requirements",
+        "rating_thresholds",
+        "goal",
     }
     for field in sorted(core_required - data.keys()):
         errors.append(f"missing required field: {field}")
@@ -50,7 +61,9 @@ def validate_level_data(data: Any) -> list[str]:
     if not _numeric_pair(spawn):
         errors.append("player_spawn must contain two numeric coordinates")
     elif isinstance(width, int) and isinstance(height, int) and isinstance(tile_size, int):
-        if not all(math.isfinite(float(value)) for value in spawn) or not (0 <= spawn[0] < width * tile_size and 0 <= spawn[1] < height * tile_size):
+        if not all(math.isfinite(float(value)) for value in spawn) or not (
+            0 <= spawn[0] < width * tile_size and 0 <= spawn[1] < height * tile_size
+        ):
             errors.append("player_spawn is outside level pixel bounds or non-finite")
 
     tiles = data.get("tiles")
@@ -90,9 +103,15 @@ def validate_level_data(data: Any) -> list[str]:
     _validate_boss_encounter(data.get("boss_encounter"), data.get("objects", []), pixel_width, pixel_height, errors)
     if isinstance(data.get("objects"), list):
         counts = {
-            "shard_total": sum(entry.get("type") == "ember_shard" for entry in data["objects"] if isinstance(entry, dict)),
-            "rare_crystal_total": sum(entry.get("type") == "rare_crystal" for entry in data["objects"] if isinstance(entry, dict)),
-            "secret_token_total": sum(entry.get("type") == "secret_token" for entry in data["objects"] if isinstance(entry, dict)),
+            "shard_total": sum(
+                entry.get("type") == "ember_shard" for entry in data["objects"] if isinstance(entry, dict)
+            ),
+            "rare_crystal_total": sum(
+                entry.get("type") == "rare_crystal" for entry in data["objects"] if isinstance(entry, dict)
+            ),
+            "secret_token_total": sum(
+                entry.get("type") == "secret_token" for entry in data["objects"] if isinstance(entry, dict)
+            ),
         }
         for field, derived in counts.items():
             if data.get(field) != derived:
@@ -100,7 +119,9 @@ def validate_level_data(data: Any) -> list[str]:
     return errors
 
 
-def _validate_ember_currents(raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:
+def _validate_ember_currents(
+    raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]
+) -> None:
     if not isinstance(raw, list):
         errors.append("ember_currents must be a list")
         return
@@ -122,16 +143,33 @@ def _validate_ember_currents(raw: object, objects: object, pixel_width: int, pix
             seen.add(current_id)
         bounds = entry.get("bounds")
         valid_bounds = isinstance(bounds, list) and len(bounds) == 4 and all(_finite_number(value) for value in bounds)
-        if not valid_bounds or bounds[2] <= 0 or bounds[3] <= 0 or bounds[0] < 0 or bounds[1] < 0 or bounds[0] + bounds[2] > pixel_width or bounds[1] + bounds[3] > pixel_height:
+        if (
+            not valid_bounds
+            or bounds[2] <= 0
+            or bounds[3] <= 0
+            or bounds[0] < 0
+            or bounds[1] < 0
+            or bounds[0] + bounds[2] > pixel_width
+            or bounds[1] + bounds[3] > pixel_height
+        ):
             errors.append(f"{prefix}.bounds is invalid or outside level bounds")
         direction = entry.get("direction")
-        if not _numeric_pair(direction) or not all(math.isfinite(float(value)) for value in direction) or float(direction[0]) ** 2 + float(direction[1]) ** 2 <= 0:
+        if (
+            not _numeric_pair(direction)
+            or not all(math.isfinite(float(value)) for value in direction)
+            or float(direction[0]) ** 2 + float(direction[1]) ** 2 <= 0
+        ):
             errors.append(f"{prefix}.direction must be a finite non-zero numeric pair")
         strength = entry.get("strength")
         if not _finite_number(strength) or not 0 < float(strength) <= 5000:
             errors.append(f"{prefix}.strength must be finite and between 0 and 5000")
         affects = entry.get("affects")
-        if not isinstance(affects, list) or not affects or not all(isinstance(value, str) for value in affects) or len(set(affects)) != len(affects):
+        if (
+            not isinstance(affects, list)
+            or not affects
+            or not all(isinstance(value, str) for value in affects)
+            or len(set(affects)) != len(affects)
+        ):
             errors.append(f"{prefix}.affects must be a non-empty unique string list")
         elif set(affects) - CURRENT_TARGETS:
             errors.append(f"{prefix}.affects contains unknown target categories")
@@ -149,7 +187,9 @@ def _validate_secrets(secrets: object, objects: object, pixel_width: int, pixel_
     if not isinstance(secrets, list):
         errors.append("secrets must be a list")
         return
-    object_ids = {entry.get("id"): entry.get("type") for entry in objects if isinstance(objects, list) and isinstance(entry, dict)}
+    object_ids = {
+        entry.get("id"): entry.get("type") for entry in objects if isinstance(objects, list) and isinstance(entry, dict)
+    }
     seen: set[str] = set()
     for index, entry in enumerate(secrets):
         prefix = f"secrets[{index}]"
@@ -178,12 +218,31 @@ def _validate_secrets(secrets: object, objects: object, pixel_width: int, pixel_
             errors.append(f"{prefix} has malformed trigger")
             continue
         bounds = properties.get("bounds")
-        valid_bounds = isinstance(bounds, list) and len(bounds) == 4 and all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) for value in bounds)
-        if not valid_bounds or bounds[2] <= 0 or bounds[3] <= 0 or bounds[0] < 0 or bounds[1] < 0 or bounds[0] + bounds[2] > pixel_width or bounds[1] + bounds[3] > pixel_height:
+        valid_bounds = (
+            isinstance(bounds, list)
+            and len(bounds) == 4
+            and all(
+                isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+                for value in bounds
+            )
+        )
+        if (
+            not valid_bounds
+            or bounds[2] <= 0
+            or bounds[3] <= 0
+            or bounds[0] < 0
+            or bounds[1] < 0
+            or bounds[0] + bounds[2] > pixel_width
+            or bounds[1] + bounds[3] > pixel_height
+        ):
             errors.append(f"{prefix}.properties.bounds is invalid")
         enemy_ids = properties.get("enemy_ids", [])
         if trigger is SecretTrigger.DEFEAT_ALL:
-            if not isinstance(enemy_ids, list) or not enemy_ids or not all(isinstance(item, str) and item for item in enemy_ids):
+            if (
+                not isinstance(enemy_ids, list)
+                or not enemy_ids
+                or not all(isinstance(item, str) and item for item in enemy_ids)
+            ):
                 errors.append(f"{prefix}.properties.enemy_ids must be a non-empty string list")
             else:
                 for enemy_id in enemy_ids:
@@ -198,6 +257,7 @@ def _validate_secrets(secrets: object, objects: object, pixel_width: int, pixel_
         if reward is not None and (not isinstance(reward, int) or isinstance(reward, bool) or reward < 0):
             errors.append(f"{prefix}.properties.reward_score must be non-negative")
 
+
 def _validate_metadata(data: dict[str, Any], errors: list[str]) -> None:
     for field in ("id", "world_id", "display_name", "description", "theme"):
         value = data.get(field)
@@ -206,7 +266,11 @@ def _validate_metadata(data: dict[str, Any], errors: list[str]) -> None:
     world_id = data.get("world_id")
     if isinstance(world_id, str) and (not world_id.replace("_", "").isalnum() or world_id.lower() != world_id):
         errors.append("world_id must use lowercase letters, numbers, and underscores")
-    if not isinstance(data.get("level_number"), int) or isinstance(data.get("level_number"), bool) or data["level_number"] <= 0:
+    if (
+        not isinstance(data.get("level_number"), int)
+        or isinstance(data.get("level_number"), bool)
+        or data["level_number"] <= 0
+    ):
         errors.append("level_number must be a positive integer")
     for field in ("time_target",):
         value = data.get(field)
@@ -238,7 +302,12 @@ def _validate_metadata(data: dict[str, Any], errors: list[str]) -> None:
             if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value < 0:
                 errors.append(f"rating_thresholds.{field} must be non-negative")
         ratio = ratings["gold_shard_ratio"]
-        if not isinstance(ratio, (int, float)) or isinstance(ratio, bool) or not math.isfinite(ratio) or not 0 <= ratio <= 1:
+        if (
+            not isinstance(ratio, (int, float))
+            or isinstance(ratio, bool)
+            or not math.isfinite(ratio)
+            or not 0 <= ratio <= 1
+        ):
             errors.append("rating_thresholds.gold_shard_ratio must be between 0 and 1")
 
 
@@ -248,7 +317,9 @@ def _validate_goal(goal: object, pixel_width: int, pixel_height: int, errors: li
         return
     if goal.get("type") != "ember_gate":
         errors.append(f"goal has unsupported type: {goal.get('type')!r}")
-    if not _numeric_pair([goal.get("x"), goal.get("y")]) or not all(math.isfinite(float(value)) for value in (goal.get("x"), goal.get("y")) if isinstance(value, (int, float))):
+    if not _numeric_pair([goal.get("x"), goal.get("y")]) or not all(
+        math.isfinite(float(value)) for value in (goal.get("x"), goal.get("y")) if isinstance(value, (int, float))
+    ):
         errors.append("goal coordinates must be numeric")
     else:
         x, y = float(goal["x"]), float(goal["y"])
@@ -261,8 +332,9 @@ def _validate_goal(goal: object, pixel_width: int, pixel_height: int, errors: li
         errors.append("goal.properties.requires_interact must be boolean")
 
 
-
-def _validate_boss_encounter(raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]) -> None:
+def _validate_boss_encounter(
+    raw: object, objects: object, pixel_width: int, pixel_height: int, errors: list[str]
+) -> None:
     if raw is None:
         return
     if not isinstance(raw, dict):
@@ -277,6 +349,7 @@ def _validate_boss_encounter(raw: object, objects: object, pixel_width: int, pix
     else:
         from settings import PROJECT_ROOT
         from bosses.boss_base import BossConfigError, load_boss_config
+
         config_path = PROJECT_ROOT / "data" / "bosses" / f"{boss_id}.json"
         try:
             config = load_boss_config(config_path)
@@ -284,41 +357,78 @@ def _validate_boss_encounter(raw: object, objects: object, pixel_width: int, pix
                 errors.append("boss_encounter boss ID does not match configuration")
         except BossConfigError as exc:
             errors.append(f"boss_encounter has invalid boss configuration: {exc}")
+
     def bounds(name: str) -> tuple[float, float, float, float] | None:
         value = raw.get(name)
-        valid = isinstance(value, list) and len(value) == 4 and all(isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item) for item in value)
-        if not valid or value[2] <= 0 or value[3] <= 0 or value[0] < 0 or value[1] < 0 or value[0] + value[2] > pixel_width or value[1] + value[3] > pixel_height:
+        valid = (
+            isinstance(value, list)
+            and len(value) == 4
+            and all(
+                isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item) for item in value
+            )
+        )
+        if (
+            not valid
+            or value[2] <= 0
+            or value[3] <= 0
+            or value[0] < 0
+            or value[1] < 0
+            or value[0] + value[2] > pixel_width
+            or value[1] + value[3] > pixel_height
+        ):
             errors.append(f"boss_encounter.{name} is invalid")
             return None
         return tuple(float(item) for item in value)
+
     arena = bounds("arena_bounds")
     trigger = bounds("trigger_bounds")
     for name in ("boss_spawn", "pulse_source"):
         value = raw.get(name)
-        if not _numeric_pair(value) or not all(math.isfinite(float(item)) for item in value) or not (0 <= value[0] < pixel_width and 0 <= value[1] < pixel_height):
+        if (
+            not _numeric_pair(value)
+            or not all(math.isfinite(float(item)) for item in value)
+            or not (0 <= value[0] < pixel_width and 0 <= value[1] < pixel_height)
+        ):
             errors.append(f"boss_encounter.{name} is invalid")
     if arena and _numeric_pair(raw.get("boss_spawn")) and not pygame_rect(arena).collidepoint(raw["boss_spawn"]):
         errors.append("boss_encounter boss spawn must be inside arena")
     if arena and trigger and not pygame_rect(arena).contains(pygame_rect(trigger)):
         errors.append("boss_encounter trigger must be inside arena")
     door_ids = raw.get("door_ids")
-    if not isinstance(door_ids, list) or not door_ids or not all(isinstance(item, str) and item for item in door_ids) or len(door_ids) != len(set(door_ids or [])):
+    if (
+        not isinstance(door_ids, list)
+        or not door_ids
+        or not all(isinstance(item, str) and item for item in door_ids)
+        or len(door_ids) != len(set(door_ids or []))
+    ):
         errors.append("boss_encounter.door_ids must be a unique non-empty string list")
     else:
-        types = {item.get("id"): item.get("type") for item in objects if isinstance(item, dict)} if isinstance(objects, list) else {}
+        types = (
+            {item.get("id"): item.get("type") for item in objects if isinstance(item, dict)}
+            if isinstance(objects, list)
+            else {}
+        )
         for door_id in door_ids:
             if types.get(door_id) != "door":
                 errors.append(f"boss_encounter references missing door: {door_id!r}")
     if isinstance(objects, list):
         has_checkpoint = any(item.get("type") == "checkpoint" for item in objects if isinstance(item, dict))
-        has_pulse = any(item.get("type") == "powerup" and item.get("powerup_type") == "ember_pulse" for item in objects if isinstance(item, dict))
-        if not has_checkpoint: errors.append("boss level requires a checkpoint")
-        if not has_pulse: errors.append("boss level requires an Ember Pulse source")
+        has_pulse = any(
+            item.get("type") == "powerup" and item.get("powerup_type") == "ember_pulse"
+            for item in objects
+            if isinstance(item, dict)
+        )
+        if not has_checkpoint:
+            errors.append("boss level requires a checkpoint")
+        if not has_pulse:
+            errors.append("boss level requires an Ember Pulse source")
 
 
 def pygame_rect(values: tuple[float, float, float, float]):
     import pygame
+
     return pygame.Rect(*[round(item) for item in values])
+
 
 def load_and_validate_level(path: Path) -> dict[str, Any]:
     try:
@@ -369,9 +479,11 @@ def validate_narrative_data(data_root: Path) -> tuple[int, int]:
         npc_count += len(load_npc_catalog(path, path.stem, dialogue_ids, bounds))
     return len(definitions), npc_count
 
+
 def main() -> int:
     import argparse
     from settings import PROJECT_ROOT
+
     parser = argparse.ArgumentParser(description="Validate Echoes of Ember level data")
     parser.add_argument("path", nargs="?", type=Path)
     parser.add_argument("--all-levels", action="store_true")
@@ -384,14 +496,17 @@ def main() -> int:
         print(f"valid: {path}")
     if args.all_levels:
         from world.campaign import DEFAULT_WORLD_REGISTRY, WorldRegistry
+
         registry = WorldRegistry.load(DEFAULT_WORLD_REGISTRY)
         print(f"valid world: {registry.world_id} ({len(registry.level_ids)} levels)")
         dialogue_count, npc_count = validate_narrative_data(PROJECT_ROOT / "data")
         print(f"valid narrative: {dialogue_count} dialogues, {npc_count} NPCs")
         from systems.achievement_system import load_achievement_definitions
+
         achievements = load_achievement_definitions(PROJECT_ROOT / "data" / "achievements" / "achievements.json")
         print(f"valid achievements: {len(achievements)} definitions")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

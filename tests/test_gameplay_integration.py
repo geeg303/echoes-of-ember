@@ -21,11 +21,7 @@ def enter_first_hazard(game: Game) -> None:
 def test_hazard_damage_death_and_respawn_preserve_pickups() -> None:
     game = Game()
     try:
-        shard = next(
-            item
-            for item in game.collectibles.collectibles
-            if item.kind is CollectibleType.EMBER_SHARD
-        )
+        shard = next(item for item in game.collectibles.collectibles if item.kind is CollectibleType.EMBER_SHARD)
         game.player.reposition(
             (
                 shard.pickup_rect.centerx - game.player.rect.width / 2,
@@ -78,13 +74,21 @@ def test_enemy_contact_invulnerability_death_and_restart_cleanup() -> None:
         game.player.previous_rect = game.player.rect.copy()
         game.player.velocity.y = 0
         first = game.enemies.update(
-            DT, game.camera.view_rect.inflate(2000, 1000), game.player,
-            game.collision, game.level.tilemap, game.progress,
+            DT,
+            game.camera.view_rect.inflate(2000, 1000),
+            game.player,
+            game.collision,
+            game.level.tilemap,
+            game.progress,
         )
         assert first.player_damaged and game.player.health == 2
         game.enemies.update(
-            DT, game.camera.view_rect.inflate(2000, 1000), game.player,
-            game.collision, game.level.tilemap, game.progress,
+            DT,
+            game.camera.view_rect.inflate(2000, 1000),
+            game.player,
+            game.collision,
+            game.level.tilemap,
+            game.progress,
         )
         assert game.player.health == 2
 
@@ -93,8 +97,12 @@ def test_enemy_contact_invulnerability_death_and_restart_cleanup() -> None:
         game.player.reposition((enemy.rect.x - game.player.rect.width + 8, enemy.rect.y))
         game.player.previous_rect = game.player.rect.copy()
         outcome = game.enemies.update(
-            DT, game.camera.view_rect.inflate(2000, 1000), game.player,
-            game.collision, game.level.tilemap, game.progress,
+            DT,
+            game.camera.view_rect.inflate(2000, 1000),
+            game.player,
+            game.collision,
+            game.level.tilemap,
+            game.progress,
         )
         assert outcome.player_died and game.player.is_dead
         for _ in range(60):

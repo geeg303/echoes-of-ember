@@ -97,7 +97,17 @@ class Level:
                 position=(float(entry["x"]), float(entry["y"])),
             )
             for index, entry in enumerate(data.get("objects", []))
-            if entry["type"] not in {"enemy", "powerup", "moving_platform", "falling_platform", "disappearing_platform", "switch", "door", "checkpoint"}
+            if entry["type"]
+            not in {
+                "enemy",
+                "powerup",
+                "moving_platform",
+                "falling_platform",
+                "disappearing_platform",
+                "switch",
+                "door",
+                "checkpoint",
+            }
         )
         enemy_spawns = tuple(
             EnemySpawn(
@@ -132,7 +142,8 @@ class Level:
         )
         secret_definitions = tuple(
             SecretDefinition(
-                secret_id=str(entry["id"]), kind=SecretType(entry["secret_type"]),
+                secret_id=str(entry["id"]),
+                kind=SecretType(entry["secret_type"]),
                 trigger=SecretTrigger(entry["properties"]["trigger_type"]),
                 bounds=tuple(float(value) for value in entry["properties"]["bounds"]),
                 enemy_ids=tuple(entry["properties"].get("enemy_ids", [])),
@@ -144,17 +155,32 @@ class Level:
         requirements = data["completion_requirements"]
         ratings = data["rating_thresholds"]
         metadata = LevelMetadata(
-            level_id=str(data["id"]), world_id=str(data["world_id"]),
-            level_number=int(data["level_number"]), display_name=str(data["display_name"]),
-            description=str(data["description"]), theme=str(data["theme"]),
-            time_target=float(data["time_target"]), declared_shards=int(data["shard_total"]),
+            level_id=str(data["id"]),
+            world_id=str(data["world_id"]),
+            level_number=int(data["level_number"]),
+            display_name=str(data["display_name"]),
+            description=str(data["description"]),
+            theme=str(data["theme"]),
+            time_target=float(data["time_target"]),
+            declared_shards=int(data["shard_total"]),
             declared_rare_crystals=int(data["rare_crystal_total"]),
             declared_secret_tokens=int(data["secret_token_total"]),
-            requirements=CompletionRequirements(bool(requirements["reach_goal"]), int(requirements.get("minimum_ember_shards", 0))),
-            ratings=RatingThresholds(int(ratings["silver_score"]), int(ratings["gold_score"]), float(ratings["gold_shard_ratio"]), float(ratings["gold_time"])),
+            requirements=CompletionRequirements(
+                bool(requirements["reach_goal"]), int(requirements.get("minimum_ember_shards", 0))
+            ),
+            ratings=RatingThresholds(
+                int(ratings["silver_score"]),
+                int(ratings["gold_score"]),
+                float(ratings["gold_shard_ratio"]),
+                float(ratings["gold_time"]),
+            ),
         )
         goal_data = data["goal"]
-        goal = GoalDefinition(str(goal_data["type"]), (float(goal_data["x"]), float(goal_data["y"])), bool(goal_data.get("properties", {}).get("requires_interact", True)))
+        goal = GoalDefinition(
+            str(goal_data["type"]),
+            (float(goal_data["x"]), float(goal_data["y"])),
+            bool(goal_data.get("properties", {}).get("requires_interact", True)),
+        )
         boss_data = data.get("boss_encounter")
         boss_encounter = None
         if boss_data is not None:

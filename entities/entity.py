@@ -14,4 +14,3 @@ class Entity:
 
     def sync_rect(self) -> None:
         self.rect.topleft = (round(self.position.x), round(self.position.y))
-

@@ -29,4 +29,3 @@ def test_silent_sound_accepts_standard_operations() -> None:
     assert sound.play() is None
     sound.set_volume(0.5)
     sound.stop()
-

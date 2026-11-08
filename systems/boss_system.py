@@ -76,7 +76,9 @@ class BossSystem:
             result.audio_events = ("awaken",)
         if not self.arena.active:
             return result
-        events = self.boss.update(dt, player.rect, self.definition.bounds, self.projectiles.spawn, self.projectiles.new_id)
+        events = self.boss.update(
+            dt, player.rect, self.definition.bounds, self.projectiles.spawn, self.projectiles.new_id
+        )
         audio = list(result.audio_events)
         if "phase_transition" in events:
             result.shake = 8.0
@@ -98,7 +100,11 @@ class BossSystem:
             audio.append("core_burst")
         result.audio_events = tuple(audio)
         for projectile in self.projectiles.projectiles:
-            if not projectile.active or projectile.faction is not Faction.PLAYER or not projectile.rect.colliderect(self.boss.rect):
+            if (
+                not projectile.active
+                or projectile.faction is not Faction.PLAYER
+                or not projectile.rect.colliderect(self.boss.rect)
+            ):
                 continue
             projectile.active = False
             previous_phase = self.boss.phase
@@ -108,7 +114,9 @@ class BossSystem:
                 if self.boss.phase != previous_phase:
                     result.shake = max(result.shake, 8.0)
                     result.audio_events += ("phase",)
-                self.effects.append(CombatEffect(pygame.Vector2(projectile.rect.center), (255, 200, 92), self.boss.defeat_claimed))
+                self.effects.append(
+                    CombatEffect(pygame.Vector2(projectile.rect.center), (255, 200, 92), self.boss.defeat_claimed)
+                )
                 if self.boss.defeat_claimed:
                     result.boss_defeated = True
                     result.audio_events += ("defeat",)
@@ -120,12 +128,14 @@ class BossSystem:
         if contact_enabled and self.boss.rect.colliderect(player.rect) and not player.is_dead:
             direction = -1 if player.rect.centerx < self.boss.rect.centerx else 1
             damage = player.apply_damage(
-                self.boss.config.contact_damage, DamageSource.ENEMY,
+                self.boss.config.contact_damage,
+                DamageSource.ENEMY,
                 pygame.Vector2(direction * PLAYER_ENEMY_KNOCKBACK[0], PLAYER_ENEMY_KNOCKBACK[1]),
             )
             result.player_damaged = damage.applied or damage.absorbed
             result.player_died = damage.died
-            if damage.applied: result.shake = max(result.shake, 6.0)
+            if damage.applied:
+                result.shake = max(result.shake, 6.0)
         if self.boss.defeat_claimed:
             self._clear_hostile_projectiles()
             if player.is_dead:
@@ -135,7 +145,8 @@ class BossSystem:
                 self.arena.finish()
                 powers.clear_encounter_abilities()
                 result.defeat_sequence_complete = True
-        for effect in self.effects: effect.update(dt)
+        for effect in self.effects:
+            effect.update(dt)
         self.effects = [effect for effect in self.effects if effect.active]
         return result
 
@@ -148,7 +159,8 @@ class BossSystem:
         self.arena.reset()
         self.effects.clear()
         self.completed_reported = False
-        if powers is not None: powers.clear_encounter_abilities()
+        if powers is not None:
+            powers.clear_encounter_abilities()
 
     def debug_damage(self, amount: int) -> bool:
         """Apply controlled developer damage while preserving phase/defeat invariants."""

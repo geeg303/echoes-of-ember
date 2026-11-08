@@ -152,18 +152,14 @@ class Player(Entity):
         axis = max(-1.0, min(1.0, axis))
         if axis:
             self.facing = 1 if axis > 0.0 else -1
-            acceleration = (
-                self.physics.ground_acceleration if self.grounded else self.physics.air_acceleration
-            )
+            acceleration = self.physics.ground_acceleration if self.grounded else self.physics.air_acceleration
             acceleration *= self.modifiers.acceleration
             target = axis * self.physics.max_run_speed * self.modifiers.speed
         else:
             if self.grounded and self.on_slippery:
                 acceleration = self.physics.slippery_deceleration
             else:
-                acceleration = (
-                    self.physics.ground_deceleration if self.grounded else self.physics.air_deceleration
-                )
+                acceleration = self.physics.ground_deceleration if self.grounded else self.physics.air_deceleration
             target = 0.0
         self.velocity.x = move_toward(self.velocity.x, target, acceleration * dt)
 
@@ -308,9 +304,7 @@ class Player(Entity):
     @property
     def death_animation_finished(self) -> bool:
         return (
-            self.is_dead
-            and self.animation.current_name == PlayerAnimationState.DEATH.value
-            and self.animation.finished
+            self.is_dead and self.animation.current_name == PlayerAnimationState.DEATH.value and self.animation.finished
         )
 
     def respawn(self, position: tuple[float, float]) -> None:

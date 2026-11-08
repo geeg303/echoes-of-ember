@@ -13,7 +13,9 @@ from systems.enemy_config import (
 from systems.progression import KNOWN_COLLECTIBLE_TYPES
 from systems.powerup_system import PowerUpType
 
-WORLD_OBJECT_TYPES = frozenset({"moving_platform", "falling_platform", "disappearing_platform", "switch", "door", "checkpoint"})
+WORLD_OBJECT_TYPES = frozenset(
+    {"moving_platform", "falling_platform", "disappearing_platform", "switch", "door", "checkpoint"}
+)
 
 
 def validate_objects(
@@ -64,17 +66,11 @@ def _validate_coordinates(
     valid: dict[str, float] = {}
     for coordinate in ("x", "y"):
         value = entry.get(coordinate)
-        if (
-            not isinstance(value, (int, float))
-            or isinstance(value, bool)
-            or not math.isfinite(value)
-        ):
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
             errors.append(f"{prefix}.{coordinate} must be a finite number")
         else:
             valid[coordinate] = float(value)
-    if len(valid) == 2 and not (
-        0 <= valid["x"] < pixel_width and 0 <= valid["y"] < pixel_height
-    ):
+    if len(valid) == 2 and not (0 <= valid["x"] < pixel_width and 0 <= valid["y"] < pixel_height):
         errors.append(f"{prefix} is outside level pixel bounds")
 
 
@@ -104,15 +100,10 @@ def _validate_enemy(entry: dict[str, Any], prefix: str, errors: list[str]) -> No
             valid = isinstance(value, int) and not isinstance(value, bool) and value > 0
         else:
             valid = (
-                isinstance(value, (int, float))
-                and not isinstance(value, bool)
-                and math.isfinite(value)
-                and value > 0
+                isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0
             )
         if not valid:
-            errors.append(
-                f"{prefix}.properties.{key} has incorrect type or value"
-            )
+            errors.append(f"{prefix}.properties.{key} has incorrect type or value")
 
 
 def _validate_powerup(entry: dict[str, Any], prefix: str, errors: list[str]) -> None:
@@ -121,7 +112,8 @@ def _validate_powerup(entry: dict[str, Any], prefix: str, errors: list[str]) -> 
         PowerUpType(raw_kind)
     except (ValueError, TypeError):
         errors.append(
-            f"{prefix} is missing powerup_type" if raw_kind is None
+            f"{prefix} is missing powerup_type"
+            if raw_kind is None
             else f"{prefix} has unknown power-up type: {raw_kind!r}"
         )
     properties = entry.get("properties", {})
@@ -137,8 +129,20 @@ def _validate_powerup(entry: dict[str, Any], prefix: str, errors: list[str]) -> 
 
 WORLD_PROPERTY_SCHEMAS: dict[str, dict[str, type]] = {
     "moving_platform": {"movement": str, "distance": float, "speed": float, "width": int, "height": int},
-    "falling_platform": {"activation_delay": float, "fall_acceleration": float, "reset_delay": float, "width": int, "height": int},
-    "disappearing_platform": {"visible_duration": float, "warning_duration": float, "hidden_duration": float, "width": int, "height": int},
+    "falling_platform": {
+        "activation_delay": float,
+        "fall_acceleration": float,
+        "reset_delay": float,
+        "width": int,
+        "height": int,
+    },
+    "disappearing_platform": {
+        "visible_duration": float,
+        "warning_duration": float,
+        "hidden_duration": float,
+        "width": int,
+        "height": int,
+    },
     "switch": {"target_id": str, "target_ids": list},
     "door": {"opening_duration": float, "width": int, "height": int},
     "checkpoint": {},
@@ -171,15 +175,25 @@ def _validate_world_object(entry: dict[str, Any], prefix: str, errors: list[str]
         elif expected is int:
             valid = isinstance(value, int) and not isinstance(value, bool) and value > 0
         else:
-            valid = isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0
+            valid = (
+                isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0
+            )
         if not valid:
             errors.append(f"{prefix}.properties.{key} has incorrect type or value")
 
 
 def _validate_references(objects: list[Any], errors: list[str]) -> None:
-    ids = {entry.get("id"): entry.get("type") for entry in objects if isinstance(entry, dict) and isinstance(entry.get("id"), str)}
+    ids = {
+        entry.get("id"): entry.get("type")
+        for entry in objects
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    }
     for index, entry in enumerate(objects):
-        if not isinstance(entry, dict) or entry.get("type") != "switch" or not isinstance(entry.get("properties", {}), dict):
+        if (
+            not isinstance(entry, dict)
+            or entry.get("type") != "switch"
+            or not isinstance(entry.get("properties", {}), dict)
+        ):
             continue
         properties = entry["properties"]
         targets = properties.get("target_ids", [properties.get("target_id")])

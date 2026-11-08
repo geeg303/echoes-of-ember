@@ -4,7 +4,7 @@ from __future__ import annotations
 import pygame
 
 from systems.level_completion import LevelResult, format_time
-from core.input_manager import Action,InputManager
+from core.input_manager import Action, InputManager
 
 
 class LevelCompleteScreen:
@@ -16,7 +16,9 @@ class LevelCompleteScreen:
     def reset(self) -> None:
         return None
 
-    def draw(self, surface: pygame.Surface, display_name: str, result: LevelResult, input_manager: InputManager | None = None) -> None:
+    def draw(
+        self, surface: pygame.Surface, display_name: str, result: LevelResult, input_manager: InputManager | None = None
+    ) -> None:
         shade = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         shade.fill((8, 12, 29, 232))
         surface.blit(shade, (0, 0))
@@ -45,6 +47,10 @@ class LevelCompleteScreen:
         if result.exit_type.value == "secret_exit":
             banner = self.small_font.render("SECRET EXIT FOUND!", True, (219, 155, 255))
             surface.blit(banner, banner.get_rect(center=(640, 196)))
-        message = (f"[{input_manager.get_prompt(Action.CONFIRM)}] CONTINUE   [{input_manager.get_prompt(Action.ATTACK)}] REPLAY   [{input_manager.get_prompt(Action.BACK)}] MAP" if input_manager else "ENTER / SPACE  CONTINUE TO MAP     R  REPLAY     M  WORLD MAP")
+        message = (
+            f"[{input_manager.get_prompt(Action.CONFIRM)}] CONTINUE   [{input_manager.get_prompt(Action.ATTACK)}] REPLAY   [{input_manager.get_prompt(Action.BACK)}] MAP"
+            if input_manager
+            else "ENTER / SPACE  CONTINUE TO MAP     R  REPLAY     M  WORLD MAP"
+        )
         prompt = self.small_font.render(message, True, (197, 211, 238))
         surface.blit(prompt, prompt.get_rect(center=(640, 604)))

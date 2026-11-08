@@ -16,9 +16,7 @@ class CollectibleManager:
         self.reset()
 
     def reset(self) -> None:
-        self.collectibles = [
-            create_collectible(spawn.object_id, spawn.kind, spawn.position) for spawn in self.spawns
-        ]
+        self.collectibles = [create_collectible(spawn.object_id, spawn.kind, spawn.position) for spawn in self.spawns]
 
     def update(self, dt: float, camera_view: pygame.Rect) -> None:
         update_view = camera_view.inflate(320, 240)
@@ -53,4 +51,3 @@ class CollectibleManager:
     @property
     def active_count(self) -> int:
         return sum(collectible.active for collectible in self.collectibles)
-

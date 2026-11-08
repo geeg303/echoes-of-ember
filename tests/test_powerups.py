@@ -32,7 +32,16 @@ def test_powerup_validation_unknown_properties_and_duplicate_ids() -> None:
     data = level_data()
     invalid = copy.deepcopy(data)
     invalid["objects"].append({"id": "bad_power", "type": "powerup", "powerup_type": "mystery", "x": 100, "y": 100})
-    invalid["objects"].append({"id": "shard_01", "type": "powerup", "powerup_type": "ember_pulse", "x": 120, "y": 100, "properties": {"duration": -2, "other": 1}})
+    invalid["objects"].append(
+        {
+            "id": "shard_01",
+            "type": "powerup",
+            "powerup_type": "ember_pulse",
+            "x": 120,
+            "y": 100,
+            "properties": {"duration": -2, "other": 1},
+        }
+    )
     errors = validate_level_data(invalid)
     assert any("unknown power-up" in error for error in errors)
     assert any("duplicate id" in error for error in errors)

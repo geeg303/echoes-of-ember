@@ -1,4 +1,5 @@
 """Cross-system runtime invariants and repeated lifecycle stress."""
+
 from __future__ import annotations
 
 import pygame
@@ -11,10 +12,16 @@ from world.tilemap import TileMap
 
 
 def floor_collision() -> CollisionEngine:
-    return CollisionEngine(TileMap.from_data({
-        "width": 40, "height": 10, "tile_size": 50,
-        "tiles": [{"id": 1, "position": [0, 8], "size": [40, 2]}],
-    }))
+    return CollisionEngine(
+        TileMap.from_data(
+            {
+                "width": 40,
+                "height": 10,
+                "tile_size": 50,
+                "tiles": [{"id": 1, "position": [0, 8], "size": [40, 2]}],
+            }
+        )
+    )
 
 
 def simulate_motion(dt: float, frames: int) -> Player:
@@ -55,9 +62,12 @@ def test_repeated_full_reconstruction_does_not_accumulate_runtime_state(game_fac
     for _ in range(12):
         game.reset_level()
         snapshot = (
-            len(game.collectibles.collectibles), len(game.enemies.enemies),
-            len(game.world_objects.platforms), len(game.npcs.npcs),
-            len(game.projectiles.projectiles), game.effects.emitter_count,
+            len(game.collectibles.collectibles),
+            len(game.enemies.enemies),
+            len(game.world_objects.platforms),
+            len(game.npcs.npcs),
+            len(game.projectiles.projectiles),
+            game.effects.emitter_count,
         )
         expected = expected or snapshot
         assert snapshot == expected

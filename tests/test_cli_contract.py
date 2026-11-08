@@ -1,4 +1,5 @@
 """Process-level launch argument and exit-code contracts."""
+
 from __future__ import annotations
 
 import os
@@ -52,4 +53,3 @@ def test_invalid_launch_combinations_fail_cleanly(project_root, arguments) -> No
 def test_supported_launch_modes_exit_successfully(project_root, arguments) -> None:
     outcome = run_cli(project_root, *arguments)
     assert outcome.returncode == 0, outcome.stderr
-

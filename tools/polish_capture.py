@@ -1,4 +1,5 @@
 """Capture representative deterministic screens for human polish review."""
+
 from __future__ import annotations
 
 import argparse

@@ -74,7 +74,29 @@ def test_secret_validation_rejects_unknown_bounds_references_and_exit_trigger() 
 
 
 def result(level_id: str, discovered: int, total: int, exit_type: ExitType = ExitType.NORMAL) -> LevelResult:
-    return LevelResult(level_id, True, 10, 100, 0, 1, 0, 1, 0, 1, 0, 1, 0, 3, 3, 0, CompletionRating.BRONZE, discovered, total, 0, exit_type)
+    return LevelResult(
+        level_id,
+        True,
+        10,
+        100,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        3,
+        3,
+        0,
+        CompletionRating.BRONZE,
+        discovered,
+        total,
+        0,
+        exit_type,
+    )
 
 
 def test_world_progress_secret_aggregate_replaces_replay() -> None:
@@ -92,7 +114,6 @@ def test_all_world_levels_have_expected_secret_totals_and_one_secret_exit() -> N
     assert [len(level.secret_definitions) for level in levels] == [2, 3, 3, 4, 0]
     exits = [item for level in levels for item in level.secret_definitions if item.kind is SecretType.EXIT]
     assert len(exits) == 1 and exits[0].secret_id == "v04_secret_exit"
-
 
 
 def test_f7_style_reset_reconstructs_secret_state() -> None:

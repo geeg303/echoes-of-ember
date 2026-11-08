@@ -25,10 +25,32 @@ def manager(tmp_path: Path, registry: WorldRegistry) -> SaveManager:
     return SaveManager(registry, tmp_path)
 
 
-def result(level_id: str, score: int = 100, exit_type: ExitType = ExitType.NORMAL, exit_id: str = "ember_gate") -> LevelResult:
+def result(
+    level_id: str, score: int = 100, exit_type: ExitType = ExitType.NORMAL, exit_id: str = "ember_gate"
+) -> LevelResult:
     return LevelResult(
-        level_id, True, 12.5, score, 3, 10, 1, 3, 1, 1, 2, 4,
-        1, 2, 3, 1, CompletionRating.SILVER, 2, 3, 1, exit_type, exit_id,
+        level_id,
+        True,
+        12.5,
+        score,
+        3,
+        10,
+        1,
+        3,
+        1,
+        1,
+        2,
+        4,
+        1,
+        2,
+        3,
+        1,
+        CompletionRating.SILVER,
+        2,
+        3,
+        1,
+        exit_type,
+        exit_id,
     )
 
 
@@ -144,7 +166,9 @@ def test_future_version_is_unsupported_and_untouched(manager: SaveManager) -> No
         lambda data: data["campaign"].update(current_map_node="unknown"),
         lambda data: data["campaign"]["progression"].update(completed_levels_once=["unknown"]),
         lambda data: data["campaign"]["progression"].update(revealed_map_nodes=["unknown"]),
-        lambda data: data["campaign"]["progression"].update(discovered_secret_exits=[{"level_id": "verdant_04", "exit_id": "unknown"}]),
+        lambda data: data["campaign"]["progression"].update(
+            discovered_secret_exits=[{"level_id": "verdant_04", "exit_id": "unknown"}]
+        ),
     ],
 )
 def test_invalid_save_data_is_rejected(manager: SaveManager, mutation) -> None:
@@ -167,9 +191,7 @@ def test_invalid_save_data_is_rejected(manager: SaveManager, mutation) -> None:
         ("secret_rooms_completed", 4),
     ],
 )
-def test_impossible_level_results_are_rejected(
-    manager: SaveManager, field: str, value: object
-) -> None:
+def test_impossible_level_results_are_rejected(manager: SaveManager, field: str, value: object) -> None:
     session = SaveSession.fresh(1, manager.registry)
     session.progress.record(result("verdant_01"))
     data = session.to_dict()
@@ -226,7 +248,6 @@ def test_slot_summary_is_lightweight_and_derived(manager: SaveManager) -> None:
 def test_invalid_slot_ids_never_construct_paths(manager: SaveManager, slot) -> None:
     with pytest.raises(ValueError):
         manager.inspect_slot(slot)
-
 
 
 def _complete_current_level(game: Game, secret: bool = False) -> None:
@@ -305,6 +326,7 @@ def test_play_time_adds_incrementally_without_duplicate_accumulation(manager: Sa
     finally:
         game.shutdown()
 
+
 def test_abandoned_replay_preserves_previous_persistent_result(manager: SaveManager) -> None:
     session = manager.new_game(1)
     session.progress.record(result("verdant_01", 4321))
@@ -332,6 +354,7 @@ def test_valid_primary_is_preferred_over_older_backup(manager: SaveManager) -> N
     assert outcome.session is not None
     assert outcome.session.play_time_seconds == pytest.approx(20)
 
+
 def test_level_result_exit_id_must_match_authored_content(manager: SaveManager) -> None:
     session = SaveSession.fresh(1, manager.registry)
     session.progress.record(result("verdant_04"))
@@ -341,6 +364,7 @@ def test_level_result_exit_id_must_match_authored_content(manager: SaveManager) 
     saved["exit_id"] = "unknown_secret_exit"
     with pytest.raises(SaveValidationError):
         SaveSession.from_dict(data, manager.registry, 1)
+
 
 def test_v1_migration_preserves_progress_but_revokes_legacy_world_completion(manager: SaveManager) -> None:
     session = SaveSession.fresh(1, manager.registry)
@@ -396,7 +420,8 @@ def test_boss_progression_is_isolated_across_three_slots(manager: SaveManager) -
     first.progress.record_boss_defeat("ashen_warden", result("verdant_boss", exit_id="ashen_warden"))
     manager.save(first)
     second = manager.new_game(2)
-    second.progress.record(result("verdant_04")); manager.save(second)
+    second.progress.record(result("verdant_04"))
+    manager.save(second)
     manager.new_game(3)
     assert manager.load(1).session.progress.world_completed_once
     assert not manager.load(2).session.progress.world_completed_once
@@ -409,4 +434,3 @@ def test_v2_rejects_world_complete_without_defeated_boss(manager: SaveManager) -
     data["campaign"]["progression"]["completed_worlds_once"] = ["verdant_reaches"]
     with pytest.raises(SaveValidationError, match="defeated bosses"):
         SaveSession.from_dict(data, manager.registry, 1)
-

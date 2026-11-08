@@ -30,4 +30,3 @@ class Jumper(GroundEnemy):
                 self.animation.play("idle")
         else:
             self.animation.play("move")
-

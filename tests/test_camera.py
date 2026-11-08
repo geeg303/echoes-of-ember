@@ -56,4 +56,3 @@ def test_procedural_parallax_draws_multiple_colors() -> None:
         for y in range(0, surface.get_height(), 80)
     }
     assert len(sampled) >= 8
-

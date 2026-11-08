@@ -1,4 +1,5 @@
 """Headless long-run stability check for Phase 23 performance work."""
+
 from __future__ import annotations
 
 import argparse

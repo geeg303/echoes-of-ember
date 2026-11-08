@@ -63,9 +63,7 @@ def test_bounce_and_slippery_surface_responses() -> None:
     assert bounce_velocity.y < 0.0
     assert bounce.bounced
 
-    _, slippery_velocity, slippery_rect, slippery = move(
-        engine_for(7), (160, 90), (0, 700), 0.1
-    )
+    _, slippery_velocity, slippery_rect, slippery = move(engine_for(7), (160, 90), (0, 700), 0.1)
     assert slippery_rect.bottom == 150
     assert slippery_velocity.y == 0.0
     assert slippery.grounded and slippery.on_slippery
@@ -76,4 +74,3 @@ def test_breakable_tile_is_solid_until_broken_by_future_interaction() -> None:
     assert rect.right == 150
     assert velocity.x == 0.0
     assert result.hit_wall
-

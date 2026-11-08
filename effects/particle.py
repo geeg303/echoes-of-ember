@@ -70,7 +70,10 @@ class Particle:
             pygame.draw.line(surface, color, center - direction / 2, center + direction / 2, max(1, size // 3))
         elif self.primitive is ParticlePrimitive.RECT:
             half = pygame.Vector2(size, size * 0.65)
-            points = [center + pygame.Vector2(x, y).rotate(self.rotation) for x, y in ((-half.x,-half.y),(half.x,-half.y),(half.x,half.y),(-half.x,half.y))]
+            points = [
+                center + pygame.Vector2(x, y).rotate(self.rotation)
+                for x, y in ((-half.x, -half.y), (half.x, -half.y), (half.x, half.y), (-half.x, half.y))
+            ]
             pygame.draw.polygon(surface, color, points)
         elif self.primitive is ParticlePrimitive.GLOW:
             pygame.draw.circle(surface, (*self.color, max(1, self.alpha // 4)), center, size * 2)

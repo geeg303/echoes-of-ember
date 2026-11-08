@@ -28,8 +28,7 @@ class SecretSystem:
     @property
     def completed_room_count(self) -> int:
         return sum(
-            area.state is SecretState.COMPLETED
-            and area.definition.kind in {SecretType.ROOM, SecretType.CHALLENGE}
+            area.state is SecretState.COMPLETED and area.definition.kind in {SecretType.ROOM, SecretType.CHALLENGE}
             for area in self.areas.values()
         )
 
@@ -88,4 +87,3 @@ class SecretSystem:
             color = (188, 114, 255) if area.state is SecretState.UNDISCOVERED else (255, 183, 88)
             pygame.draw.ellipse(surface, color, rect, 4)
             pygame.draw.circle(surface, (255, 232, 150), rect.center, 8)
-

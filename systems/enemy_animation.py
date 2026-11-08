@@ -69,4 +69,3 @@ def _draw_frame(kind: EnemyType, state: str, index: int, count: int) -> pygame.S
     eye_color = (255, 236, 133) if state != "death" else (80, 74, 91)
     pygame.draw.circle(surface, eye_color, (47, body.y + 12), 4)
     return surface
-

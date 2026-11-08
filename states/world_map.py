@@ -6,13 +6,20 @@ import math
 
 import pygame
 
-from core.input_manager import Action,InputManager
+from core.input_manager import Action, InputManager
 from systems.level_completion import format_time
 from world.world_map import ConnectionState, NodeState, NodeType, WorldMapRuntime
 
 
 class WorldMapScreen:
-    def __init__(self, runtime: WorldMapRuntime, title: pygame.font.Font, font: pygame.font.Font, small: pygame.font.Font, input_manager: InputManager | None = None) -> None:
+    def __init__(
+        self,
+        runtime: WorldMapRuntime,
+        title: pygame.font.Font,
+        font: pygame.font.Font,
+        small: pygame.font.Font,
+        input_manager: InputManager | None = None,
+    ) -> None:
         self.runtime = runtime
         self.title = title
         self.font = font
@@ -86,7 +93,11 @@ class WorldMapScreen:
             state = self.runtime.connection_state(connection)
             if state is ConnectionState.HIDDEN:
                 continue
-            points = [self.runtime.definition.nodes[connection.source].position, *connection.waypoints, self.runtime.definition.nodes[connection.target].position]
+            points = [
+                self.runtime.definition.nodes[connection.source].position,
+                *connection.waypoints,
+                self.runtime.definition.nodes[connection.target].position,
+            ]
             color = {
                 ConnectionState.LOCKED: (72, 76, 70),
                 ConnectionState.AVAILABLE: (213, 171, 91),
@@ -135,7 +146,9 @@ class WorldMapScreen:
             self._node_marker(surface, center, node.kind, state, radius)
 
     @staticmethod
-    def _node_marker(surface: pygame.Surface, center: tuple[int, int], kind: NodeType, state: NodeState, radius: int) -> None:
+    def _node_marker(
+        surface: pygame.Surface, center: tuple[int, int], kind: NodeType, state: NodeState, radius: int
+    ) -> None:
         """Give map states a shape cue so they never rely on color alone."""
         x, y = center
         ink = (34, 39, 49)
@@ -144,20 +157,21 @@ class WorldMapScreen:
             pygame.draw.rect(surface, ink, (x - 9, y - 3, 18, 14), border_radius=3)
             pygame.draw.circle(surface, (210, 211, 194), (x, y + 2), 2)
         elif state is NodeState.MASTERED:
-            points=[]
+            points = []
             for index in range(10):
-                angle=-math.pi/2+index*math.pi/5;length=9 if index%2==0 else 4
-                points.append((round(x+math.cos(angle)*length),round(y+math.sin(angle)*length)))
+                angle = -math.pi / 2 + index * math.pi / 5
+                length = 9 if index % 2 == 0 else 4
+                points.append((round(x + math.cos(angle) * length), round(y + math.sin(angle) * length)))
             pygame.draw.polygon(surface, ink, points)
         elif state is NodeState.COMPLETED:
-            pygame.draw.lines(surface, ink, False, [(x-8,y),(x-2,y+7),(x+10,y-8)], 4)
+            pygame.draw.lines(surface, ink, False, [(x - 8, y), (x - 2, y + 7), (x + 10, y - 8)], 4)
         elif kind is NodeType.SECRET:
             pygame.draw.circle(surface, ink, center, 5, 2)
             pygame.draw.circle(surface, ink, (x, y + 9), 2)
         elif kind is NodeType.BOSS:
-            pygame.draw.polygon(surface, ink, [(x,y-10),(x+10,y),(x,y+10),(x-10,y)], 3)
+            pygame.draw.polygon(surface, ink, [(x, y - 10), (x + 10, y), (x, y + 10), (x - 10, y)], 3)
         elif kind is NodeType.WORLD_GOAL:
-            pygame.draw.polygon(surface, ink, [(x,y-11),(x+10,y+8),(x-10,y+8)], 3)
+            pygame.draw.polygon(surface, ink, [(x, y - 11), (x + 10, y + 8), (x - 10, y + 8)], 3)
         elif state is NodeState.AVAILABLE:
             pygame.draw.circle(surface, ink, center, 5)
 
@@ -165,7 +179,11 @@ class WorldMapScreen:
         x, y = round(self.runtime.avatar_position.x), round(self.runtime.avatar_position.y)
         bob = round(math.sin(self.age * 5) * 2)
         pygame.draw.circle(surface, (255, 139, 70), (x, y - 22 + bob), 10)
-        pygame.draw.polygon(surface, (53, 68, 102), [(x - 11, y - 13 + bob), (x + 11, y - 13 + bob), (x + 15, y + 10 + bob), (x - 15, y + 10 + bob)])
+        pygame.draw.polygon(
+            surface,
+            (53, 68, 102),
+            [(x - 11, y - 13 + bob), (x + 11, y - 13 + bob), (x + 15, y + 10 + bob), (x - 15, y + 10 + bob)],
+        )
         pygame.draw.circle(surface, (255, 226, 167), (x, y - 25 + bob), 4)
 
     def _panel(self, surface: pygame.Surface) -> None:
@@ -181,16 +199,31 @@ class WorldMapScreen:
         if node.level_id and node.level_id in self.runtime.progress.results:
             result = self.runtime.progress.results[node.level_id]
             details = [
-                f"RATING {result.rating.value}", f"SCORE {result.score:08d}", f"TIME {format_time(result.completion_time)}",
+                f"RATING {result.rating.value}",
+                f"SCORE {result.score:08d}",
+                f"TIME {format_time(result.completion_time)}",
                 f"SHARDS {result.ember_shards_collected}/{result.ember_shards_total}",
                 f"RARE {result.rare_crystals_collected}/{result.rare_crystals_total}",
-                f"TOKEN {'FOUND' if result.secret_tokens_collected else 'MISSING'}", f"SECRETS {result.secrets_discovered}/{result.secrets_total}",
+                f"TOKEN {'FOUND' if result.secret_tokens_collected else 'MISSING'}",
+                f"SECRETS {result.secrets_discovered}/{result.secrets_total}",
             ]
         elif node.kind in {NodeType.LEVEL, NodeType.BOSS}:
-            details = ["ASHEN WARDEN DEFEATED" if node.kind is NodeType.BOSS and state is NodeState.COMPLETED else "NOT YET COMPLETED"]
+            details = [
+                "ASHEN WARDEN DEFEATED"
+                if node.kind is NodeType.BOSS and state is NodeState.COMPLETED
+                else "NOT YET COMPLETED"
+            ]
         elif node.kind is NodeType.SECRET:
             details = ["A HIDDEN PATH HAS BEEN REVEALED"]
         else:
-            details = ([f"[{self.input.get_prompt(Action.CONFIRM)}] SELECT", "STICK / D-PAD  TRAVEL", f"[{self.input.get_prompt(Action.BACK)}] MAIN MENU"] if self.input else ["ENTER / SPACE  SELECT", "ARROWS / WASD  TRAVEL", "ESC  MAIN MENU"])
+            details = (
+                [
+                    f"[{self.input.get_prompt(Action.CONFIRM)}] SELECT",
+                    "STICK / D-PAD  TRAVEL",
+                    f"[{self.input.get_prompt(Action.BACK)}] MAIN MENU",
+                ]
+                if self.input
+                else ["ENTER / SPACE  SELECT", "ARROWS / WASD  TRAVEL", "ESC  MAIN MENU"]
+            )
         image = self.small.render("     ".join(details), True, (219, 224, 218))
         surface.blit(image, (300, 611))

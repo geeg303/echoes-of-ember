@@ -80,7 +80,9 @@ class WorldMapDefinition:
     connections: tuple[MapConnection, ...]
 
     @classmethod
-    def from_data(cls, data: object, level_ids: tuple[str, ...], valid_secret_exits: set[tuple[str, str]] | None = None) -> "WorldMapDefinition":
+    def from_data(
+        cls, data: object, level_ids: tuple[str, ...], valid_secret_exits: set[tuple[str, str]] | None = None
+    ) -> "WorldMapDefinition":
         errors: list[str] = []
         if not isinstance(data, dict):
             raise MapDefinitionError("map must be an object")
@@ -112,7 +114,10 @@ class WorldMapDefinition:
                 errors.append(f"duplicate map node: {node_id}")
                 continue
             position = (raw.get("x"), raw.get("y"))
-            if not all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) for value in position):
+            if not all(
+                isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+                for value in position
+            ):
                 errors.append(f"{prefix} has invalid position")
                 continue
             level_id = raw.get("level_id")
@@ -161,12 +166,20 @@ class WorldMapDefinition:
                 points = []
             unlock = _requirement(raw.get("unlock"), level_ids, prefix, errors, valid_secret_exits, valid_boss_ids)
             if unlock is not None:
-                connections.append(MapConnection(connection_id, source, target, tuple((float(p[0]), float(p[1])) for p in points), unlock))
+                connections.append(
+                    MapConnection(
+                        connection_id, source, target, tuple((float(p[0]), float(p[1])) for p in points), unlock
+                    )
+                )
         if not any(node.kind is NodeType.WORLD_GOAL for node in nodes.values()):
             errors.append("map requires a world_goal node")
         if isinstance(start, str):
             reachable = _structurally_reachable(start, connections)
-            required = {node.node_id for node in nodes.values() if node.kind in {NodeType.LEVEL, NodeType.BOSS, NodeType.WORLD_GOAL}}
+            required = {
+                node.node_id
+                for node in nodes.values()
+                if node.kind in {NodeType.LEVEL, NodeType.BOSS, NodeType.WORLD_GOAL}
+            }
             if not required <= reachable:
                 errors.append("normal campaign nodes are not structurally reachable from start")
         if errors:
@@ -175,10 +188,21 @@ class WorldMapDefinition:
 
 
 def _point(value: object) -> bool:
-    return isinstance(value, list) and len(value) == 2 and all(isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item) for item in value)
+    return (
+        isinstance(value, list)
+        and len(value) == 2
+        and all(isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item) for item in value)
+    )
 
 
-def _requirement(raw: object, level_ids: tuple[str, ...], prefix: str, errors: list[str], valid_secret_exits: set[tuple[str, str]] | None, valid_boss_ids: set[str]) -> UnlockRequirement | None:
+def _requirement(
+    raw: object,
+    level_ids: tuple[str, ...],
+    prefix: str,
+    errors: list[str],
+    valid_secret_exits: set[tuple[str, str]] | None,
+    valid_boss_ids: set[str],
+) -> UnlockRequirement | None:
     if not isinstance(raw, dict):
         errors.append(f"{prefix}.unlock must be an object")
         return None
@@ -194,7 +218,11 @@ def _requirement(raw: object, level_ids: tuple[str, ...], prefix: str, errors: l
         errors.append(f"{prefix}.unlock references unknown level")
     if kind is RequirementType.SECRET_EXIT_DISCOVERED and (not isinstance(exit_id, str) or not exit_id):
         errors.append(f"{prefix}.unlock requires exit_id")
-    elif kind is RequirementType.SECRET_EXIT_DISCOVERED and valid_secret_exits is not None and (level_id, exit_id) not in valid_secret_exits:
+    elif (
+        kind is RequirementType.SECRET_EXIT_DISCOVERED
+        and valid_secret_exits is not None
+        and (level_id, exit_id) not in valid_secret_exits
+    ):
         errors.append(f"{prefix}.unlock references unknown secret exit")
     if kind is RequirementType.BOSS_DEFEATED and (not isinstance(boss_id, str) or not boss_id):
         errors.append(f"{prefix}.unlock requires boss_id")
@@ -248,14 +276,26 @@ class WorldMapRuntime:
         return NodeState.AVAILABLE if self._node_has_available_connection(node_id) else NodeState.LOCKED
 
     def connection_state(self, connection: MapConnection) -> ConnectionState:
-        if connection.target in self.definition.nodes and self.definition.nodes[connection.target].kind is NodeType.SECRET and not self._requirement_met(connection.unlock):
+        if (
+            connection.target in self.definition.nodes
+            and self.definition.nodes[connection.target].kind is NodeType.SECRET
+            and not self._requirement_met(connection.unlock)
+        ):
             return ConnectionState.HIDDEN
         if not self._requirement_met(connection.unlock):
             return ConnectionState.LOCKED
-        return ConnectionState.TRAVERSED if connection.connection_id in self.traversed_connections else ConnectionState.AVAILABLE
+        return (
+            ConnectionState.TRAVERSED
+            if connection.connection_id in self.traversed_connections
+            else ConnectionState.AVAILABLE
+        )
 
     def connections_from_current(self) -> list[MapConnection]:
-        return [item for item in self.definition.connections if item.source == self.current_node_id or item.target == self.current_node_id]
+        return [
+            item
+            for item in self.definition.connections
+            if item.source == self.current_node_id or item.target == self.current_node_id
+        ]
 
     def available_destinations(self) -> list[tuple[MapConnection, str]]:
         result = []
@@ -331,4 +371,3 @@ class WorldMapRuntime:
         if requirement.kind is RequirementType.BOSS_DEFEATED:
             return requirement.boss_id in self.progress.defeated_bosses
         return self.progress.world_completed_once
-

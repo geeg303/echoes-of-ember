@@ -45,10 +45,7 @@ PLAYER_ANIMATION_SPECS: dict[PlayerAnimationState, AnimationSpec] = {
 def build_player_animation_controller() -> AnimationController:
     clips: list[AnimationClip] = []
     for state, spec in PLAYER_ANIMATION_SPECS.items():
-        frames = [
-            _draw_nova_frame(state, frame_index, spec.frame_count)
-            for frame_index in range(spec.frame_count)
-        ]
+        frames = [_draw_nova_frame(state, frame_index, spec.frame_count) for frame_index in range(spec.frame_count)]
         clips.append(
             AnimationClip.from_surfaces(
                 state.value,
@@ -160,4 +157,3 @@ def _draw_nova_frame(
     if state is PlayerAnimationState.HURT:
         pygame.draw.line(surface, (255, 245, 190), (8, 18 + frame_index * 4), (18, 12 + frame_index * 4), 3)
     return surface
-

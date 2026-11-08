@@ -94,9 +94,7 @@ class Camera:
             self._random.uniform(-strength, strength),
             self._random.uniform(-strength, strength),
         )
-        self._shake_intensity = max(
-            0.0, self._shake_intensity - self.settings.shake_decay * dt
-        )
+        self._shake_intensity = max(0.0, self._shake_intensity - self.settings.shake_decay * dt)
 
     @property
     def render_offset(self) -> tuple[int, int]:
@@ -115,12 +113,8 @@ class Camera:
         )
 
     def _clamp_position(self) -> None:
-        self.position.x = self._clamp_axis(
-            self.position.x, self.world_width, self.viewport_width
-        )
-        self.position.y = self._clamp_axis(
-            self.position.y, self.world_height, self.viewport_height
-        )
+        self.position.x = self._clamp_axis(self.position.x, self.world_width, self.viewport_width)
+        self.position.y = self._clamp_axis(self.position.y, self.world_height, self.viewport_height)
         if self.bounds is not None:
             max_x = max(self.bounds.left, self.bounds.right - self.viewport_width)
             max_y = max(self.bounds.top, self.bounds.bottom - self.viewport_height)

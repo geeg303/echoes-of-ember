@@ -46,8 +46,7 @@ class AnimationClip:
         return cls(
             name=name,
             frames=tuple(
-                AnimationFrame(surface, duration, events.get(index, ()))
-                for index, surface in enumerate(surfaces)
+                AnimationFrame(surface, duration, events.get(index, ())) for index, surface in enumerate(surfaces)
             ),
             loop=loop,
         )
@@ -118,4 +117,3 @@ class AnimationController:
         events = tuple(self._pending_events)
         self._pending_events.clear()
         return events
-

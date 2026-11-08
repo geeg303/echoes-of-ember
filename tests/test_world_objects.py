@@ -34,7 +34,9 @@ def test_moving_platform_interpolation_reversal_and_passenger_displacement() -> 
     platform.update(0.2)
     assert platform.position.x == 120 and platform.direction == -1
 
-    manager = WorldObjectManager((spawn("ride", "moving_platform", (100, 200), movement="horizontal", distance=100, speed=100),), (0, 0))
+    manager = WorldObjectManager(
+        (spawn("ride", "moving_platform", (100, 200), movement="horizontal", distance=100, speed=100),), (0, 0)
+    )
     player = Player((120, 138))
     manager.riding_id = "ride"
     manager.update_before_player(0.1, player, empty_map())
@@ -42,7 +44,9 @@ def test_moving_platform_interpolation_reversal_and_passenger_displacement() -> 
 
 
 def test_player_lands_on_dynamic_platform_and_detaches_when_jumping() -> None:
-    manager = WorldObjectManager((spawn("ride", "moving_platform", (100, 200), movement="horizontal", distance=100, speed=50),), (0, 0))
+    manager = WorldObjectManager(
+        (spawn("ride", "moving_platform", (100, 200), movement="horizontal", distance=100, speed=50),), (0, 0)
+    )
     platform = manager.platforms[0]
     player = Player((125, 130))
     player.previous_rect = player.rect.copy()
@@ -161,8 +165,18 @@ def test_world_object_validation_rejects_malformed_values_and_references() -> No
     with open("data/levels/verdant_01.json", encoding="utf-8") as handle:
         data = json.load(handle)
     invalid = copy.deepcopy(data)
-    invalid["objects"].append({"id": "bad_platform", "type": "moving_platform", "x": 10, "y": 10, "properties": {"movement": "diagonal", "distance": -1}})
-    invalid["objects"].append({"id": "bad_switch", "type": "switch", "x": 20, "y": 20, "properties": {"target_id": "missing_door"}})
+    invalid["objects"].append(
+        {
+            "id": "bad_platform",
+            "type": "moving_platform",
+            "x": 10,
+            "y": 10,
+            "properties": {"movement": "diagonal", "distance": -1},
+        }
+    )
+    invalid["objects"].append(
+        {"id": "bad_switch", "type": "switch", "x": 20, "y": 20, "properties": {"target_id": "missing_door"}}
+    )
     invalid["objects"].append({"type": "checkpoint", "x": 30, "y": 30})
     errors = validate_level_data(invalid)
     assert any("movement" in error for error in errors)

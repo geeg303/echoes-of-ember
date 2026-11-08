@@ -27,4 +27,3 @@ def create_enemy(spawn: EnemySpawn) -> Enemy:
 
 
 __all__ = ["create_enemy"]
-

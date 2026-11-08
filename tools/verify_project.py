@@ -1,4 +1,5 @@
 """One-command local verification pipeline for Echoes of Ember."""
+
 from __future__ import annotations
 
 import argparse
@@ -45,19 +46,23 @@ def build_stages(mode: str) -> tuple[Stage, ...]:
         Stage("git-diff-check", ("git", "diff", "--check")),
     ]
     if mode in {"full", "release"}:
-        stages.extend([
-            Stage("smoke-normal", (py, "main.py", "--smoke-test")),
-            Stage("smoke-slot", (py, "main.py", "--slot", "1", "--smoke-test")),
-            Stage("smoke-level", (py, "main.py", "--level", "verdant_03", "--smoke-test")),
-            Stage("smoke-editor", (py, "main.py", "--editor", "--level", "verdant_04", "--smoke-test")),
-            Stage("smoke-debug", (py, "main.py", "--debug", "--level", "verdant_boss", "--smoke-test")),
-            Stage("short-soak", (py, "-m", "tools.soak_test", "--frames", "3000", "--draw-every", "30"), 180),
-        ])
+        stages.extend(
+            [
+                Stage("smoke-normal", (py, "main.py", "--smoke-test")),
+                Stage("smoke-slot", (py, "main.py", "--slot", "1", "--smoke-test")),
+                Stage("smoke-level", (py, "main.py", "--level", "verdant_03", "--smoke-test")),
+                Stage("smoke-editor", (py, "main.py", "--editor", "--level", "verdant_04", "--smoke-test")),
+                Stage("smoke-debug", (py, "main.py", "--debug", "--level", "verdant_boss", "--smoke-test")),
+                Stage("short-soak", (py, "-m", "tools.soak_test", "--frames", "3000", "--draw-every", "30"), 180),
+            ]
+        )
     if mode == "release":
-        stages.extend([
-            Stage("performance", (py, "-m", "tools.performance_benchmark", "--all", "--frames", "600"), 240),
-            Stage("long-soak", (py, "-m", "tools.soak_test", "--frames", "18000", "--draw-every", "30"), 300),
-        ])
+        stages.extend(
+            [
+                Stage("performance", (py, "-m", "tools.performance_benchmark", "--all", "--frames", "600"), 240),
+                Stage("long-soak", (py, "-m", "tools.soak_test", "--frames", "18000", "--draw-every", "30"), 300),
+            ]
+        )
     return tuple(stages)
 
 
@@ -79,8 +84,12 @@ def run_stage(stage: Stage, environment: dict[str, str]) -> StageResult:
         output = f"timed out after {stage.timeout}s\n{exc.stdout or ''}\n{exc.stderr or ''}".strip()
         returncode = 124
     return StageResult(
-        stage.name, returncode == 0, round(time.perf_counter() - started, 3),
-        list(stage.command), output, returncode,
+        stage.name,
+        returncode == 0,
+        round(time.perf_counter() - started, 3),
+        list(stage.command),
+        output,
+        returncode,
     )
 
 
@@ -130,4 +139,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

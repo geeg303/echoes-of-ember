@@ -1,4 +1,5 @@
 """Persistence and configuration failure matrices using isolated paths."""
+
 from __future__ import annotations
 
 import json
@@ -36,12 +37,17 @@ def test_invalid_settings_fall_back_without_overwriting_source(tmp_path, mutate)
 
 def test_schema_one_settings_migrate_in_memory_with_safe_defaults(tmp_path) -> None:
     path = tmp_path / "settings.json"
-    path.write_text(json.dumps({
-        "schema_version": 1,
-        "audio": {"master_volume": 0.4},
-        "visual": {"effects_quality": "reduced"},
-        "display": {"fullscreen": True},
-    }), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "audio": {"master_volume": 0.4},
+                "visual": {"effects_quality": "reduced"},
+                "display": {"fullscreen": True},
+            }
+        ),
+        encoding="utf-8",
+    )
     settings = SettingsManager(path).load()
     assert settings.audio.master_volume == 0.4
     assert settings.effects_quality == "reduced"
@@ -70,11 +76,16 @@ def test_invalid_achievement_progress_is_preserved_and_disabled(tmp_path, progre
 
 def test_invalid_achievement_timestamp_is_rejected(tmp_path) -> None:
     path = tmp_path / "achievements.json"
-    path.write_text(json.dumps({
-        "schema_version": 1,
-        "unlocked": {"first_light": {"unlocked_at": "not-a-time"}},
-        "progress": {"counters": {}, "sets": {}, "flags": []},
-    }), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "unlocked": {"first_light": {"unlocked_at": "not-a-time"}},
+                "progress": {"counters": {}, "sets": {}, "flags": []},
+            }
+        ),
+        encoding="utf-8",
+    )
     store = AchievementStore(path)
     manager = AchievementManager.create(PROJECT_ROOT / "data" / "achievements" / "achievements.json", path)
     assert manager.store.status == "corrupt" and not manager.profile.unlocked
@@ -99,4 +110,3 @@ def test_save_replace_failure_keeps_last_valid_primary(isolated_save_manager, mo
         manager.save(session)
     assert primary.read_bytes() == before
     assert session.dirty
-

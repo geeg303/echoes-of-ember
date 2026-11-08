@@ -25,9 +25,7 @@ KNOWN_COLLECTIBLE_TYPES = frozenset(kind.value for kind in CollectibleType)
 @dataclass(slots=True)
 class LevelProgress:
     totals: dict[CollectibleType, int]
-    collected: dict[CollectibleType, int] = field(
-        default_factory=lambda: {kind: 0 for kind in CollectibleType}
-    )
+    collected: dict[CollectibleType, int] = field(default_factory=lambda: {kind: 0 for kind in CollectibleType})
     collected_ids: set[str] = field(default_factory=set)
     score: int = 0
 
@@ -56,4 +54,3 @@ class LevelProgress:
     def award_score(self, amount: int) -> None:
         if amount > 0:
             self.score += amount
-

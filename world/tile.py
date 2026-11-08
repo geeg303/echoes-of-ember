@@ -89,4 +89,3 @@ def draw_tile(
     elif definition.kind is TileKind.SLIPPERY:
         pygame.draw.line(surface, (216, 255, 255), (rect.x + 7, rect.y + 10), (rect.right - 7, rect.y + 10), 5)
         pygame.draw.line(surface, (151, 235, 240), (rect.x + 18, rect.y + 27), (rect.right - 10, rect.y + 20), 3)
-

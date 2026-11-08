@@ -14,5 +14,14 @@ class Checkpoint:
     def draw(self, surface: pygame.Surface, offset: tuple[int, int]) -> None:
         rect = self.rect.move(offset)
         color = (255, 191, 88) if self.active else (94, 121, 151)
-        pygame.draw.polygon(surface, color, [(rect.centerx, rect.top), (rect.right, rect.centery), (rect.centerx, rect.bottom), (rect.left, rect.centery)])
+        pygame.draw.polygon(
+            surface,
+            color,
+            [
+                (rect.centerx, rect.top),
+                (rect.right, rect.centery),
+                (rect.centerx, rect.bottom),
+                (rect.left, rect.centery),
+            ],
+        )
         pygame.draw.circle(surface, (255, 240, 179) if self.active else (142, 165, 183), rect.center, 8)

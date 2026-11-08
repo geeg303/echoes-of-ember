@@ -20,12 +20,14 @@ class ParallaxBackground:
             for _ in range(max(45, world_width // 55))
         ]
         self.clouds = [
-            (randomizer.randrange(-200, world_width + 200), randomizer.randrange(90, 330), randomizer.randrange(70, 150))
+            (
+                randomizer.randrange(-200, world_width + 200),
+                randomizer.randrange(90, 330),
+                randomizer.randrange(70, 150),
+            )
             for _ in range(max(12, world_width // 300))
         ]
-        self.tree_positions = [
-            (x, randomizer.randrange(75, 145)) for x in range(-100, world_width + 300, 155)
-        ]
+        self.tree_positions = [(x, randomizer.randrange(75, 145)) for x in range(-100, world_width + 300, 155)]
         self._gradient: pygame.Surface | None = None
         self._gradient_size = (0, 0)
 

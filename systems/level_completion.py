@@ -33,10 +33,9 @@ class CompletionRequirements:
     minimum_ember_shards: int = 0
 
     def evaluate(self, reached_goal: bool, progress: LevelProgress) -> bool:
-        return (
-            (reached_goal or not self.reach_goal)
-            and progress.count(CollectibleType.EMBER_SHARD) >= self.minimum_ember_shards
-        )
+        return (reached_goal or not self.reach_goal) and progress.count(
+            CollectibleType.EMBER_SHARD
+        ) >= self.minimum_ember_shards
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,7 +80,11 @@ def calculate_rating(
     thresholds: RatingThresholds,
 ) -> CompletionRating:
     ratio = shards_collected / shards_total if shards_total else 1.0
-    if score >= thresholds.gold_score and ratio >= thresholds.gold_shard_ratio and completion_time <= thresholds.gold_time:
+    if (
+        score >= thresholds.gold_score
+        and ratio >= thresholds.gold_shard_ratio
+        and completion_time <= thresholds.gold_time
+    ):
         return CompletionRating.GOLD
     if score >= thresholds.silver_score:
         return CompletionRating.SILVER

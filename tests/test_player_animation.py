@@ -120,4 +120,3 @@ def test_animation_frames_do_not_change_collision_rectangle() -> None:
         assert player.rect == original_rect
         assert player.rect.size == original_size
         player.respawn(original_rect.topleft)
-

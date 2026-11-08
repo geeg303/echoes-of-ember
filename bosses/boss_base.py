@@ -72,17 +72,26 @@ def load_boss_config(path: Path) -> BossConfig:
         raise BossConfigError("; ".join(errors))
     phases = tuple(
         BossPhaseConfig(
-            int(item["phase"]), int(item["minimum_health"]),
-            tuple(str(attack) for attack in item["attacks"]), float(item["attack_cooldown"]),
+            int(item["phase"]),
+            int(item["minimum_health"]),
+            tuple(str(attack) for attack in item["attacks"]),
+            float(item["attack_cooldown"]),
         )
         for item in raw["phases"]
     )
     return BossConfig(
-        str(raw["id"]), str(raw["display_name"]), int(raw["max_health"]),
-        (int(raw["size"][0]), int(raw["size"][1])), float(raw["movement_speed"]),
-        int(raw["contact_damage"]), float(raw["hit_invulnerability"]),
-        float(raw["stagger_duration"]), float(raw["intro_duration"]),
-        float(raw["defeat_duration"]), int(raw["score_reward"]), phases,
+        str(raw["id"]),
+        str(raw["display_name"]),
+        int(raw["max_health"]),
+        (int(raw["size"][0]), int(raw["size"][1])),
+        float(raw["movement_speed"]),
+        int(raw["contact_damage"]),
+        float(raw["hit_invulnerability"]),
+        float(raw["stagger_duration"]),
+        float(raw["intro_duration"]),
+        float(raw["defeat_duration"]),
+        int(raw["score_reward"]),
+        phases,
         {str(key): float(value) for key, value in raw["timings"].items()},
         float(raw["projectile_speed"]),
     )
@@ -99,17 +108,31 @@ def validate_boss_config(raw: object) -> list[str]:
         value = raw.get(key)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
             errors.append(f"{key} must be a positive integer")
-    for key in ("movement_speed", "hit_invulnerability", "stagger_duration", "intro_duration", "defeat_duration", "projectile_speed"):
+    for key in (
+        "movement_speed",
+        "hit_invulnerability",
+        "stagger_duration",
+        "intro_duration",
+        "defeat_duration",
+        "projectile_speed",
+    ):
         value = raw.get(key)
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value < 0:
             errors.append(f"{key} must be finite and non-negative")
     size = raw.get("size")
-    if not isinstance(size, list) or len(size) != 2 or not all(isinstance(v, int) and not isinstance(v, bool) and v > 0 for v in size):
+    if (
+        not isinstance(size, list)
+        or len(size) != 2
+        or not all(isinstance(v, int) and not isinstance(v, bool) and v > 0 for v in size)
+    ):
         errors.append("size must contain two positive integers")
     timings = raw.get("timings")
     if not isinstance(timings, dict) or not timings:
         errors.append("timings must be a non-empty object")
-    elif any(not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) or v < 0 for v in timings.values()):
+    elif any(
+        not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) or v < 0
+        for v in timings.values()
+    ):
         errors.append("timings must contain finite non-negative numbers")
     phases = raw.get("phases")
     if not isinstance(phases, list) or not phases:
@@ -128,10 +151,20 @@ def validate_boss_config(raw: object) -> list[str]:
         if isinstance(number, int) and isinstance(minimum, int):
             parsed.append((number, minimum))
         attacks = phase.get("attacks")
-        if not isinstance(attacks, list) or not attacks or not all(isinstance(v, str) and v for v in attacks) or len(attacks) != len(set(attacks or [])):
+        if (
+            not isinstance(attacks, list)
+            or not attacks
+            or not all(isinstance(v, str) and v for v in attacks)
+            or len(attacks) != len(set(attacks or []))
+        ):
             errors.append(f"phases[{index}].attacks must be a unique non-empty string list")
         cooldown = phase.get("attack_cooldown")
-        if not isinstance(cooldown, (int, float)) or isinstance(cooldown, bool) or not math.isfinite(cooldown) or cooldown < 0:
+        if (
+            not isinstance(cooldown, (int, float))
+            or isinstance(cooldown, bool)
+            or not math.isfinite(cooldown)
+            or cooldown < 0
+        ):
             errors.append(f"phases[{index}].attack_cooldown must be non-negative")
     if parsed:
         numbers = [item[0] for item in parsed]

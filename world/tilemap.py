@@ -121,7 +121,12 @@ class TileMap:
                 tile = self.tile_at(grid_x, grid_y)
                 if tile is None:
                     continue
-                local = pygame.Rect((grid_x - first_x) * self.tile_size, (grid_y - first_y) * self.tile_size, self.tile_size, self.tile_size)
+                local = pygame.Rect(
+                    (grid_x - first_x) * self.tile_size,
+                    (grid_y - first_y) * self.tile_size,
+                    self.tile_size,
+                    self.tile_size,
+                )
                 draw_tile(chunk, tile.definition, local, self.tile_size)
         self._chunk_cache[key] = chunk
         return chunk

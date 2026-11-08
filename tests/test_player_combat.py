@@ -24,9 +24,7 @@ from world.tilemap import TileMap
 
 
 def empty_world() -> tuple[TileMap, CollisionEngine]:
-    tilemap = TileMap.from_data(
-        {"width": 30, "height": 10, "tile_size": 50, "tiles": []}
-    )
+    tilemap = TileMap.from_data({"width": 30, "height": 10, "tile_size": 50, "tiles": []})
     return tilemap, CollisionEngine(tilemap)
 
 
@@ -73,22 +71,16 @@ def pulse_at(manager: ProjectileManager, center: tuple[int, int]) -> None:
 def test_projectile_kills_normal_enemy_and_awards_score_once() -> None:
     tilemap, collision = empty_world()
     projectiles = ProjectileManager()
-    enemies = EnemyManager(
-        (EnemySpawn("crawler", EnemyType.CRAWLER, (300, 200), {}),), projectiles
-    )
+    enemies = EnemyManager((EnemySpawn("crawler", EnemyType.CRAWLER, (300, 200), {}),), projectiles)
     player = Player((0, 0))
     progress = LevelProgress.from_types([])
     target = enemies.enemies[0]
     pulse_at(projectiles, target.rect.center)
-    outcome = enemies.update(
-        0.0, pygame.Rect(0, 0, 1000, 600), player, collision, tilemap, progress
-    )
+    outcome = enemies.update(0.0, pygame.Rect(0, 0, 1000, 600), player, collision, tilemap, progress)
     assert not target.alive and outcome.score_awarded == 200 and progress.score == 200
 
     pulse_at(projectiles, target.rect.center)
-    second = enemies.update(
-        0.0, pygame.Rect(0, 0, 1000, 600), player, collision, tilemap, progress
-    )
+    second = enemies.update(0.0, pygame.Rect(0, 0, 1000, 600), player, collision, tilemap, progress)
     assert second.score_awarded == 0 and progress.score == 200
     assert projectiles.projectiles == []
 
@@ -96,18 +88,14 @@ def test_projectile_kills_normal_enemy_and_awards_score_once() -> None:
 def test_armored_enemy_requires_four_separate_pulse_hits() -> None:
     tilemap, collision = empty_world()
     projectiles = ProjectileManager()
-    enemies = EnemyManager(
-        (EnemySpawn("armor", EnemyType.ARMORED, (300, 200), {}),), projectiles
-    )
+    enemies = EnemyManager((EnemySpawn("armor", EnemyType.ARMORED, (300, 200), {}),), projectiles)
     player = Player((0, 0))
     progress = LevelProgress.from_types([])
     target = enemies.enemies[0]
     for expected_health in (3, 2, 1, 0):
         target.hit_cooldown = 0.0
         pulse_at(projectiles, target.rect.center)
-        outcome = enemies.update(
-            0.0, pygame.Rect(0, 0, 1000, 600), player, collision, tilemap, progress
-        )
+        outcome = enemies.update(0.0, pygame.Rect(0, 0, 1000, 600), player, collision, tilemap, progress)
         assert target.health == expected_health
     assert not target.alive
     assert outcome.score_awarded == 750 and progress.score == 750

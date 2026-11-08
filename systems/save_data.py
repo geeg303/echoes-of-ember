@@ -57,8 +57,7 @@ class SaveSession:
                 "active_world_id": self.progress.registry.world_id,
                 "current_map_node": self.current_map_node,
                 "level_results": {
-                    level_id: _result_to_dict(result)
-                    for level_id, result in sorted(self.progress.results.items())
+                    level_id: _result_to_dict(result) for level_id, result in sorted(self.progress.results.items())
                 },
                 "progression": {
                     "completed_levels_once": sorted(self.progress.completed_levels_once),
@@ -133,9 +132,7 @@ class SaveSession:
         progress.defeated_bosses = _unique_known_strings(
             progression.get("defeated_bosses"), set(registry.boss_ids), "defeated_bosses"
         )
-        progress.dialogue_flags = _unique_dialogue_flags(
-            progression.get("dialogue_flags"), "dialogue_flags"
-        )
+        progress.dialogue_flags = _unique_dialogue_flags(progression.get("dialogue_flags"), "dialogue_flags")
         worlds = _unique_known_strings(
             progression.get("completed_worlds_once"), {registry.world_id}, "completed_worlds_once"
         )
@@ -260,9 +257,7 @@ def _result_from_dict(raw: object, level_id: str) -> LevelResult:
         ("secret_rooms_completed", "secrets_total"),
     ):
         if getattr(result, collected_name) > getattr(result, total_name):
-            raise SaveValidationError(
-                f"level result {level_id}.{collected_name} exceeds {total_name}"
-            )
+            raise SaveValidationError(f"level result {level_id}.{collected_name} exceeds {total_name}")
     return result
 
 

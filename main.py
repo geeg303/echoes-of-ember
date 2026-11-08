@@ -43,6 +43,7 @@ def main() -> int:
     if args.package_self_test:
         try:
             from core.package_self_test import run_package_self_test
+
             run_package_self_test()
         except (OSError, RuntimeError, PermissionError, ValueError) as exc:
             logging.error("Package self-test failed: %s", exc)
@@ -60,6 +61,7 @@ def main() -> int:
     if args.editor:
         from editor.document import EditorDocumentError
         from tools.level_editor import run_editor
+
         try:
             run_editor(args.level or "verdant_01", frames=5 if args.smoke_test else None, debug=args.debug)
         except (EditorDocumentError, OSError, ValueError) as exc:
@@ -75,7 +77,8 @@ def main() -> int:
         if level_id not in registry.level_paths:
             prototype_path = PROJECT_ROOT / "data" / "levels" / f"{level_id}.json"
             if args.level and level_id.startswith(("prototype_", "dev_")) and prototype_path.is_file():
-                paths = dict(registry.level_paths); paths[level_id] = prototype_path
+                paths = dict(registry.level_paths)
+                paths[level_id] = prototype_path
                 registry = replace(registry, level_ids=registry.level_ids + (level_id,), level_paths=paths)
             else:
                 raise WorldRegistryError(f"unknown level id: {level_id}")
@@ -84,7 +87,17 @@ def main() -> int:
         return 2
     direct_campaign = args.slot is not None or args.new_game
     slot_id = args.slot or 1
-    game = Game(level_id=level_id, registry=registry, start_frontend=args.level is None and not direct_campaign, start_on_map=args.level is None and direct_campaign, slot_id=slot_id, new_game=args.new_game, persistence=direct_campaign, achievements_enabled=args.level is None and not args.debug, debug_enabled=args.debug)
+    game = Game(
+        level_id=level_id,
+        registry=registry,
+        start_frontend=args.level is None and not direct_campaign,
+        start_on_map=args.level is None and direct_campaign,
+        slot_id=slot_id,
+        new_game=args.new_game,
+        persistence=direct_campaign,
+        achievements_enabled=args.level is None and not args.debug,
+        debug_enabled=args.debug,
+    )
     game.run(frame_limit=5 if args.smoke_test else None)
     return 0
 

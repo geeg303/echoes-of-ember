@@ -1,4 +1,5 @@
 """Small shared visual vocabulary for player-facing screen-space UI."""
+
 from __future__ import annotations
 
 import pygame
@@ -40,4 +41,3 @@ def draw_panel(
 ) -> None:
     pygame.draw.rect(surface, fill, rect, border_radius=radius)
     pygame.draw.rect(surface, border, rect, width, border_radius=radius)
-

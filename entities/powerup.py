@@ -9,7 +9,9 @@ from systems.powerup_system import POWERUP_DEFINITIONS, PowerUpSystem, PowerUpTy
 
 
 class PowerUpPickup:
-    def __init__(self, object_id: str, kind: PowerUpType, position: tuple[float, float], duration: float | None = None) -> None:
+    def __init__(
+        self, object_id: str, kind: PowerUpType, position: tuple[float, float], duration: float | None = None
+    ) -> None:
         self.object_id = object_id
         self.kind = kind
         self.position = pygame.Vector2(position)
@@ -37,9 +39,26 @@ class PowerUpPickup:
         if self.kind is PowerUpType.EMBER_PULSE:
             pygame.draw.circle(surface, (255, 238, 170), center, 8)
         elif self.kind is PowerUpType.WIND_BOOTS:
-            pygame.draw.lines(surface, (230, 255, 255), False, [(center[0]-12, center[1]-7), (center[0]+3, center[1]+7), (center[0]+13, center[1]+7)], 5)
+            pygame.draw.lines(
+                surface,
+                (230, 255, 255),
+                False,
+                [(center[0] - 12, center[1] - 7), (center[0] + 3, center[1] + 7), (center[0] + 13, center[1] + 7)],
+                5,
+            )
         elif self.kind is PowerUpType.AETHER_WING:
-            pygame.draw.arc(surface, (245, 225, 255), pygame.Rect(center[0]-15, center[1]-12, 14, 24), 1.2, 5.2, 4)
-            pygame.draw.arc(surface, (245, 225, 255), pygame.Rect(center[0]+1, center[1]-12, 14, 24), -2.0, 2.0, 4)
+            pygame.draw.arc(surface, (245, 225, 255), pygame.Rect(center[0] - 15, center[1] - 12, 14, 24), 1.2, 5.2, 4)
+            pygame.draw.arc(surface, (245, 225, 255), pygame.Rect(center[0] + 1, center[1] - 12, 14, 24), -2.0, 2.0, 4)
         else:
-            pygame.draw.polygon(surface, (226, 235, 241), [(center[0], center[1]-12), (center[0]+11, center[1]-5), (center[0]+8, center[1]+11), (center[0]-8, center[1]+11), (center[0]-11, center[1]-5)], 3)
+            pygame.draw.polygon(
+                surface,
+                (226, 235, 241),
+                [
+                    (center[0], center[1] - 12),
+                    (center[0] + 11, center[1] - 5),
+                    (center[0] + 8, center[1] + 11),
+                    (center[0] - 8, center[1] + 11),
+                    (center[0] - 11, center[1] - 5),
+                ],
+                3,
+            )

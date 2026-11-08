@@ -81,9 +81,7 @@ def test_normal_stomp_kills_once_and_armored_stomp_only_bounces() -> None:
 
     crawler_spawn = EnemySpawn("c", EnemyType.CRAWLER, (200, 264), {})
     manager = EnemyManager((crawler_spawn,), projectiles)
-    outcome = manager.update(
-        0.0, pygame.Rect(0, 0, 1000, 500), player, collision, tilemap, progress
-    )
+    outcome = manager.update(0.0, pygame.Rect(0, 0, 1000, 500), player, collision, tilemap, progress)
     assert not manager.enemies[0].alive
     assert outcome.score_awarded == 200 and progress.score == 200
     assert player.velocity.y == -PLAYER_STOMP_BOUNCE_SPEED
@@ -103,17 +101,13 @@ def test_normal_stomp_kills_once_and_armored_stomp_only_bounces() -> None:
 def test_projectile_faction_lifetime_and_terrain_cleanup() -> None:
     tilemap, _ = floor_world()
     manager = ProjectileManager()
-    projectile = Projectile(
-        "bolt", (100, 100), pygame.Vector2(100, 0), 1, Faction.ENEMY, lifetime=0.05
-    )
+    projectile = Projectile("bolt", (100, 100), pygame.Vector2(100, 0), 1, Faction.ENEMY, lifetime=0.05)
     manager.spawn(projectile)
     manager.update(0.06, tilemap)
     assert manager.projectiles == []
     assert projectile.faction is Faction.ENEMY
 
-    terrain_hit = Projectile(
-        "bolt2", (100, 270), pygame.Vector2(0, 500), 1, Faction.ENEMY, lifetime=2
-    )
+    terrain_hit = Projectile("bolt2", (100, 270), pygame.Vector2(0, 500), 1, Faction.ENEMY, lifetime=2)
     manager.spawn(terrain_hit)
     manager.update(0.1, tilemap)
     assert manager.projectiles == []
